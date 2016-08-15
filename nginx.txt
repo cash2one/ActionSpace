@@ -1,6 +1,6 @@
-Ê¹ÓÃnginx£º
-1¡¢nginx -c nginx/nginx.conf
-2¡¢python manage.py runserver
+ä½¿ç”¨nginxï¼š
+1ã€nginx -c nginx/nginx.conf
+2ã€python manage.py runserver
 
-Ê¹ÓÃapache£º
-Ö±½ÓÖ´ĞĞhttpd¼´¿É
+ä½¿ç”¨apacheï¼š
+ç›´æ¥æ‰§è¡Œhttpdå³å¯

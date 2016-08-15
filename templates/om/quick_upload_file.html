@@ -1,0 +1,134 @@
+{% extends 'om/base.html' %}
+<!DOCTYPE html>
+<html>
+{% block head %}
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="Cache-Control" content="no-siteapp" />
+    <title>运维工作平台 - 编辑任务属性</title>
+    {% load staticfiles %}
+    <meta name="keywords" content="H+">
+    <meta name="description" content="H+">
+
+    <!--[if lt IE 9]>
+    <meta http-equiv="refresh" content="0;ie.html" />
+    <![endif]-->
+    {% block head_link %}
+    <link rel="shortcut icon" href="{% static 'om/favicon.ico' %}">
+    <link href="{% static 'om/css/bootstrap.min14ed.css' %}" rel="stylesheet">
+    <link href="{% static 'om/css/font-awesome.min93e3.css' %}" rel="stylesheet">
+    <link href="{% static 'om/css/animate.min.css' %}" rel="stylesheet">
+    <link href="{% static 'om/css/plugins/codemirror/theme/ambiance.css' %}" rel="stylesheet">
+    <link href="{% static 'om/css/plugins/codemirror/codemirror.css' %}" rel="stylesheet">
+    <link href="{% static 'om/css/style.min862f.css' %}" rel="stylesheet">
+    <link href="{% static 'om/css/plugins/awesome-bootstrap-checkbox/awesome-bootstrap-checkbox.css' %}" rel="stylesheet">
+    <link href="{% static 'om/css/plugins/chosen/chosen.css' %}" rel="stylesheet">
+    {% endblock %}
+</head>
+{% endblock %}
+{% block body %}
+{% load staticfiles %}
+<body class="gray-bg">
+    <div class="wrapper wrapper-content  animated fadeInRight">
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="ibox ">
+                    <div class="ibox-title">
+                        <h5>快速分发文件</h5>
+                    </div>
+                    <div class="ibox-content">
+                        <form class="form-horizontal">
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label">任务名称</label>
+                                <div class="col-sm-8">
+                                    <input type="email" placeholder="任务名称" class="form-control">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label">目标机器</label>
+                                <div class="col-sm-8">
+                                    <div class="input-group">
+                                        <select data-placeholder="请选择" class="chosen-select" multiple  style="width:650px;">
+                                            <option value="">目标机器</option>
+                                            <optgroup label="PA18">
+                                                <option value="1" hassubinfo="true">10.17.12.121</option>
+                                                <option value="2" hassubinfo="true">10.17.12.122</option>
+                                                <option value="3" hassubinfo="true">10.17.12.123</option>
+                                                <option value="4" hassubinfo="true">10.17.12.124</option>
+                                            <optgroup>
+                                            <optgroup label="TRACESSO">
+                                                <option value="5" hassubinfo="true">10.17.12.125</option>
+                                                <option value="6" hassubinfo="true">10.17.12.126</option>
+                                                <option value="7" hassubinfo="true">10.17.12.127</option>
+                                                <option value="8" hassubinfo="true">10.17.12.128</option>
+                                            <optgroup>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label">执行账户</label>
+                                <div class="col-sm-8">
+                                    <div class="input-group">
+                                        <select data-placeholder="请选择" class="chosen-select"  style="width:650px;">
+                                            <option value="">执行账户</option>
+                                            <option value="1" hassubinfo="true">root</option>
+                                            <option value="2" hassubinfo="true">wls81</option>
+                                            <option value="3" hassubinfo="true">deployop</option>
+                                            <option value="4" hassubinfo="true">logarchive</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label">文件来源</label>
+                                <div class="col-sm-8">
+                                    <div class="radio radio-info radio-inline">
+                                        <input type="radio" id="local_file" value="local_file" name="file_source" checked="">
+                                        <label for="python"> 本地文件 </label>
+                                    </div>
+                                    <div class="radio radio-info radio-inline">
+                                        <input type="radio" id="server_file" value="server_file" name="file_source">
+                                        <label for="shell"> 服务器文件 </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                        <div class="text-center">
+                            <a data-toggle="modal" class="btn btn-primary">开始执行</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% block script %}
+    <script src="{% static 'om/js/jquery.min.js' %}"></script>
+    <script src="{% static 'om/js/bootstrap.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/peity/jquery.peity.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/chosen/chosen.jquery.js' %}"></script>
+    <script src="{% static 'om/js/plugins/codemirror/codemirror.js' %}"></script>
+    <script src="{% static 'om/js/plugins/codemirror/mode/javascript/javascript.js' %}"></script>
+    <script src="{% static 'om/js/plugins/codemirror/mode/python/python.js' %}"></script>
+    <script src="{% static 'om/js/plugins/codemirror/mode/perl/perl.js' %}"></script>
+    <script src="{% static 'om/js/content.min.js' %}"></script>
+    <script>
+        $(".chosen-select").chosen();
+        var editor = CodeMirror.fromTextArea($("#code_python")[0], {
+            mode: 'python',
+            lineNumbers: true,
+            indentUnit: 4,
+            styleActiveLine: true,
+            matchBrackets: true,
+            theme: 'ambiance'
+        });
+        $("input:radio[name='code_mode']").change(function (){
+            editor.setOption("mode", $(this).prop("id"));
+        });
+        editor.setSize('%80', 300)
+    </script>
+    {% endblock %}
+</body>
+{% endblock %}

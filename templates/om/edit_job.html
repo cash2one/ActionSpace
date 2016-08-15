@@ -1,0 +1,200 @@
+{% extends 'om/base.html' %}
+<!DOCTYPE html>
+<html>
+{% block head %}
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="Cache-Control" content="no-siteapp" />
+    <title>运维工作平台 - 编辑任务属性</title>
+    {% load staticfiles %}
+    <meta name="keywords" content="H+">
+    <meta name="description" content="H+">
+
+    <!--[if lt IE 9]>
+    <meta http-equiv="refresh" content="0;ie.html" />
+    <![endif]-->
+    {% block head_link %}
+    <link rel="shortcut icon" href="{% static 'om/favicon.ico' %}">
+    <link href="{% static 'om/css/bootstrap.min14ed.css' %}" rel="stylesheet">
+    <link href="{% static 'om/css/font-awesome.min93e3.css' %}" rel="stylesheet">
+    <link href="{% static 'om/css/animate.min.css' %}" rel="stylesheet">
+    <link href="{% static 'om/css/plugins/codemirror/theme/ambiance.css' %}" rel="stylesheet">
+    <link href="{% static 'om/css/plugins/codemirror/codemirror.css' %}" rel="stylesheet">
+    <link href="{% static 'om/css/style.min862f.css' %}" rel="stylesheet">
+    <link href="{% static 'om/css/plugins/awesome-bootstrap-checkbox/awesome-bootstrap-checkbox.css' %}" rel="stylesheet">
+    <link href="{% static 'om/css/plugins/chosen/chosen.css' %}" rel="stylesheet">
+    {% endblock %}
+</head>
+{% endblock %}
+{% block body %}
+{% load staticfiles %}
+<body class="gray-bg">
+    <div class="wrapper wrapper-content  animated fadeInRight">
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="ibox ">
+                    <div class="ibox-title">
+                        <h5>编辑任务属性</h5>
+                    </div>
+                    <div class="ibox-content">
+                        <form class="form-horizontal">
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label">作业名称</label>
+                                <div class="col-sm-8">
+                                    <input type="email" placeholder="作业名称" class="form-control">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label">所属作业组</label>
+
+                                <div class="col-sm-8">
+                                    <input type="password" placeholder="所属作业组" class="form-control">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label">作业类型</label>
+
+                                <div class="col-sm-8">
+                                    <input type="password" placeholder="作业类型" class="form-control">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label">执行用户</label>
+
+                                <div class="col-sm-8">
+                                    <input type="password" placeholder="执行用户" class="form-control">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label">执行完成后是否暂停</label>
+
+                                <div class="col-sm-8">
+                                    <input type="password" placeholder="执行完成后是否暂停" class="form-control">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label">执行失败后是否暂停</label>
+                                <div class="col-sm-8">
+                                    <input type="password" placeholder="执行失败后是否暂停" class="form-control">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label">所属作业组</label>
+                                <div class="col-sm-8">
+                                    <div class="input-group">
+                                        <select data-placeholder="请选择作业组" class="chosen-select" multiple  style="width:650px;">
+                                            <option value="">请选择作业组</option>
+                                            <option value="1" hassubinfo="true">作业组1</option>
+                                            <option value="2" hassubinfo="true">作业组2</option>
+                                            <option value="3" hassubinfo="true">作业组3</option>
+                                            <option value="4" hassubinfo="true">作业组4</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label">备注</label>
+
+                                <div class="col-sm-8">
+                                    <input type="password" placeholder="备注" class="form-control">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label">脚本类型</label>
+                                <div class="col-sm-8">
+                                    <div class="radio radio-info radio-inline">
+                                        <input type="radio" id="python" value="python" name="code_mode" checked="">
+                                        <label for="python"> python </label>
+                                    </div>
+                                    <div class="radio radio-info radio-inline">
+                                        <input type="radio" id="shell" value="shell" name="code_mode">
+                                        <label for="shell"> shell </label>
+                                    </div>
+                                    <div class="radio radio-info radio-inline">
+                                        <input type="radio" id="perl" value="bat" name="code_mode">
+                                        <label for="bat"> bat </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label">脚本内容</label>
+                                <div class="col-sm-8">
+                                    <textarea id="code_python">
+#coding:utf-8
+import sys, os
+
+def process():
+    #process this
+    print 'process task'
+
+if __name__ == '__main__':
+    process()
+                                    </textarea>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label">是否使用本地上传的文件</label>
+                                <div class="col-sm-8">
+                                    <div class="switch">
+                                        <div class="onoffswitch">
+                                            <input type="checkbox" checked class="onoffswitch-checkbox" id="example1">
+                                            <label class="onoffswitch-label" for="example1">
+                                                <span class="onoffswitch-inner"></span>
+                                                <span class="onoffswitch-switch"></span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label">上传目标路径</label>
+
+                                <div class="col-sm-8">
+                                    <input type="password" placeholder="上传目标路径" class="form-control">
+                                </div>
+                            </div>
+                            <div class="hr-line-dashed"></div>
+                            <div class="form-group">
+                                <div class="col-sm-10 col-sm-offset-5">
+                                    <button class="btn btn-primary" type="submit">保存</button>
+                                    <button class="btn btn-white" type="submit">取消</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% block script %}
+    <script src="{% static 'om/js/jquery.min.js' %}"></script>
+    <script src="{% static 'om/js/bootstrap.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/peity/jquery.peity.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/chosen/chosen.jquery.js' %}"></script>
+    <script src="{% static 'om/js/plugins/codemirror/codemirror.js' %}"></script>
+    <script src="{% static 'om/js/plugins/codemirror/mode/javascript/javascript.js' %}"></script>
+    <script src="{% static 'om/js/plugins/codemirror/mode/python/python.js' %}"></script>
+    <script src="{% static 'om/js/plugins/codemirror/mode/perl/perl.js' %}"></script>
+    <script src="{% static 'om/js/content.min.js' %}"></script>
+    <script>
+        $(".chosen-select").chosen();
+        var editor = CodeMirror.fromTextArea($("#code_python")[0], {
+            mode: 'python',
+            lineNumbers: true,
+            indentUnit: 4,
+            styleActiveLine: true,
+            matchBrackets: true,
+            theme: 'ambiance'
+        });
+
+        $("input:radio[name='code_mode']").change(function (){
+            editor.setOption("mode", $(this).prop("id"));
+        });
+
+        editor.setSize('%80', 300)
+    </script>
+    {% endblock %}
+</body>
+{% endblock %}

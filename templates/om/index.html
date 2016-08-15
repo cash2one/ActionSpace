@@ -1,29 +1,6 @@
-<!DOCTYPE html>
-<html>
-
-
-<!-- Mirrored from www.zi-han.net/theme/hplus/ by HTTrack Website Copier/3.x [XR&CO'2014], Wed, 20 Jan 2016 14:16:41 GMT -->
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="renderer" content="webkit">
-    <meta http-equiv="Cache-Control" content="no-siteapp" />
-    <title>运维工作平台 - 主页</title>
-    {% load staticfiles %}
-    <meta name="keywords" content="H+">
-    <meta name="description" content="H+">
-
-    <!--[if lt IE 9]>
-    <meta http-equiv="refresh" content="0;ie.html" />
-    <![endif]-->
-
-    <link rel="shortcut icon" href="favicon.ico">
-    <link href="{% static 'om/css/bootstrap.min14ed.css' %}" rel="stylesheet">
-    <link href="{% static 'om/css/font-awesome.min93e3.css' %}" rel="stylesheet">
-    <link href="{% static 'om/css/animate.min.css' %}" rel="stylesheet">
-    <link href="{% static 'om/css/style.min862f.css' %}" rel="stylesheet">
-</head>
-
+{% extends 'om/base.html' %}
+{% block body %}
+{% load staticfiles %}
 <body class="fixed-sidebar full-height-layout gray-bg" style="overflow:hidden">
     <div id="wrapper">
         <!--左侧导航开始-->
@@ -83,7 +60,7 @@
                         </ul>
                     </li>
                     <li>
-                        <a class="J_menuItem" href="layouts.html"><i class="fa fa-list-alt"></i><span class="nav-label">执行历史</span></a>
+                        <a class="J_menuItem" href="{%url 'action_history'%}"><i class="fa fa-list-alt"></i><span class="nav-label">执行历史</span></a>
                     </li>
                 </ul>
             </div>
@@ -464,16 +441,14 @@
         </div>
         <!--右侧边栏结束-->
     </div>
-    <script src="{% static 'om/js/jquery.min.js' %}"></script>
-    <script src="{% static 'om/js/bootstrap.min.js' %}"></script>
-    <script src="{% static 'om/js/plugins/metisMenu/jquery.metisMenu.js' %}"></script>
-    <script src="{% static 'om/js/plugins/slimscroll/jquery.slimscroll.min.js' %}"></script>
-    <script src="{% static 'om/js/plugins/layer/layer.min.js' %}"></script>
-    <script src="{% static 'om/js/hplus.min.js' %}"></script>
-    <script type="text/javascript" src="{% static 'om/js/contabs.min.js' %}"></script>
-    <script src="{% static 'om/js/plugins/pace/pace.min.js' %}"></script>
+    {% block script %}
+        <script src="{% static 'om/js/jquery.min.js' %}"></script>
+        <script src="{% static 'om/js/bootstrap.min.js' %}"></script>
+        <script src="{% static 'om/js/plugins/metisMenu/jquery.metisMenu.js' %}"></script>
+        <script src="{% static 'om/js/plugins/slimscroll/jquery.slimscroll.min.js' %}"></script>
+        <script src="{% static 'om/js/plugins/layer/layer.min.js' %}"></script>
+        <script src="{% static 'om/js/hplus.min.js' %}"></script>
+        <script type="text/javascript" src="{% static 'om/js/contabs.min.js' %}"></script>
+    {% endblock %}
 </body>
-
-
-<!-- Mirrored from www.zi-han.net/theme/hplus/ by HTTrack Website Copier/3.x [XR&CO'2014], Wed, 20 Jan 2016 14:17:11 GMT -->
-</html>
+{% endblock %}

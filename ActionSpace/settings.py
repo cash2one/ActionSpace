@@ -1,3 +1,4 @@
+# coding=utf-8
 """
 Django settings for ActionSpace project.
 
@@ -23,9 +24,9 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'p497&f@ey9wu33lc*)pa(ruj!58cq%=vfatufny6)y!u!))0f4'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
-ALLOWED_HOSTS = ['localhost']
+ALLOWED_HOSTS = ['*', ]
 
 
 # Application definition
@@ -77,7 +78,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'ActionSpace.wsgi.application'
-
 
 # Database
 # https://docs.djangoproject.com/en/1.9/ref/settings/#databases
@@ -149,4 +149,14 @@ CKEDITOR_CONFIGS = {
     'awesome_ckeditor': {
         'toolbar': 'Full',
     }
+}
+
+SUIT_CONFIG = {  
+    'ADMIN_NAME': '运维工作平台',  
+    'MENU': (  
+        'sites',  
+        {'app': 'accounts', 'label': '帐户'},  
+        {'app': 'zinnia', 'label': '博客'},  
+        {'app': 'auth', 'label': '认证管理'},  
+    ),  
 }
