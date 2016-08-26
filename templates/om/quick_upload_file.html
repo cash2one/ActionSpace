@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="renderer" content="webkit">
     <meta http-equiv="Cache-Control" content="no-siteapp" />
-    <title>运维工作平台 - 编辑任务属性</title>
+    <title>运维工作平台 - 快速分发文件</title>
     {% load staticfiles %}
     <meta name="keywords" content="H+">
     <meta name="description" content="H+">
@@ -20,11 +20,10 @@
     <link href="{% static 'om/css/bootstrap.min14ed.css' %}" rel="stylesheet">
     <link href="{% static 'om/css/font-awesome.min93e3.css' %}" rel="stylesheet">
     <link href="{% static 'om/css/animate.min.css' %}" rel="stylesheet">
-    <link href="{% static 'om/css/plugins/codemirror/theme/ambiance.css' %}" rel="stylesheet">
-    <link href="{% static 'om/css/plugins/codemirror/codemirror.css' %}" rel="stylesheet">
     <link href="{% static 'om/css/style.min862f.css' %}" rel="stylesheet">
     <link href="{% static 'om/css/plugins/awesome-bootstrap-checkbox/awesome-bootstrap-checkbox.css' %}" rel="stylesheet">
     <link href="{% static 'om/css/plugins/chosen/chosen.css' %}" rel="stylesheet">
+    <link href="{% static 'om/css/plugins/bootstrap-table/bootstrap-table.min.css' %}" rel="stylesheet">
     {% endblock %}
 </head>
 {% endblock %}
@@ -49,22 +48,21 @@
                             <div class="form-group">
                                 <label class="col-sm-2 control-label">目标机器</label>
                                 <div class="col-sm-8">
-                                    <div class="input-group">
-                                        <select data-placeholder="请选择" class="chosen-select" multiple  style="width:650px;">
-                                            <option value="">目标机器</option>
-                                            <optgroup label="PA18">
-                                                <option value="1" hassubinfo="true">10.17.12.121</option>
-                                                <option value="2" hassubinfo="true">10.17.12.122</option>
-                                                <option value="3" hassubinfo="true">10.17.12.123</option>
-                                                <option value="4" hassubinfo="true">10.17.12.124</option>
-                                            <optgroup>
-                                            <optgroup label="TRACESSO">
-                                                <option value="5" hassubinfo="true">10.17.12.125</option>
-                                                <option value="6" hassubinfo="true">10.17.12.126</option>
-                                                <option value="7" hassubinfo="true">10.17.12.127</option>
-                                                <option value="8" hassubinfo="true">10.17.12.128</option>
-                                            <optgroup>
-                                        </select>
+                                    <div >
+                                        <button type="button" class="btn btn-success" id="choose_server"><i class="fa fa-desktop"></i>&nbsp;选择服务器</button>
+                                    </div>
+                                    <div >
+                                        <table id="table" data-toggle="table" data-pagination="true" data-id-field="id" data-page-size="3"
+                                            data-page-list="[3, 10, ALL]" data-height="250">
+                                            <thead>
+                                                <tr>
+                                                    <th data-field="server_ip">IP</th>
+                                                    <th data-field="server_status">状态</th>
+                                                    <th data-field="server_hostname">主机名</th>
+                                                    <th data-field="server_action" data-formatter="actionFormatter" data-events="actionEvents">操作</th>
+                                                </tr>
+                                            </thead>
+                                        </table>
                                     </div>
                                 </div>
                             </div>
@@ -87,11 +85,11 @@
                                 <div class="col-sm-8">
                                     <div class="radio radio-info radio-inline">
                                         <input type="radio" id="local_file" value="local_file" name="file_source" checked="">
-                                        <label for="python"> 本地文件 </label>
+                                        <label for="local_file"> 本地文件 </label>
                                     </div>
                                     <div class="radio radio-info radio-inline">
                                         <input type="radio" id="server_file" value="server_file" name="file_source">
-                                        <label for="shell"> 服务器文件 </label>
+                                        <label for="server_file"> 服务器文件 </label>
                                     </div>
                                 </div>
                             </div>
@@ -109,25 +107,41 @@
     <script src="{% static 'om/js/bootstrap.min.js' %}"></script>
     <script src="{% static 'om/js/plugins/peity/jquery.peity.min.js' %}"></script>
     <script src="{% static 'om/js/plugins/chosen/chosen.jquery.js' %}"></script>
-    <script src="{% static 'om/js/plugins/codemirror/codemirror.js' %}"></script>
-    <script src="{% static 'om/js/plugins/codemirror/mode/javascript/javascript.js' %}"></script>
-    <script src="{% static 'om/js/plugins/codemirror/mode/python/python.js' %}"></script>
-    <script src="{% static 'om/js/plugins/codemirror/mode/perl/perl.js' %}"></script>
     <script src="{% static 'om/js/content.min.js' %}"></script>
+    <script src="{% static 'om/layer/layer.js' %}"></script>
+    <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table-mobile.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/bootstrap-table/locale/bootstrap-table-zh-CN.min.js' %}"></script>
     <script>
         $(".chosen-select").chosen();
-        var editor = CodeMirror.fromTextArea($("#code_python")[0], {
-            mode: 'python',
-            lineNumbers: true,
-            indentUnit: 4,
-            styleActiveLine: true,
-            matchBrackets: true,
-            theme: 'ambiance'
+        $('#choose_server').on('click', function(){
+            var choose_server_layer = layer.open({
+              type: 2,
+              area: ['700px', '530px'],
+              fix: false, //不固定
+              maxmin: true,
+              content: "{%url 'choose_server'%}"
+            });
+            layer.full(choose_server_layer);
         });
-        $("input:radio[name='code_mode']").change(function (){
-            editor.setOption("mode", $(this).prop("id"));
-        });
-        editor.setSize('%80', 300)
+
+       function actionFormatter(value, row, index) {
+            return [
+                '<a class="delete_server" href="javascript:void(0)" title="删除">',
+                '<button type="button" class="btn btn-info">删除</button>',
+                '</a>'
+            ].join('');
+        }
+
+        setTimeout(function () {
+            $('#table').bootstrapTable('resetView');
+        }, 200);
+
+        window.actionEvents = {
+            'click .delete_server': function (e, value, row, index) {
+                $('#table').bootstrapTable('remove', {field: 'server_ip', values: [row.server_ip]});
+            }
+        };
     </script>
     {% endblock %}
 </body>

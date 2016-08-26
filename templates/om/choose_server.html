@@ -1,0 +1,106 @@
+{% extends 'om/base.html' %}
+<!DOCTYPE html>
+<html>
+{% block head %}
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="Cache-Control" content="no-siteapp" />
+    <title>运维工作平台 - 编辑任务属性</title>
+    {% load staticfiles %}
+    <meta name="keywords" content="H+">
+    <meta name="description" content="H+">
+
+    <!--[if lt IE 9]>
+    <meta http-equiv="refresh" content="0;ie.html" />
+    <![endif]-->
+    {% block head_link %}
+    <link rel="shortcut icon" href="{% static 'om/favicon.ico' %}">
+    <link href="{% static 'om/css/font-awesome.min93e3.css' %}" rel="stylesheet">
+    <link href="{% static 'om/css/bootstrap.min14ed.css' %}" rel="stylesheet">
+    <link href="{% static 'om/css/plugins/bootstrap-table/bootstrap-table.min.css' %}" rel="stylesheet">
+    <link href="{% static 'om/css/animate.min.css' %}" rel="stylesheet">
+    <link href="{% static 'om/css/style.min862f.css' %}" rel="stylesheet">
+    {% endblock %}
+</head>
+{% endblock %}
+{% block body %}
+{% load staticfiles %}
+<body class="gray-bg">
+    <div class="wrapper wrapper-content  animated fadeInRight">
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="ibox ">
+                    <div class="ibox-title">
+                        <h5>执行作业流</h5>
+                    </div>
+                    <div class="ibox-content">
+                        <div id="toolbar" class="btn-group">
+                            <button type="button" class="btn btn-default">
+                                <i class="glyphicon glyphicon-plus"></i>
+                            </button>
+                            <button type="button" class="btn btn-default">
+                                <i class="glyphicon glyphicon-heart"></i>
+                            </button>
+                            <button type="button" class="btn btn-default">
+                                <i class="glyphicon glyphicon-trash"></i>
+                            </button>
+                        </div>
+                        <table id="table"
+                            data-toggle="table"
+                            data-sort-name="system"
+                            data-sort-order="desc"
+                            data-url="{% url 'get_server_list' %}"
+                            data-striped="true"
+                            data-click-to-select="true"
+                            data-pagination="true"
+                            data-search="true"
+                            data-page-list="[5, 10, 20, 50, 100, 200, ALL]"
+                            data-show-refresh="true"
+                            data-show-toggle="true"
+                            data-show-columns="true"
+                          >
+                            <thead>
+                                <tr>
+                                    <th data-field="state" data-checkbox="true"></th>
+                                    <th data-field="system" data-sortable="true">系统</th>
+                                    <th data-field="env" data-sortable="true">环境</th>
+                                    <th data-field="entity" data-sortable="true">实体</th>
+                                    <th data-field="server_ip" data-sortable="true">IP</th>
+                                    <th data-field="server_hostname" data-sortable="true">主机名</th>
+                                    <th data-field="server_status" data-sortable="true">状态</th>
+                                </tr>
+                            </thead>
+                        </table>
+                        <div class="form-group">
+                                <div class="col-sm-10 col-sm-offset-5">
+                                    <button id="save_layer" class="btn btn-primary" type="submit">保存</button>
+                                    <button id="cancel_layer" class="btn btn-white" type="submit">取消</button>
+                                </div>
+                            </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% block script %}
+    <script src="{% static 'om/js/jquery.min.js' %}"></script>
+    <script src="{% static 'om/js/bootstrap.min.js' %}"></script>
+    <script src="{% static 'om/js/content.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table-mobile.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/bootstrap-table/locale/bootstrap-table-zh-CN.min.js' %}"></script>
+    <script type="text/javascript">
+        var index = parent.layer.getFrameIndex(window.name); //获取窗口索引
+        $('#save_layer').on('click', function(){
+            parent.$('#table').bootstrapTable("load", $('#table').bootstrapTable("getSelections"));
+            parent.layer.close(index);
+        });
+        $('#cancel_layer').on('click', function(){
+            parent.layer.close(index);
+        });
+    </script>
+    {% endblock %}
+</body>
+{% endblock %}

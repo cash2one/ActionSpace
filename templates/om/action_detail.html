@@ -1,0 +1,81 @@
+{% extends 'om/base.html' %}
+{% block body %}
+{% load staticfiles %}
+<body class="gray-bg">
+    <div class="row">
+        <div class="col-sm-12">
+            <div class="wrapper wrapper-content">
+                <div class="row animated fadeInRight">
+                    <div class="col-sm-12">
+                        <div class="ibox float-e-margins">
+                            <div class="text-center float-e-margins p-md">
+                                <span>显示设置：</span>
+                                <a href="#" class="btn btn-xs btn-primary" id="lightVersion">浅色</a>
+                                <a href="#" class="btn btn-xs btn-primary" id="darkVersion">深色</a>
+                                <a href="#" class="btn btn-xs btn-primary" id="leftVersion">布局切换</a>
+                            </div>
+                            <div class="" id="ibox-content">
+                                <div id="vertical-timeline" class="vertical-container light-timeline">
+                                    <div class="vertical-timeline-block">
+                                        <div class="vertical-timeline-icon navy-bg">
+                                            <i class="fa fa-briefcase"></i>
+                                        </div>
+                                        <div class="vertical-timeline-content">
+                                            <h2>上传操作脚本到DSP-CCS-步骤1</h2>
+                                            <p>上传操作脚本到DSP-INFO</p>
+                                            <a href="#" class="btn btn-sm btn-primary"> 更多信息</a>
+                                            <span class="vertical-date">
+                                                状态：<small>已完成</small>
+                                                <br>
+                                                完成时间：<small>2月3日</small>
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="vertical-timeline-block">
+                                        <div class="vertical-timeline-icon navy-bg">
+                                            <i class="fa fa-briefcase"></i>
+                                        </div>
+                                        <div class="vertical-timeline-content">
+                                            <h2>上传操作脚本到DSP-CCS-步骤2</h2>
+                                            <p>上传操作脚本到DSP-IPUSH</p>
+                                            <a href="#" class="btn btn-sm btn-primary"> 更多信息</a>
+                                            <span class="vertical-date">
+                                                状态：<small>已完成</small>
+                                                <br>
+                                                完成时间：<small>2月3日</small>
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="vertical-timeline-block">
+                                        <div class="vertical-timeline-icon blue-bg">
+                                            <i class="fa fa-coffee"></i>
+                                        </div>
+                                        <div class="vertical-timeline-content">
+                                            <h2>上传操作脚本到DSP-CCS-步骤3</h2>
+                                            <p>上传操作脚本到DSP-ACTIVITY</p>
+                                            <a href="#" class="btn btn-sm btn-primary"> 更多信息</a>
+                                            <span class="vertical-date">
+                                                状态：<small>正在执行</small>
+                                                <br>
+                                                完成时间：<small>2月3日</small>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% block script %}
+    <script src="{% static 'om/js/jquery.min.js' %}"></script>
+    <script src="{% static 'om/js/bootstrap.min.js' %}"></script>
+    <script src="{% static 'om/js/content.min.js' %}"></script>
+    <script>
+        $(document).ready(function(){$("#lightVersion").click(function(event){event.preventDefault();$("#ibox-content").removeClass("ibox-content");$("#vertical-timeline").removeClass("dark-timeline");$("#vertical-timeline").addClass("light-timeline")});$("#darkVersion").click(function(event){event.preventDefault();$("#ibox-content").addClass("ibox-content");$("#vertical-timeline").removeClass("light-timeline");$("#vertical-timeline").addClass("dark-timeline")});$("#leftVersion").click(function(event){event.preventDefault();$("#vertical-timeline").toggleClass("center-orientation")})});
+    </script>
+    {% endblock %}
+</body>
+{% endblock %}

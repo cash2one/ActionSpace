@@ -1,0 +1,169 @@
+{% extends 'om/base.html' %}
+<!DOCTYPE html>
+<html>
+{% block head %}
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="Cache-Control" content="no-siteapp" />
+    <title>运维工作平台 - 编辑任务属性</title>
+    {% load staticfiles %}
+    <meta name="keywords" content="H+">
+    <meta name="description" content="H+">
+
+    <!--[if lt IE 9]>
+    <meta http-equiv="refresh" content="0;ie.html" />
+    <![endif]-->
+    {% block head_link %}
+    <link rel="shortcut icon" href="{% static 'om/favicon.ico' %}">
+    <link href="{% static 'om/css/font-awesome.min93e3.css' %}" rel="stylesheet">
+    <link href="{% static 'om/css/animate.min.css' %}" rel="stylesheet">
+    <link href="{% static 'om/css/style.min862f.css' %}" rel="stylesheet">
+    <link href="{% static 'om/css/bootstrap.min14ed.css' %}" rel="stylesheet">
+    <link href="{% static 'om/css/plugins/bootstrap-table/bootstrap-table.min.css' %}" rel="stylesheet">
+    {% endblock %}
+</head>
+{% endblock %}
+{% block body %}
+{% load staticfiles %}
+<body class="gray-bg">
+    <div class="wrapper wrapper-content animated fadeInRight">
+        <div class="ibox float-e-margins">
+            <div class="ibox-title">
+                <h5>概况</h5>
+                <div class="ibox-tools">
+                    <a class="collapse-link">
+                        <i class="fa fa-chevron-up"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="ibox-content">
+                <div class="row">
+                    <div class="col-sm-3">
+                        <div class="widget style1">
+                            <div class="row">
+                                <div class="col-xs-4 text-center">
+                                    <i class="fa fa-clock-o fa-5x"></i>
+                                    <span> 今日已执行 </span>
+                                </div>
+                                <div class="col-xs-8 text-right">
+                                    <h2 class="font-bold">4232</h2>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-3">
+                        <div class="widget style1 navy-bg">
+                            <div class="row">
+                                <div class="col-xs-4">
+                                    <i class="fa fa-desktop fa-5x"></i>
+                                    <span> 主机数 </span>
+                                </div>
+                                <div class="col-xs-8 text-right">
+                                    <h2 class="font-bold">1430</h2>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-3">
+                        <div class="widget style1 lazur-bg">
+                            <div class="row">
+                                <div class="col-xs-4">
+                                    <i class="fa fa-calendar fa-5x"></i>
+                                     <span> 本月统计 </span>
+                                </div>
+                                <div class="col-xs-8 text-right">
+                                    <div class="pl20 pr5 pb5 pt5" style="width:65%;">
+                                     <div>
+                                        <div>执行中：<span id="instanceRunning">34</span></div>
+                                        <div>成功：<span id="instanceSuccess">608</span></div>
+                                        <div>失败：<span id="instanceFail">42</span></div>
+                                     </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-3">
+                        <div class="widget style1 yellow-bg">
+                            <div class="row">
+                                <div class="col-xs-4">
+                                    <i class="fa fa-list-alt fa-5x"></i>
+                                     <span> 常用作业数 </span>
+                                </div>
+                                <div class="col-xs-8 text-right">
+                                    <h2 class="font-bold">12</h2>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="ibox float-e-margins">
+            <div class="ibox-title">
+                <h5>最近任务执行记录</h5>
+                <div class="ibox-tools">
+                    <a class="collapse-link">
+                        <i class="fa fa-chevron-up"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="ibox-content">
+                <div class="ibox-content">
+                    <table data-toggle="table" id="table" data-search="true" data-show-refresh="true" data-show-toggle="true"
+                       data-show-columns="true"  data-minimum-count-columns="2" data-show-pagination-switch="true" data-pagination="true" data-id-field="id" data-page-list="[10, 25, 50, 100, ALL]" data-show-header="true" data-show-footer="false" data-url="{% url 'get_action_history_list' %}">
+                        <thead>
+                            <tr>
+                                <th data-field="task_name">任务名称</th>
+                                <th data-field="run_user">启动人</th>
+                                <th data-field="task_status">任务状态</th>
+                                <th data-field="start_time">开始时间</th>
+                                <th data-field="end_time">结束时间</th>
+                                <th data-field="cost_time">耗时（秒）</th>
+                                <th data-field="action" data-formatter="actionFormatter" data-events="actionEvents">操作</th>
+                            </tr>
+                        </thead>
+                    </table>
+            </div>
+        </div>
+    </div>
+    {% block script %}
+    <script src="{% static 'om/js/jquery.min.js' %}"></script>
+    <script src="{% static 'js/jquery-ui-1.10.4.min.js' %}"></script>
+    <script src="{% static 'om/js/bootstrap.min.js' %}"></script>
+    <script src="{% static 'om/js/content.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table-mobile.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/bootstrap-table/locale/bootstrap-table-zh-CN.min.js' %}"></script>
+    <script src="{% static 'om/layer/layer.js' %}"></script>
+    <script type="text/javascript">
+        function actionFormatter(value, row, index) {
+            return [
+                 '<a href="javascript:;" class="detail">查看详情</a>'
+            ].join('');
+        }
+        function show_detail(){
+            var detail_layer = layer.open({
+                  type: 2,
+                  area: ['700px', '530px'],
+                  fix: false, //不固定
+                  maxmin: true,
+                  content: "{%url 'action_detail'%}"
+                });
+                layer.full(detail_layer);
+        }
+        window.actionEvents = {
+            'click .redo': function (e, value, row, index) {
+                alert('即将执行: ' + row['task_name']);
+                console.log(value, row, index);
+            },
+            'click .detail': function (e, value, row, index) {
+                show_detail();
+            }
+        };
+    </script>
+    {% endblock %}
+</body>
+{% endblock %}

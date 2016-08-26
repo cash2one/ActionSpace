@@ -47,6 +47,10 @@ class Computer(models.Model):
 
 class Flow(models.Model):
     name = models.CharField(max_length=100, verbose_name='作业流名称')
+    founder = models.CharField(max_length=50, verbose_name='创建人')
+    last_modified_by = models.CharField(max_length=50, verbose_name='最后修改人')
+    created_time = models.DateTimeField(verbose_name="创建时间")
+    last_modified_time = models.DateTimeField(verbose_name="最后修改时间")
     desc = models.TextField(verbose_name='备注')
 
     def __unicode__(self):

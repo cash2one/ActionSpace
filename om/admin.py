@@ -15,9 +15,7 @@ admin.site.unregister(FlatPage)
 class FlatPageCustom(FlatPageAdmin):
     # 'widget': CKEditorWidget(config_name='awesome_ckeditor')
     formfield_overrides = {
-        models.TextField: {
-            'widget': CKEditorWidget(config_name='default')
-            }
+        models.TextField: {'widget': CKEditorWidget(config_name='default')}
     }
 
 
@@ -59,7 +57,7 @@ class JobGroupInline(admin.StackedInline):
 
 @admin.register(Flow)
 class FlowAdmin(admin.ModelAdmin):
-    list_display = ('name', 'desc')
+    list_display = ('name', 'founder', 'last_modified_by', 'created_time', 'last_modified_time', 'desc')
     inlines = [JobGroupInline]
 
 

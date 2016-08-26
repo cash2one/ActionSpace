@@ -47,37 +47,9 @@
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label class="col-sm-2 control-label">所属作业组</label>
-
-                                <div class="col-sm-8">
-                                    <input type="password" placeholder="所属作业组" class="form-control">
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="col-sm-2 control-label">作业类型</label>
-
-                                <div class="col-sm-8">
-                                    <input type="password" placeholder="作业类型" class="form-control">
-                                </div>
-                            </div>
-                            <div class="form-group">
                                 <label class="col-sm-2 control-label">执行用户</label>
-
                                 <div class="col-sm-8">
                                     <input type="password" placeholder="执行用户" class="form-control">
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="col-sm-2 control-label">执行完成后是否暂停</label>
-
-                                <div class="col-sm-8">
-                                    <input type="password" placeholder="执行完成后是否暂停" class="form-control">
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="col-sm-2 control-label">执行失败后是否暂停</label>
-                                <div class="col-sm-8">
-                                    <input type="password" placeholder="执行失败后是否暂停" class="form-control">
                                 </div>
                             </div>
                             <div class="form-group">
@@ -95,17 +67,98 @@
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label class="col-sm-2 control-label">备注</label>
-
-                                <div class="col-sm-8">
-                                    <input type="password" placeholder="备注" class="form-control">
+                                <label class="col-sm-2 control-label">执行完成后是否暂停</label>
+                                <div class="col-sm-1">
+                                    <div class="switch">
+                                        <div class="onoffswitch">
+                                            <input type="checkbox" class="onoffswitch-checkbox" id="stop_on_finish">
+                                            <label class="onoffswitch-label" for="stop_on_finish">
+                                                <span class="onoffswitch-inner"></span>
+                                                <span class="onoffswitch-switch"></span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="stop_on_finish_desc" style="display:none">
+                                    <label class="col-sm-2 control-label">执行完成后暂停说明</label>
+                                    <div class="col-sm-5">
+                                        <input type="text" placeholder="暂停说明" class="form-control">
+                                    </div>
                                 </div>
                             </div>
                             <div class="form-group">
+                                <label class="col-sm-2 control-label">执行失败后是否暂停</label>
+                                <div class="col-sm-1">
+                                    <div class="switch">
+                                        <div class="onoffswitch">
+                                            <input type="checkbox" checked class="onoffswitch-checkbox" id="stop_on_fail">
+                                            <label class="onoffswitch-label" for="stop_on_fail">
+                                                <span class="onoffswitch-inner"></span>
+                                                <span class="onoffswitch-switch"></span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="stop_on_fail_desc">
+                                    <label class="col-sm-2 control-label">执行失败后暂停说明</label>
+                                    <div class="col-sm-5">
+                                        <input type="text" placeholder="暂停说明" class="form-control">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label">作业类型</label>
+                                <div class="col-sm-8">
+                                     <div class="radio radio-info radio-inline">
+                                        <input type="radio" id="script_task" value="script_task" name="task_type" checked="">
+                                        <label for="script_task"> 脚本执行 </label>
+                                    </div>
+                                    <div class="radio radio-info radio-inline">
+                                        <input type="radio" id="file_task" value="file_task" name="task_type">
+                                        <label for="file_task"> 文件传输 </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="hr-line-dashed"></div>
+                             <div id="script_source" class="form-group">
+                                <label class="col-sm-2 control-label">脚本来源</label>
+                                <div class="col-sm-3">
+                                    <div class="radio radio-info radio-inline">
+                                        <input type="radio" id="manual" value="manual" name="code_source" checked="">
+                                        <label for="manual"> 手工录入 </label>
+                                    </div>
+                                    <div class="radio radio-info radio-inline">
+                                        <input type="radio" id="clone" value="clone" name="code_source">
+                                        <label for="clone"> 克隆现有脚本 </label>
+                                    </div>
+                                    <div class="radio radio-info radio-inline">
+                                        <input type="radio" id="local" value="local" name="code_source">
+                                        <label for="local"> 本地上传 </label>
+                                    </div>
+                                </div>
+                                <div id="script_upload" class="col-sm-5" style="display:none">
+                                        <input id="script_upload_path" type="file" class="form-control">
+                                </div>
+                            </div>
+                            <div id="code_source_select" class="form-group">
+                                <label class="col-sm-2 control-label">选择脚本</label>
+                                <div class="col-sm-8">
+                                    <div class="input-group">
+                                        <select data-placeholder="请选择脚本" class="chosen-code-source"  style="width:650px;">
+                                            <option value="">请选择脚本</option>
+                                            <option value="1" hassubinfo="true">检查REDIS状态[python]</option>
+                                            <option value="2" hassubinfo="true">重启DSP-CCS-IPUSH[python]</option>
+                                            <option value="3" hassubinfo="true">重启DSP-CCS-INFO[shell]</option>
+                                            <option value="4" hassubinfo="true">重启资管[bat]</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="script_type" class="form-group">
                                 <label class="col-sm-2 control-label">脚本类型</label>
                                 <div class="col-sm-8">
                                     <div class="radio radio-info radio-inline">
-                                        <input type="radio" id="python" value="python" name="code_mode" checked="">
+                                        <input type="radio" id="python" value="python" name="code_mode" checked>
                                         <label for="python"> python </label>
                                     </div>
                                     <div class="radio radio-info radio-inline">
@@ -114,11 +167,11 @@
                                     </div>
                                     <div class="radio radio-info radio-inline">
                                         <input type="radio" id="perl" value="bat" name="code_mode">
-                                        <label for="bat"> bat </label>
+                                        <label for="perl"> bat </label>
                                     </div>
                                 </div>
                             </div>
-                            <div class="form-group">
+                            <div id="script_content" class="form-group">
                                 <label class="col-sm-2 control-label">脚本内容</label>
                                 <div class="col-sm-8">
                                     <textarea id="code_python">
@@ -134,25 +187,33 @@ if __name__ == '__main__':
                                     </textarea>
                                 </div>
                             </div>
-                            <div class="form-group">
+                            <div id="file_use_local" class="form-group" style="display:none">
                                 <label class="col-sm-2 control-label">是否使用本地上传的文件</label>
-                                <div class="col-sm-8">
+                                <div class="col-sm-1">
                                     <div class="switch">
                                         <div class="onoffswitch">
-                                            <input type="checkbox" checked class="onoffswitch-checkbox" id="example1">
-                                            <label class="onoffswitch-label" for="example1">
+                                            <input type="checkbox" class="onoffswitch-checkbox" id="use_local_file">
+                                            <label class="onoffswitch-label" for="use_local_file">
                                                 <span class="onoffswitch-inner"></span>
                                                 <span class="onoffswitch-switch"></span>
                                             </label>
                                         </div>
                                     </div>
                                 </div>
+                                <div id="file_use_local_upload" class="col-sm-7" style="display:none">
+                                        <input id="use_local_file_path" type="file" class="form-control">
+                                </div>
                             </div>
-                            <div class="form-group">
+                            <div id="file_target_path" class="form-group" style="display:none">
                                 <label class="col-sm-2 control-label">上传目标路径</label>
-
                                 <div class="col-sm-8">
                                     <input type="password" placeholder="上传目标路径" class="form-control">
+                                </div>
+                            </div>
+                             <div class="form-group">
+                                <label class="col-sm-2 control-label">备注</label>
+                                <div class="col-sm-8">
+                                    <textarea placeholder="备注" class="form-control" id="desc_div"></textarea>
                                 </div>
                             </div>
                             <div class="hr-line-dashed"></div>
@@ -178,22 +239,102 @@ if __name__ == '__main__':
     <script src="{% static 'om/js/plugins/codemirror/mode/python/python.js' %}"></script>
     <script src="{% static 'om/js/plugins/codemirror/mode/perl/perl.js' %}"></script>
     <script src="{% static 'om/js/content.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/prettyfile/bootstrap-prettyfile.js' %}"></script>
     <script>
-        $(".chosen-select").chosen();
-        var editor = CodeMirror.fromTextArea($("#code_python")[0], {
-            mode: 'python',
-            lineNumbers: true,
-            indentUnit: 4,
-            styleActiveLine: true,
-            matchBrackets: true,
-            theme: 'ambiance'
+        $(document).ready(function() {
+            $(".chosen-select").chosen();
+            $(".chosen-code-source").chosen();
+            $("#code_source_select").hide();
+            $( 'input[type="file"]' ).prettyFile();
         });
+         var editor = CodeMirror.fromTextArea($("#code_python")[0], {
+            mode: 'python', lineNumbers: true, indentUnit: 4,
+            styleActiveLine: true, matchBrackets: true, theme: 'ambiance'
+        });
+
+        function task_mode(mode) {
+            if (mode == "script_task") {
+                $("#script_source, #script_type, #script_content").show();
+                $("#file_use_local, #file_target_path").hide();
+            }
+            else {
+                $("#script_source, #script_type, #script_content").hide();
+                $("#file_use_local, #file_target_path").show();
+            }
+        }
+        editor.setSize('%80', 300);
 
         $("input:radio[name='code_mode']").change(function (){
             editor.setOption("mode", $(this).prop("id"));
         });
 
-        editor.setSize('%80', 300)
+        $("input:radio[name='task_type']").change(function (){
+            task_mode($(this).prop("id"))
+        });
+
+        $("input:radio[name='code_source']").change(function (){
+            if ($(this).prop("id") == "clone") {
+                $("#code_source_select").show();
+                $("#script_upload").hide();
+            }
+            else if ($(this).prop("id")  == "local")  {
+                $("#script_upload").show();
+                $("#code_source_select").hide();
+            }
+            else
+            {
+                $("#code_source_select").hide();
+                $("#script_upload").hide();
+            }
+        });
+
+        $("#stop_on_finish").change(function (){
+            if ($("#stop_on_finish").prop("checked") ) {
+                $("#stop_on_finish_desc").show();
+            }
+            else {
+                $("#stop_on_finish_desc").hide();
+            }
+        });
+
+        $("#stop_on_fail").change(function (){
+            if ($(this).prop("checked") ) {
+                $("#stop_on_fail_desc").show();
+            }
+            else {
+                $("#stop_on_fail_desc").hide();
+            }
+        });
+
+        $("#use_local_file").change(function (){
+            if ($(this).prop("checked") ) {
+                $("#file_use_local_upload").show();
+            }
+            else {
+                $("#file_use_local_upload").hide();
+            }
+        });
+
+        $("#use_local_file_path").change(function (e){
+            if (e.target.files) {
+                var reader = new FileReader();
+                reader.onload = function()  {
+                    $("#desc_div").text(this.result)
+                }
+                reader.readAsText(e.target.files[0]);
+            }
+        });
+
+        $("#script_upload_path").change(function (e){
+            if (e.target.files) {
+                var reader = new FileReader();
+                reader.onload = function()  {
+                    editor.setValue(this.result)
+                }
+                reader.readAsText(e.target.files[0]);
+            }
+        });
+        
     </script>
     {% endblock %}
 </body>

@@ -1,6 +1,6 @@
-使用nginx：
-1、nginx -c nginx/nginx.conf
-2、python manage.py runserver
+nginx
+1 nginx -c nginx/nginx.conf
+2 python manage.py runserver
 
-使用apache：
-直接执行httpd即可
+apache
+httpd
