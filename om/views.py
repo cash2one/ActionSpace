@@ -1,10 +1,11 @@
 # coding=utf-8
 from django.http import HttpResponse, JsonResponse
-from django.shortcuts import render
-from models import Flow
+from django.shortcuts import get_object_or_404,render
+from models import Flow, JobGroup, Job
 import random
 import socket
 import struct
+import simplejson
 
 
 # Create your views here.
@@ -31,7 +32,7 @@ def quick_upload_file(request):
 def exec_flow(request):
     context = {
         'flows': Flow.objects.all(),
-        'fields': Flow._meta.fields
+        'fields': [x for x in Flow._meta.fields if x .name != 'job_group_list']
     }
     return render(request, 'om/exec_flow.html', context)
 
@@ -40,12 +41,61 @@ def new_flow(request):
     return render(request, 'om/new_flow.html')
 
 
-def edit_job(request):
-    return render(request, 'om/edit_job.html')
+def edit_job(request, job_id):
+    job = get_object_or_404(Job, pk=job_id)
+    context = {
+        'job': job
+    }
+    return render(request, 'om/edit_job.html', context)
 
 
-def edit_flow(request):
-    return render(request, 'om/edit_flow.html')
+def edit_flow(request, flow_id):
+    flow = Flow.objects.get(pk=flow_id)
+    groups_objects = JobGroup.objects
+    job_objects = Job.objects
+    groups = []
+    for group_id in flow.job_group_list.split(','):
+        if group_id.isdigit() and int(group_id) > 0:
+            job_group = groups_objects.get(pk=int(group_id))
+            group_info = {'group': job_group, 'job_list': []}
+            job_list = []
+            for job_id in job_group.job_list.split(','):
+                if job_id.isdigit() and int(job_id) > 0:
+                    job_list.append(job_objects.get(pk=int(job_id)))
+            group_info['job_list'] = job_list
+            groups.append(group_info)
+    context = {
+        'flow': flow,
+        'groups': groups
+    }
+    return render(request, 'om/edit_flow.html', context)
+
+
+def save_edit_flow(request):
+    result = ['FLOW_INIT','TASK_INIT']
+    if request.method == 'POST' and request.POST.keys():
+        info =simplejson.loads(request.POST.keys()[0])
+        flow_sort = info['flow']
+        if flow_sort:
+            flow = Flow.objects.get(pk=int(info['id']))
+            new_job_group_list = ','.join([x.replace('group_', '') for x in flow_sort])
+            #update flow job_group_list
+            if flow and flow.job_group_list != new_job_group_list:
+                flow.job_group_list = new_job_group_list
+                flow.save()
+                result[0] = 'FLOW_SAVE'
+            #update jobgroup tast_list
+            task_change = False
+            for k in flow_sort:
+                group_task_list = ','.join([x.replace('task_', '') for x in info[k]])
+                group = JobGroup.objects.get(pk=int(k.replace('group_', '')))
+                if group and group.job_list != group_task_list:
+                    group.job_list = group_task_list
+                    group.save()
+                    task_change = True
+                if task_change:
+                    result[1] = 'TASK_SAVE'
+    return JsonResponse(result, safe=False)
 
 
 def action_history(request):
@@ -103,7 +153,6 @@ def get_server_list(_):
             'server_hostname': __get_random_ip() + '-' + str(i),
             'server_status': status[random.randint(0, len(status) - 1)],
         })
-
     return JsonResponse(server_list, safe=False)
 
 

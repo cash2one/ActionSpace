@@ -3,6 +3,5 @@ from django.http import HttpResponse
 
 
 # Create your views here.
-def index(request):
-    print request
+def index(_):
     return HttpResponse("<script language='javascript'>document.location = 'om/'</script>")

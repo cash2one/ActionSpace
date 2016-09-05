@@ -1,6 +1,6 @@
 # coding=utf-8
 from django.contrib import admin
-from om.models import System, Entity, Computer, Flow, JobGroup, JobType, ExecUser, Job, LogType, Log
+from om.models import System, Entity, Computer, Flow, JobGroup, ExecUser, Job, LogType, Log
 from django.db import models
 from django.contrib.flatpages.admin import FlatPageAdmin
 from django.contrib.flatpages.models import FlatPage
@@ -50,31 +50,17 @@ class ComputerAdmin(admin.ModelAdmin):
     filter_horizontal = ('entity',)
 
 
-class JobGroupInline(admin.StackedInline):
-    model = JobGroup
-    extra = 0
-
-
 @admin.register(Flow)
 class FlowAdmin(admin.ModelAdmin):
-    list_display = ('name', 'founder', 'last_modified_by', 'created_time', 'last_modified_time', 'desc')
-    inlines = [JobGroupInline]
-
-
-class JobInline(admin.StackedInline):
-    model = Job
-    extra = 0
+    list_display = (
+        'name', 'founder', 'last_modified_by', 'created_time', 'last_modified_time',
+        'pause_when_finish', 'pause_when_error', 'job_group_list', 'desc'
+        )
 
 
 @admin.register(JobGroup)
 class JobGroupAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'flow', 'desc')
-    inlines = [JobInline]
-
-
-@admin.register(JobType)
-class JobTypeAdmin(admin.ModelAdmin):
-    list_display = ('name', 'desc')
+    list_display = ('id', 'name', 'pause_when_finish', 'pause_when_error', 'job_list', 'desc')
 
 
 @admin.register(ExecUser)
@@ -85,14 +71,14 @@ class ExecUserAdmin(admin.ModelAdmin):
 @admin.register(Job)
 class JobAdmin(admin.ModelAdmin):
     list_display = (
-        'name', 'job_group', 'job_type', 'exec_user', 'pause_when_finish',
-        'pause_when_error', 'script_content', 'file_from_local', 'file_target_path',
+        'id', 'name', 'job_type', 'script_type', 'exec_user', 'pause_when_finish',
+        'pause_when_error', 'file_from_local', 'file_target_path',
         'desc'
     )
 
     fieldsets = (
         (None, {
-            'fields': ('name', 'job_group', 'job_type', 'exec_user')
+            'fields': ('name', 'job_type', 'exec_user', 'script_type')
         }),
         ('高级选项', {
             'classes': ('collapse',),

@@ -50,10 +50,15 @@
                             <tbody>
                                 {% for flow in flows %}
                                     <tr>
-                                        {% for val in flow.__dict__ %}
-                                            <td>{{ val }}</td>
-                                        {% endfor %}
-
+                                        <td>{{ flow.id }}</td>
+                                        <td>{{ flow.name }}</td>
+                                        <td>{{ flow.founder }}</td>
+                                        <td>{{ flow.last_modified_by }}</td>
+                                        <td>{{ flow.created_time | date:"Y-n-d H:i:s" }}</td>
+                                        <td>{{ flow.last_modified_time | date:"Y-n-d H:i:s" }}</td>
+                                        <td>{% if flow.pause_when_finish %}<i class="fa fa-check"></i>{% else %}<i class="fa fa-close"></i>{% endif%}</td>
+                                        <td>{% if flow.pause_when_error %}<i class="fa fa-check"></i>{% else %}<i class="fa fa-close"></i>{% endif%}</td>
+                                        <td>{{ flow.desc }}</td>
                                     </tr>
                                 {% endfor %}
                             </tbody>
@@ -87,10 +92,12 @@
             'click .flow_edit': function (e, value, row, index) {
                 var flow_edit_layer = layer.open({
                   type: 2,
+                  title: "编辑作业流：" + row.name,
                   area: ['700px', '530px'],
                   fix: false, //不固定
                   maxmin: true,
-                  content: "{%url 'edit_flow'%}"
+                  content:"/om/edit_flow/"+row.id+"/"
+                  //content: "{%url 'om:edit_flow' 1 %}"
                 });
                 layer.full(flow_edit_layer);
             },

@@ -113,7 +113,7 @@
             <div class="ibox-content">
                 <div class="ibox-content">
                     <table data-toggle="table" id="table" data-search="true" data-show-refresh="true" data-show-toggle="true"
-                       data-show-columns="true"  data-minimum-count-columns="2" data-show-pagination-switch="true" data-pagination="true" data-id-field="id" data-page-list="[10, 25, 50, 100, ALL]" data-show-header="true" data-show-footer="false" data-url="{% url 'get_action_history_list' %}">
+                       data-show-columns="true"  data-minimum-count-columns="2" data-show-pagination-switch="true" data-pagination="true" data-id-field="id" data-page-list="[10, 25, 50, 100, ALL]" data-show-header="true" data-show-footer="false" data-url="{% url 'om:get_action_history_list' %}">
                         <thead>
                             <tr>
                                 <th data-field="task_name">任务名称</th>
@@ -150,7 +150,7 @@
                   area: ['700px', '530px'],
                   fix: false, //不固定
                   maxmin: true,
-                  content: "{%url 'action_detail'%}"
+                  content: "{%url 'om:action_detail'%}"
                 });
                 layer.full(detail_layer);
         }

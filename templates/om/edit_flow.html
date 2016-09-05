@@ -4,152 +4,64 @@
 <body class="gray-bg">
     <div class="wrapper wrapper-content  animated fadeInRight">
         <div class="col-sm-12">
-            <div class="ibox float-e-margins">
-                <div class="ibox-title">
-                    <h5>上传操作脚本到DSP-CCS</h5>
-                    <div class="ibox-tools">
-                        <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
-                        <a class="dropdown-toggle" data-toggle="dropdown" href="draggable_panels.html#">
-                            <i class="fa fa-wrench"></i>
-                        </a>
-                        <ul class="dropdown-menu dropdown-user todo-list m-t">
-                            <li>
-                                <input type="checkbox" value="" name="" class="i-checks" />
-                                <span class="m-l-xs">执行完成是否暂停</span>
-                            </li>
-                            <li>
-                                <input type="checkbox" value="" name="" class="i-checks" checked/>
-                                <span class="m-l-xs">执行报错是否暂停</span>
-                            </li>
-                        </ul>
-                        <a class="close-link"><i class="fa fa-times"></i></a>
-                    </div>
-                </div>
-                <div class="ibox-content">
-                    <ul class="sortable-list-file connectList-file agile-list" id="file">
-                        <li class="warning-element"  id="file_INFO">
-                            [1]上传操作脚本到DSP-INFO
-                            <div class="agile-detail">
-                                <a href="#" class="pull-right btn btn-xs btn-white">编辑步骤</a>
-                            </div>
-                        </li>
-                        <li class="success-element"  id="file_IPUSH">
-                            [2]上传操作脚本到DSP-IPUSH
-                            <div class="agile-detail">
-                                <a href="#" class="pull-right btn btn-xs btn-white" id="edit_IPUSH">编辑步骤</a>
-                            </div>
-                        </li>
-                        <li class="info-element"  id="file_ACTIVITY">
-                            [3]上传操作脚本到DSP-ACTIVITY
-                            <div class="agile-detail">
-                                <a href="#" class="pull-right btn btn-xs btn-white">编辑步骤</a>
-                            </div>
-                        </li>
-                    </ul>
-                    <button type="button" class="btn btn-block btn-outline btn-primary" id="add_task"><i class="fa fa-plus"></i>增加节点</button>
-                    <div id="result">
-                    </div>
+            <div class="ibox">
+                <div class="ibox-content text-center">
+                    <button class="btn btn-primary" id="toggle_group_edit_flow">切换视图</button>
+                    <button class="btn btn-primary" id="add_group_edit_flow"><i class="fa fa-plus">增加步骤</i></button>
                 </div>
             </div>
         </div>
-        <div class="col-sm-12">
-            <div class="ibox float-e-margins">
-                <div class="ibox-title">
-                    <h5>重启DSP-CCS</h5>
-                    <div class="ibox-tools">
-                        <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
-                        <a class="dropdown-toggle" data-toggle="dropdown" href="draggable_panels.html#">
-                            <i class="fa fa-wrench"></i>
-                        </a>
-                        <ul class="dropdown-menu dropdown-user todo-list m-t">
-                            <li>
-                                <input type="checkbox" value="" name="" class="i-checks" />
-                                <span class="m-l-xs">执行完成是否暂停</span>
-                            </li>
-                            <li>
-                                <input type="checkbox" value="" name="" class="i-checks" checked/>
-                                <span class="m-l-xs">执行报错是否暂停</span>
-                            </li>
-                        </ul>
-                        <a class="close-link"><i class="fa fa-times"></i></a>
+        <ul class="col-sm-12 sortable-list-group" style=" list-style-type: none">
+            {% for group in groups %}
+                <li id="group_{{group.group.id}}">
+                    <div class="ibox float-e-margins">
+                        <div class="ibox-title">
+                            <h5>{{group.group.name}} <small>(备注：{{group.group.desc}})</small></h5>
+                            <div class="ibox-tools">
+                                <a class="btn btn-primary btn-xs" id="add_task_{{group.group.id}}"><i class="fa fa-plus">添加任务</i></a>
+                                <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
+                                <a class="dropdown-toggle" data-toggle="dropdown"><i class="fa fa-wrench"></i></a>
+                                <ul class="dropdown-menu dropdown-user todo-list m-t">
+                                    <li>
+                                        <input type="checkbox" value="" name="" class="i-checks"  {% if group.group.pause_when_finish %} checked {%  endif %}/>
+                                        <span class="m-l-xs">执行完成暂停</span>
+                                    </li>
+                                    <li>
+                                        <input type="checkbox" value="" name="" class="i-checks" {% if group.group.pause_when_error %} checked {%  endif %}/>
+                                        <span class="m-l-xs">执行报错暂停</span>
+                                    </li>
+                                </ul>
+                                <a class="close-link"><i class="fa fa-times"></i></a>
+                            </div>
+                        </div>
+                        <div class="ibox-content">
+                            <ul class="sortable-list-task-{{group.group.id}} agile-list" id="group_{{group.group.id}}">
+                                {% for job in group.job_list %}
+                                    <li class="warning-element"  id="task_{{ job.id }}">
+                                        <div>
+                                             <i class="fa fa-arrows-alt">{{ job.name }}</i>
+                                             <a href="#" class="pull-right btn btn-xs btn-primary" id="edit_task_{{group.group.id}}_{{job.id}}"><i class="fa fa-edit">编辑</i></a>
+                                             <a href="#" class="pull-right btn btn-xs btn-danger" id="del_task_{{group.group.id}}_{{job.id}}"><i class="fa fa-remove">删除</i></a>
+                                        </div>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
                     </div>
-                </div>
-                <div class="ibox-content">
-                    <ul class="sortable-list-script connectList-script agile-list">
-                        <li class="warning-element">
-                            重启DSP-INFO
-                            <div class="agile-detail">
-                                <a href="#" class="pull-right btn btn-xs btn-white">编辑步骤</a>
-                            </div>
-                        </li>
-                        <li class="success-element">
-                            重启DSP-IPUSH
-                            <div class="agile-detail">
-                                <a href="#" class="pull-right btn btn-xs btn-white">编辑步骤</a>
-                            </div>
-                        </li>
-                        <li class="info-element">
-                            重启DSP-ACTIVITY
-                            <div class="agile-detail">
-                                <a href="#" class="pull-right btn btn-xs btn-white">编辑步骤</a>
-                            </div>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-12">
-            <div class="ibox float-e-margins">
-                <div class="ibox-title">
-                    <h5>验证服务是否正常</h5>
-                    <div class="ibox-tools">
-                        <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
-                        <a class="dropdown-toggle" data-toggle="dropdown" href="draggable_panels.html#">
-                            <i class="fa fa-wrench"></i>
-                        </a>
-                        <ul class="dropdown-menu dropdown-user todo-list m-t">
-                            <li>
-                                <input type="checkbox" value="" name="" class="i-checks" />
-                                <span class="m-l-xs">执行完成是否暂停</span>
-                            </li>
-                            <li>
-                                <input type="checkbox" value="" name="" class="i-checks" checked/>
-                                <span class="m-l-xs">执行报错是否暂停</span>
-                            </li>
-                        </ul>
-                        <a class="close-link"><i class="fa fa-times"></i></a>
-                    </div>
-                </div>
-                <div class="ibox-content">
-                    <ul class="sortable-list-end connectList-end agile-list">
-                        <li class="warning-element">
-                            验证DSP-INFO
-                            <div class="agile-detail">
-                                <a href="#" class="pull-right btn btn-xs btn-white">编辑步骤</a>
-                            </div>
-                        </li>
-                        <li class="success-element">
-                            验证DSP-IPUSH
-                            <div class="agile-detail">
-                                <a href="#" class="pull-right btn btn-xs btn-white">编辑步骤</a>
-                            </div>
-                        </li>
-                        <li class="info-element">
-                            验证DSP-ACTIVITY
-                            <div class="agile-detail">
-                                <a href="#" class="pull-right btn btn-xs btn-white">编辑步骤</a>
-                            </div>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </div>
+                </li>
+            {% endfor %}
+            </ul>
+        <div id="result"></div>
         <div class="hr-line-dashed"></div>
         <div class="form-group">
-            <div class="col-sm-10 col-sm-offset-5">
-                <button class="btn btn-primary" type="submit"><i class="fa fa-plus"></i>增加步骤</button>
-                <button class="btn btn-primary" type="submit">保存</button>
-                <button class="btn btn-white" type="submit">取消</button>
+            <div class="col-sm-12">
+                <div class="ibox">
+                    <div class="ibox-content text-center">
+                    <button class="btn btn-primary" id="save_edit_flow"><i class="fa fa-save">保存</i></button>
+                    <button class="btn btn-primary" id="exec_edit_flow"><i class="fa fa-arrow-circle-o-right">去执行</i></button>
+                    <button class="btn btn-primary" id="cancel_edit_flow"><i class="fa fa-close">取消</i></button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -164,58 +76,81 @@
     <script src="{% static 'om/js/plugins/validate/jquery.validate.min.js' %}"></script>
     <script src="{% static 'om/js/plugins/validate/messages_zh.min.js' %}"></script>
     <script src="{% static 'om/js/plugins/iCheck/icheck.min.js' %}"></script>
-    <script>
+    <script type="text/javascript">
+        $.ajaxSetup({
+            beforeSend: function(x) {
+                x.setRequestHeader("X-CSRFToken", '{{ csrf_token }}');
+            }
+        });
         $(document).ready(
             function(){
-                $("[class*=col]").sortable({
-                    handle:".ibox-title",
-                    connectWith:"[class*=col]",
-                    tolerance:"pointer",
-                    forcePlaceholderSize:!0,
-                    opacity:.8,
-                    axis: 'y',
-                }).disableSelection()
-                $(".sortable-list-file").sortable({
-                    connectWith:".connectList-file", 
-                    cursor: 'move',
-                    axis: 'y',
-                    stop: function(){ 
-                        $("#result").text($(".sortable-list-file").sortable('serialize'));
-                    }
-                }).disableSelection()
-                $(".sortable-list-script").sortable({
-                    connectWith:".connectList-script", 
-                    cursor: 'move',
-                    axis: 'y',
-                }).disableSelection()
-                $(".sortable-list-end").sortable({
-                    connectWith:".connectList-end", 
-                    cursor: 'move',
-                    axis: 'y',
-                }).disableSelection();
+                $("#toggle_group_edit_flow").on("click", function(){
+                    $(".collapse-link").trigger("click");
+                });
+                $(".sortable-list-group").sortable({
+                        tolerance:"pointer", forcePlaceholderSize:!0, opacity:.8, axis: 'y',cursor: 'move',
+                        stop: function(){
+                            $('#result').data('flow', $(this).sortable("toArray"));
+                        },
+                        create: function( event, ui ) {
+                            $('#result').data('id', {{flow.id}});
+                            $('#result').data('flow', $(this).sortable("toArray"));
+                        }
+                    }).disableSelection()
+                {% for group in groups %}
+                    $(".sortable-list-task-{{group.group.id}}").sortable({
+                        tolerance:"pointer", forcePlaceholderSize:!0, opacity:.8, axis: 'y',cursor: 'move',
+                        stop: function(){
+                            $('#result').data('group_'+{{group.group.id}} , $(this).sortable("toArray"));
+                        },
+                        create: function( event, ui ) {
+                            $('#result').data('group_'+{{group.group.id}} , $(this).sortable("toArray"));
+                        }
+                    }).disableSelection()
+                    {% for job in group.job_list %}
+                        $('#edit_task_{{group.group.id}}_{{job.id}}').on('click', function(){
+                            var edit_task_{{group.group.id}}_{{job.id}}_layer = layer.open({
+                              type: 2,
+                              area: ['700px', '530px'],
+                              fix: false, //不固定
+                              maxmin: true,
+                              content: "{%url 'om:edit_job' job.id %}"
+                            });
+                            layer.full(edit_task_{{group.group.id}}_{{job.id}}_layer);
+                        });
+                        $('#del_task_{{group.group.id}}_{{job.id}}').on('click', function(){
+                            $("#task_{{group.group.id}}_{{ job.id }}").remove()
+                        });
+                    {% endfor %}
+                    $('#add_task_{{group.group.id}}').on('click', function(){
+                        //var add_task_layer = layer.open({
+                        //  type: 2,
+                        //  area: ['700px', '530px'],
+                        //  fix: false, //不固定
+                        //  maxmin: true,
+                        //  content: "{%url 'om:edit_job' 1 %}"
+                        //});
+                        //layer.full(add_task_layer);
+                    });
+                {% endfor %}
+                $('#cancel_edit_flow').on('click', function(){
+                    var index = parent.layer.getFrameIndex(window.name);
+                    parent.layer.close(index);
+                });
+                $('#save_edit_flow').on('click', function(){
+                    $.ajax({
+                        type: 'POST',
+                        url: "{%url 'om:save_edit_flow'%}",
+                        data: JSON.stringify($('#result').data()),
+                        success: function(result) {
+                            alert(result)
+                        }
+                    });
+                    //alert(JSON.stringify($('#result').data()))
+                });
                 $(".i-checks").iCheck({checkboxClass:"icheckbox_square-green",radioClass:"iradio_square-green",})
             }
         );
-        $('#edit_IPUSH').on('click', function(){
-            var edit_IPUSH_layer = layer.open({
-              type: 2,
-              area: ['700px', '530px'],
-              fix: false, //不固定
-              maxmin: true,
-              content: "{%url 'edit_job'%}"
-            });
-            layer.full(edit_IPUSH_layer);
-        });
-        $('#add_task').on('click', function(){
-            var add_task_layer = layer.open({
-              type: 2,
-              area: ['700px', '530px'],
-              fix: false, //不固定
-              maxmin: true,
-              content: "{%url 'edit_job'%}"
-            });
-            layer.full(add_task_layer);
-        });
     </script>
 </body>
 {% endblock %}

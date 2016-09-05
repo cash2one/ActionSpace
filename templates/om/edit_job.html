@@ -43,27 +43,13 @@
                             <div class="form-group">
                                 <label class="col-sm-2 control-label">作业名称</label>
                                 <div class="col-sm-8">
-                                    <input type="email" placeholder="作业名称" class="form-control">
+                                    <input type="text" placeholder="作业名称" class="form-control" value='{{ job.name }}'>
                                 </div>
                             </div>
                             <div class="form-group">
                                 <label class="col-sm-2 control-label">执行用户</label>
                                 <div class="col-sm-8">
-                                    <input type="password" placeholder="执行用户" class="form-control">
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="col-sm-2 control-label">所属作业组</label>
-                                <div class="col-sm-8">
-                                    <div class="input-group">
-                                        <select data-placeholder="请选择作业组" class="chosen-select" multiple  style="width:650px;">
-                                            <option value="">请选择作业组</option>
-                                            <option value="1" hassubinfo="true">作业组1</option>
-                                            <option value="2" hassubinfo="true">作业组2</option>
-                                            <option value="3" hassubinfo="true">作业组3</option>
-                                            <option value="4" hassubinfo="true">作业组4</option>
-                                        </select>
-                                    </div>
+                                    <input type="text" placeholder="执行用户" class="form-control" value='{{ job.exec_user }}'>
                                 </div>
                             </div>
                             <div class="form-group">
@@ -71,7 +57,8 @@
                                 <div class="col-sm-1">
                                     <div class="switch">
                                         <div class="onoffswitch">
-                                            <input type="checkbox" class="onoffswitch-checkbox" id="stop_on_finish">
+                                            <input type="checkbox" class="onoffswitch-checkbox"
+                                            id="stop_on_finish" {% if job.pause_when_finish %} checked {% endif %}>
                                             <label class="onoffswitch-label" for="stop_on_finish">
                                                 <span class="onoffswitch-inner"></span>
                                                 <span class="onoffswitch-switch"></span>
@@ -79,7 +66,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div id="stop_on_finish_desc" style="display:none">
+                                <div id="stop_on_finish_desc" {% if not job.pause_when_finish %} style="display:none" {% endif %}>
                                     <label class="col-sm-2 control-label">执行完成后暂停说明</label>
                                     <div class="col-sm-5">
                                         <input type="text" placeholder="暂停说明" class="form-control">
@@ -91,7 +78,8 @@
                                 <div class="col-sm-1">
                                     <div class="switch">
                                         <div class="onoffswitch">
-                                            <input type="checkbox" checked class="onoffswitch-checkbox" id="stop_on_fail">
+                                            <input type="checkbox" class="onoffswitch-checkbox"
+                                            id="stop_on_fail" {% if job.pause_when_error %} checked {% endif %}>
                                             <label class="onoffswitch-label" for="stop_on_fail">
                                                 <span class="onoffswitch-inner"></span>
                                                 <span class="onoffswitch-switch"></span>
@@ -99,7 +87,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div id="stop_on_fail_desc">
+                                <div id="stop_on_fail_desc" {% if not job.pause_when_error %} style="display:none" {% endif %}>
                                     <label class="col-sm-2 control-label">执行失败后暂停说明</label>
                                     <div class="col-sm-5">
                                         <input type="text" placeholder="暂停说明" class="form-control">
