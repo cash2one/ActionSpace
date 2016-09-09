@@ -160,3 +160,5 @@ SUIT_CONFIG = {
         {'app': 'auth', 'label': '认证管理'},  
     ),  
 }
+
+LOGIN_URL = '/admin/login/'

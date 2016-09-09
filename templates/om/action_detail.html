@@ -1,7 +1,9 @@
 {% extends 'om/base.html' %}
-{% block body %}
 {% load staticfiles %}
+{% block body_begin %}
 <body class="gray-bg">
+{% endblock %}
+{% block body_content %}
     <div class="row">
         <div class="col-sm-12">
             <div class="wrapper wrapper-content">
@@ -69,13 +71,9 @@
             </div>
         </div>
     </div>
-    {% block script %}
-    <script src="{% static 'om/js/jquery.min.js' %}"></script>
-    <script src="{% static 'om/js/bootstrap.min.js' %}"></script>
-    <script src="{% static 'om/js/content.min.js' %}"></script>
+{% endblock %}
+{% block other_js %}
     <script>
         $(document).ready(function(){$("#lightVersion").click(function(event){event.preventDefault();$("#ibox-content").removeClass("ibox-content");$("#vertical-timeline").removeClass("dark-timeline");$("#vertical-timeline").addClass("light-timeline")});$("#darkVersion").click(function(event){event.preventDefault();$("#ibox-content").addClass("ibox-content");$("#vertical-timeline").removeClass("light-timeline");$("#vertical-timeline").addClass("dark-timeline")});$("#leftVersion").click(function(event){event.preventDefault();$("#vertical-timeline").toggleClass("center-orientation")})});
     </script>
-    {% endblock %}
-</body>
 {% endblock %}

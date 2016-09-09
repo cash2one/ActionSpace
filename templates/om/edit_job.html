@@ -1,241 +1,95 @@
 {% extends 'om/base.html' %}
-<!DOCTYPE html>
-<html>
-{% block head %}
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="renderer" content="webkit">
-    <meta http-equiv="Cache-Control" content="no-siteapp" />
-    <title>运维工作平台 - 编辑任务属性</title>
-    {% load staticfiles %}
-    <meta name="keywords" content="H+">
-    <meta name="description" content="H+">
-
-    <!--[if lt IE 9]>
-    <meta http-equiv="refresh" content="0;ie.html" />
-    <![endif]-->
-    {% block head_link %}
-    <link rel="shortcut icon" href="{% static 'om/favicon.ico' %}">
-    <link href="{% static 'om/css/bootstrap.min14ed.css' %}" rel="stylesheet">
-    <link href="{% static 'om/css/font-awesome.min93e3.css' %}" rel="stylesheet">
-    <link href="{% static 'om/css/animate.min.css' %}" rel="stylesheet">
-    <link href="{% static 'om/css/plugins/codemirror/theme/ambiance.css' %}" rel="stylesheet">
-    <link href="{% static 'om/css/plugins/codemirror/codemirror.css' %}" rel="stylesheet">
-    <link href="{% static 'om/css/style.min862f.css' %}" rel="stylesheet">
-    <link href="{% static 'om/css/plugins/awesome-bootstrap-checkbox/awesome-bootstrap-checkbox.css' %}" rel="stylesheet">
-    <link href="{% static 'om/css/plugins/chosen/chosen.css' %}" rel="stylesheet">
-    {% endblock %}
-</head>
-{% endblock %}
-{% block body %}
+{% load form_extra_tag %}
 {% load staticfiles %}
+{% block body_begin %}
 <body class="gray-bg">
-    <div class="wrapper wrapper-content  animated fadeInRight">
-        <div class="row">
-            <div class="col-sm-12">
-                <div class="ibox ">
-                    <div class="ibox-title">
-                        <h5>编辑任务属性</h5>
-                    </div>
-                    <div class="ibox-content">
-                        <form class="form-horizontal">
-                            <div class="form-group">
-                                <label class="col-sm-2 control-label">作业名称</label>
-                                <div class="col-sm-8">
-                                    <input type="text" placeholder="作业名称" class="form-control" value='{{ job.name }}'>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="col-sm-2 control-label">执行用户</label>
-                                <div class="col-sm-8">
-                                    <input type="text" placeholder="执行用户" class="form-control" value='{{ job.exec_user }}'>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="col-sm-2 control-label">执行完成后是否暂停</label>
-                                <div class="col-sm-1">
-                                    <div class="switch">
-                                        <div class="onoffswitch">
-                                            <input type="checkbox" class="onoffswitch-checkbox"
-                                            id="stop_on_finish" {% if job.pause_when_finish %} checked {% endif %}>
-                                            <label class="onoffswitch-label" for="stop_on_finish">
-                                                <span class="onoffswitch-inner"></span>
-                                                <span class="onoffswitch-switch"></span>
-                                            </label>
+{% endblock %}
+{% block body_content %}
+    {% if save.saved and save.result %}
+        <script src="{% static 'om/js/jquery.min.js' %}"></script>
+        <script src="{% static 'om/js/bootstrap.min.js' %}"></script>
+        <script src="{% static 'om/layer/layer.js' %}"></script>
+        <script type="text/javascript">
+            var index = parent.layer.getFrameIndex(window.name);
+            {% if save.result %}
+                layer.alert('保存成功！',{icon: 6}, function(){
+                    window.parent.location.reload();
+                    parent.layer.close(index);
+                });
+            {% endif %}
+        </script>
+    {% else %}
+        {% if save.saved and not save.result %}
+            <script src="{% static 'om/js/jquery.min.js' %}"></script>
+            <script src="{% static 'om/js/bootstrap.min.js' %}"></script>
+            <script src="{% static 'om/layer/layer.js' %}"></script>
+            <script type="text/javascript">
+                layer.alert('保存失败！[' + '{{ save.error_msg }}' +']',{icon: 5});
+            </script>
+        {% endif %}
+        <div class="wrapper wrapper-content  animated fadeInRight">
+            <div class="row">
+                <div class="col-sm-12">
+                    <div class="ibox ">
+                        <div class="ibox-title">
+                            <h5>编辑作业</h5>
+                        </div>
+                        <div class="ibox-content">
+                            <form class="form-horizontal" method='post'>
+                                {% csrf_token %}
+                                {% for field in form %}
+                                    <div class="form-group">
+                                        <label class="col-sm-2 control-label">{{ field.label_tag }}</label>
+                                        <div class="col-sm-8" style='display:block;'>
+                                            {% if field.name in check_field_list %}
+                                                <div class="switch">
+                                                    <div class="onoffswitch">
+                                                        {{ field | set_attr:'class=onoffswitch-checkbox' }}
+                                                        <label class="onoffswitch-label" for="{{ field.id_for_label }}">
+                                                            <span class="onoffswitch-inner"></span>
+                                                            <span class="onoffswitch-switch"></span>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            {% elif field.name in disable_field_list %}
+                                                {{ field | set_attr:'readonly=readonly' }}
+                                            {% else %}
+                                                {{ field | set_attr:'class=form-control' }}
+                                            {% endif %}
+                                            {% if field.errors %}
+                                                <div class="alert alert-warning">{{ field.errors }}</div>
+                                            {% endif %}
                                         </div>
                                     </div>
-                                </div>
-                                <div id="stop_on_finish_desc" {% if not job.pause_when_finish %} style="display:none" {% endif %}>
-                                    <label class="col-sm-2 control-label">执行完成后暂停说明</label>
-                                    <div class="col-sm-5">
-                                        <input type="text" placeholder="暂停说明" class="form-control">
+                                {% endfor %}
+                                <div class="form-group">
+                                    <div class="col-sm-10 col-sm-offset-5">
+                                        <button class="btn btn-primary" type="submit" value="save">保存</button>
+                                        <button class="btn btn-white" id="cancel_form" type="button" value="cancel">取消</button>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="col-sm-2 control-label">执行失败后是否暂停</label>
-                                <div class="col-sm-1">
-                                    <div class="switch">
-                                        <div class="onoffswitch">
-                                            <input type="checkbox" class="onoffswitch-checkbox"
-                                            id="stop_on_fail" {% if job.pause_when_error %} checked {% endif %}>
-                                            <label class="onoffswitch-label" for="stop_on_fail">
-                                                <span class="onoffswitch-inner"></span>
-                                                <span class="onoffswitch-switch"></span>
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div id="stop_on_fail_desc" {% if not job.pause_when_error %} style="display:none" {% endif %}>
-                                    <label class="col-sm-2 control-label">执行失败后暂停说明</label>
-                                    <div class="col-sm-5">
-                                        <input type="text" placeholder="暂停说明" class="form-control">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="col-sm-2 control-label">作业类型</label>
-                                <div class="col-sm-8">
-                                     <div class="radio radio-info radio-inline">
-                                        <input type="radio" id="script_task" value="script_task" name="task_type" checked="">
-                                        <label for="script_task"> 脚本执行 </label>
-                                    </div>
-                                    <div class="radio radio-info radio-inline">
-                                        <input type="radio" id="file_task" value="file_task" name="task_type">
-                                        <label for="file_task"> 文件传输 </label>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="hr-line-dashed"></div>
-                             <div id="script_source" class="form-group">
-                                <label class="col-sm-2 control-label">脚本来源</label>
-                                <div class="col-sm-3">
-                                    <div class="radio radio-info radio-inline">
-                                        <input type="radio" id="manual" value="manual" name="code_source" checked="">
-                                        <label for="manual"> 手工录入 </label>
-                                    </div>
-                                    <div class="radio radio-info radio-inline">
-                                        <input type="radio" id="clone" value="clone" name="code_source">
-                                        <label for="clone"> 克隆现有脚本 </label>
-                                    </div>
-                                    <div class="radio radio-info radio-inline">
-                                        <input type="radio" id="local" value="local" name="code_source">
-                                        <label for="local"> 本地上传 </label>
-                                    </div>
-                                </div>
-                                <div id="script_upload" class="col-sm-5" style="display:none">
-                                        <input id="script_upload_path" type="file" class="form-control">
-                                </div>
-                            </div>
-                            <div id="code_source_select" class="form-group">
-                                <label class="col-sm-2 control-label">选择脚本</label>
-                                <div class="col-sm-8">
-                                    <div class="input-group">
-                                        <select data-placeholder="请选择脚本" class="chosen-code-source"  style="width:650px;">
-                                            <option value="">请选择脚本</option>
-                                            <option value="1" hassubinfo="true">检查REDIS状态[python]</option>
-                                            <option value="2" hassubinfo="true">重启DSP-CCS-IPUSH[python]</option>
-                                            <option value="3" hassubinfo="true">重启DSP-CCS-INFO[shell]</option>
-                                            <option value="4" hassubinfo="true">重启资管[bat]</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                            <div id="script_type" class="form-group">
-                                <label class="col-sm-2 control-label">脚本类型</label>
-                                <div class="col-sm-8">
-                                    <div class="radio radio-info radio-inline">
-                                        <input type="radio" id="python" value="python" name="code_mode" checked>
-                                        <label for="python"> python </label>
-                                    </div>
-                                    <div class="radio radio-info radio-inline">
-                                        <input type="radio" id="shell" value="shell" name="code_mode">
-                                        <label for="shell"> shell </label>
-                                    </div>
-                                    <div class="radio radio-info radio-inline">
-                                        <input type="radio" id="perl" value="bat" name="code_mode">
-                                        <label for="perl"> bat </label>
-                                    </div>
-                                </div>
-                            </div>
-                            <div id="script_content" class="form-group">
-                                <label class="col-sm-2 control-label">脚本内容</label>
-                                <div class="col-sm-8">
-                                    <textarea id="code_python">
-#coding:utf-8
-import sys, os
-
-def process():
-    #process this
-    print 'process task'
-
-if __name__ == '__main__':
-    process()
-                                    </textarea>
-                                </div>
-                            </div>
-                            <div id="file_use_local" class="form-group" style="display:none">
-                                <label class="col-sm-2 control-label">是否使用本地上传的文件</label>
-                                <div class="col-sm-1">
-                                    <div class="switch">
-                                        <div class="onoffswitch">
-                                            <input type="checkbox" class="onoffswitch-checkbox" id="use_local_file">
-                                            <label class="onoffswitch-label" for="use_local_file">
-                                                <span class="onoffswitch-inner"></span>
-                                                <span class="onoffswitch-switch"></span>
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div id="file_use_local_upload" class="col-sm-7" style="display:none">
-                                        <input id="use_local_file_path" type="file" class="form-control">
-                                </div>
-                            </div>
-                            <div id="file_target_path" class="form-group" style="display:none">
-                                <label class="col-sm-2 control-label">上传目标路径</label>
-                                <div class="col-sm-8">
-                                    <input type="password" placeholder="上传目标路径" class="form-control">
-                                </div>
-                            </div>
-                             <div class="form-group">
-                                <label class="col-sm-2 control-label">备注</label>
-                                <div class="col-sm-8">
-                                    <textarea placeholder="备注" class="form-control" id="desc_div"></textarea>
-                                </div>
-                            </div>
-                            <div class="hr-line-dashed"></div>
-                            <div class="form-group">
-                                <div class="col-sm-10 col-sm-offset-5">
-                                    <button class="btn btn-primary" type="submit">保存</button>
-                                    <button class="btn btn-white" type="submit">取消</button>
-                                </div>
-                            </div>
                         </form>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-    {% block script %}
-    <script src="{% static 'om/js/jquery.min.js' %}"></script>
-    <script src="{% static 'om/js/bootstrap.min.js' %}"></script>
+    {% endif %}
+{% endblock %}
+{% block other_js %}
     <script src="{% static 'om/js/plugins/peity/jquery.peity.min.js' %}"></script>
-    <script src="{% static 'om/js/plugins/chosen/chosen.jquery.js' %}"></script>
     <script src="{% static 'om/js/plugins/codemirror/codemirror.js' %}"></script>
-    <script src="{% static 'om/js/plugins/codemirror/mode/javascript/javascript.js' %}"></script>
+    <script src="{% static 'om/js/plugins/codemirror/mode/shell/shell.js' %}"></script>
     <script src="{% static 'om/js/plugins/codemirror/mode/python/python.js' %}"></script>
     <script src="{% static 'om/js/plugins/codemirror/mode/perl/perl.js' %}"></script>
-    <script src="{% static 'om/js/content.min.js' %}"></script>
     <script src="{% static 'om/js/plugins/prettyfile/bootstrap-prettyfile.js' %}"></script>
+    <script src="{% static 'om/layer/layer.js' %}"></script>
     <script>
         $(document).ready(function() {
-            $(".chosen-select").chosen();
-            $(".chosen-code-source").chosen();
             $("#code_source_select").hide();
             $( 'input[type="file"]' ).prettyFile();
         });
-         var editor = CodeMirror.fromTextArea($("#code_python")[0], {
+         var editor = CodeMirror.fromTextArea($("#id_script_content")[0], {
             mode: 'python', lineNumbers: true, indentUnit: 4,
             styleActiveLine: true, matchBrackets: true, theme: 'ambiance'
         });
@@ -251,6 +105,29 @@ if __name__ == '__main__':
             }
         }
         editor.setSize('%80', 300);
+
+        function set_code_type(val) {
+            switch(val)
+            {
+            case 'PY':
+                editor.setOption("mode", 'python');
+                break;
+            case 'SHELL':
+                editor.setOption("mode", 'shell');
+                break;
+            case 'BAT':
+                editor.setOption("mode", 'perl');
+                break;
+            default:
+                editor.setOption("mode", 'perl');
+            }
+        }
+
+        set_code_type($("#id_script_type").children('option:selected').val());
+
+        $('#id_script_type').change(function(){
+            set_code_type($(this).children('option:selected').val());
+        });
 
         $("input:radio[name='code_mode']").change(function (){
             editor.setOption("mode", $(this).prop("id"));
@@ -308,7 +185,7 @@ if __name__ == '__main__':
                 var reader = new FileReader();
                 reader.onload = function()  {
                     $("#desc_div").text(this.result)
-                }
+                };
                 reader.readAsText(e.target.files[0]);
             }
         });
@@ -318,12 +195,13 @@ if __name__ == '__main__':
                 var reader = new FileReader();
                 reader.onload = function()  {
                     editor.setValue(this.result)
-                }
+                };
                 reader.readAsText(e.target.files[0]);
             }
         });
-        
+
+        $('#cancel_form').click(function (e) {
+            parent.layer.close(parent.layer.getFrameIndex(window.name));
+        })
     </script>
-    {% endblock %}
-</body>
 {% endblock %}

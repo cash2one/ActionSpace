@@ -52,15 +52,19 @@ class ComputerAdmin(admin.ModelAdmin):
 
 @admin.register(Flow)
 class FlowAdmin(admin.ModelAdmin):
+    readonly_fields = ('created_time', 'last_modified_time',)
     list_display = (
-        'name', 'founder', 'last_modified_by', 'created_time', 'last_modified_time',
-        'pause_when_finish', 'pause_when_error', 'job_group_list', 'desc'
+        'name', 'founder', 'last_modified_by', 'pause_when_finish',
+        'pause_when_error', 'job_group_list', 'desc'
         )
 
 
 @admin.register(JobGroup)
 class JobGroupAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'pause_when_finish', 'pause_when_error', 'job_list', 'desc')
+    readonly_fields = ('created_time', 'last_modified_time',)
+    list_display = (
+        'id', 'name', 'founder', 'last_modified_by', 'pause_when_finish',
+        'pause_when_error', 'job_list', 'desc')
 
 
 @admin.register(ExecUser)
@@ -70,10 +74,12 @@ class ExecUserAdmin(admin.ModelAdmin):
 
 @admin.register(Job)
 class JobAdmin(admin.ModelAdmin):
+    list_display_links = ('name',)
+    readonly_fields = ('created_time', 'last_modified_time',)
     list_display = (
-        'id', 'name', 'job_type', 'script_type', 'exec_user', 'pause_when_finish',
-        'pause_when_error', 'file_from_local', 'file_target_path',
-        'desc'
+        'id', 'name', 'founder', 'last_modified_by', 'job_type', 'script_type',
+        'exec_user', 'pause_when_finish', 'pause_when_error',
+        'file_from_local', 'file_target_path', 'server_list', 'desc'
     )
 
     fieldsets = (
@@ -83,7 +89,7 @@ class JobAdmin(admin.ModelAdmin):
         ('高级选项', {
             'classes': ('collapse',),
             'fields': ('pause_when_finish', 'pause_when_error',
-                       'script_content', 'file_from_local', 'file_target_path', 'desc'),
+                       'script_content', 'file_from_local', 'file_target_path', 'server_list', 'desc'),
         }),
     )
 

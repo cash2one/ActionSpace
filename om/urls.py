@@ -4,7 +4,7 @@ from . import views
 
 app_name = 'om'
 urlpatterns = [
-    url(r"^$", views.index, name='index'),
+    url(r'^$', views.index, name='index'),
     url(r'^default_content/$', views.default_content, name='default_content'),
     url(r'^index_content/$', views.index_content, name='index_content'),
     url(r'^quick_exec_script/$', views.quick_exec_script, name='quick_exec_script'),
@@ -20,4 +20,9 @@ urlpatterns = [
     url(r'^get_action_history_list/$', views.get_action_history_list, name='get_action_history_list'),
     url(r'^choose_server_result/$', views.choose_server_result, name='choose_server_result'),
     url(r'^save_edit_flow/$', views.save_edit_flow, name='save_edit_flow'),
+    url(r'^new_job/(?P<job_group_id>[0-9]+)/$', views.new_job, name='new_job_for_group'),
+    url(r'^new_group/(?P<flow_id>[0-9]+)/$', views.new_group, name='new_group'),
+    url(r'^del_job_in_group/(?P<group_id>[0-9]+)/(?P<job_id>[0-9]+)/$', views.del_job_in_group, name='del_job_in_group'),
+    url(r'^del_group/(?P<group_id>[0-9]+)/$', views.del_group, name='del_group'),
+    url(r'^edit_group/(?P<group_id>[0-9]+)/$', views.edit_group, name='edit_group'),
 ]

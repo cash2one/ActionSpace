@@ -1,13 +1,15 @@
 {% extends 'om/base.html' %}
-{% block body %}
 {% load staticfiles %}
+{% block body_begin %}
 <body class="gray-bg">
+{% endblock %}
+{% block body_content %}
     <div class="wrapper wrapper-content  animated fadeInRight">
         <div class="col-sm-12">
             <div class="ibox">
                 <div class="ibox-content text-center">
                     <button class="btn btn-primary" id="toggle_group_edit_flow">切换视图</button>
-                    <button class="btn btn-primary" id="add_group_edit_flow"><i class="fa fa-plus">增加步骤</i></button>
+                    <button class="btn btn-primary" id="add_group_edit_flow"><i class="fa fa-plus">增加作业组</i></button>
                 </div>
             </div>
         </div>
@@ -18,37 +20,46 @@
                         <div class="ibox-title">
                             <h5>{{group.group.name}} <small>(备注：{{group.group.desc}})</small></h5>
                             <div class="ibox-tools">
-                                <a class="btn btn-primary btn-xs" id="add_task_{{group.group.id}}"><i class="fa fa-plus">添加任务</i></a>
                                 <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
                                 <a class="dropdown-toggle" data-toggle="dropdown"><i class="fa fa-wrench"></i></a>
                                 <ul class="dropdown-menu dropdown-user todo-list m-t">
                                     <li>
-                                        <input type="checkbox" value="" name="" class="i-checks"  {% if group.group.pause_when_finish %} checked {%  endif %}/>
-                                        <span class="m-l-xs">执行完成暂停</span>
+                                        <a class="btn btn-w-m btn-link" id="add_task_{{group.group.id}}">
+                                            <i class="fa fa-plus">添加作业</i>
+                                        </a>
                                     </li>
                                     <li>
-                                        <input type="checkbox" value="" name="" class="i-checks" {% if group.group.pause_when_error %} checked {%  endif %}/>
-                                        <span class="m-l-xs">执行报错暂停</span>
+                                        <a class="btn btn-w-m btn-link" id="edit_task_{{group.group.id}}">
+                                            <i class="fa fa-edit">编辑组</i>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="btn btn-w-m btn-link" id="del_task_{{group.group.id}}">
+                                            <i class="fa fa-remove">删除组</i>
+                                        </a>
                                     </li>
                                 </ul>
-                                <a class="close-link"><i class="fa fa-times"></i></a>
                             </div>
                         </div>
                         <div class="ibox-content">
                             <ul class="sortable-list-task-{{group.group.id}} agile-list" id="group_{{group.group.id}}">
                                 {% for job in group.job_list %}
-                                    <li class="warning-element"  id="task_{{ job.id }}">
-                                        <div>
-                                             <i class="fa fa-arrows-alt">{{ job.name }}</i>
-                                             <a href="#" class="pull-right btn btn-xs btn-primary" id="edit_task_{{group.group.id}}_{{job.id}}"><i class="fa fa-edit">编辑</i></a>
-                                             <a href="#" class="pull-right btn btn-xs btn-danger" id="del_task_{{group.group.id}}_{{job.id}}"><i class="fa fa-remove">删除</i></a>
-                                        </div>
+                                    <li class="warning-element" id="task_{{group.group.id}}_{{job.id}}">
+                                         <i class="fa fa-arrows-alt">{{ job.name }}</i>
+                                        <a href="#" class="pull-right btn btn-xs btn-danger" id="del_task_{{group.group.id}}_{{job.id}}">
+                                             <i class="fa fa-remove">删除</i>
+                                         </a>
+                                         <a href="#" class="pull-right btn btn-xs btn-primary" id="edit_task_{{group.group.id}}_{{job.id}}">
+                                             <i class="fa fa-edit">编辑</i>
+                                         </a>
                                     </li>
                                 {% endfor %}
                             </ul>
                         </div>
                     </div>
                 </li>
+            {% empty %}
+                <li><div class="alert alert-info">还没有作业信息，请先添加一个！</div></li>
             {% endfor %}
             </ul>
         <div id="result"></div>
@@ -57,25 +68,23 @@
             <div class="col-sm-12">
                 <div class="ibox">
                     <div class="ibox-content text-center">
-                    <button class="btn btn-primary" id="save_edit_flow"><i class="fa fa-save">保存</i></button>
                     <button class="btn btn-primary" id="exec_edit_flow"><i class="fa fa-arrow-circle-o-right">去执行</i></button>
-                    <button class="btn btn-primary" id="cancel_edit_flow"><i class="fa fa-close">取消</i></button>
+                    <button class="btn btn-primary" id="get_back"><i class="fa fa-reply">返回</i></button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    <script src="{% static 'om/js/jquery.min.js' %}"></script>
-    <script src="{% static 'om/js/bootstrap.min.js' %}"></script>
+{% endblock %}
+{% block other_js %}
     <script src="{% static 'om/js/plugins/peity/jquery.peity.min.js' %}"></script>
-    <script src="{% static 'om/js/content.min.js' %}"></script>
     <script src="{% static 'om/js/plugins/jquery-ui/jquery-ui.min.js' %}"></script>
     <script src="{% static 'om/js/plugins/iCheck/icheck.min.js' %}"></script>
     <script src="{% static 'om/js/demo/peity-demo.min.js' %}"></script>
     <script src="{% static 'om/layer/layer.js' %}"></script>
     <script src="{% static 'om/js/plugins/validate/jquery.validate.min.js' %}"></script>
     <script src="{% static 'om/js/plugins/validate/messages_zh.min.js' %}"></script>
-    <script src="{% static 'om/js/plugins/iCheck/icheck.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/toastr/toastr.min.js' %}"></script>
     <script type="text/javascript">
         $.ajaxSetup({
             beforeSend: function(x) {
@@ -84,73 +93,142 @@
         });
         $(document).ready(
             function(){
-                $("#toggle_group_edit_flow").on("click", function(){
-                    $(".collapse-link").trigger("click");
-                });
-                $(".sortable-list-group").sortable({
-                        tolerance:"pointer", forcePlaceholderSize:!0, opacity:.8, axis: 'y',cursor: 'move',
-                        stop: function(){
-                            $('#result').data('flow', $(this).sortable("toArray"));
-                        },
-                        create: function( event, ui ) {
-                            $('#result').data('id', {{flow.id}});
-                            $('#result').data('flow', $(this).sortable("toArray"));
-                        }
-                    }).disableSelection()
-                {% for group in groups %}
-                    $(".sortable-list-task-{{group.group.id}}").sortable({
-                        tolerance:"pointer", forcePlaceholderSize:!0, opacity:.8, axis: 'y',cursor: 'move',
-                        stop: function(){
-                            $('#result').data('group_'+{{group.group.id}} , $(this).sortable("toArray"));
-                        },
-                        create: function( event, ui ) {
-                            $('#result').data('group_'+{{group.group.id}} , $(this).sortable("toArray"));
-                        }
-                    }).disableSelection()
-                    {% for job in group.job_list %}
-                        $('#edit_task_{{group.group.id}}_{{job.id}}').on('click', function(){
-                            var edit_task_{{group.group.id}}_{{job.id}}_layer = layer.open({
-                              type: 2,
-                              area: ['700px', '530px'],
-                              fix: false, //不固定
-                              maxmin: true,
-                              content: "{%url 'om:edit_job' job.id %}"
-                            });
-                            layer.full(edit_task_{{group.group.id}}_{{job.id}}_layer);
-                        });
-                        $('#del_task_{{group.group.id}}_{{job.id}}').on('click', function(){
-                            $("#task_{{group.group.id}}_{{ job.id }}").remove()
-                        });
-                    {% endfor %}
-                    $('#add_task_{{group.group.id}}').on('click', function(){
-                        //var add_task_layer = layer.open({
-                        //  type: 2,
-                        //  area: ['700px', '530px'],
-                        //  fix: false, //不固定
-                        //  maxmin: true,
-                        //  content: "{%url 'om:edit_job' 1 %}"
-                        //});
-                        //layer.full(add_task_layer);
-                    });
-                {% endfor %}
-                $('#cancel_edit_flow').on('click', function(){
-                    var index = parent.layer.getFrameIndex(window.name);
-                    parent.layer.close(index);
-                });
-                $('#save_edit_flow').on('click', function(){
+                function save() {
                     $.ajax({
                         type: 'POST',
                         url: "{%url 'om:save_edit_flow'%}",
                         data: JSON.stringify($('#result').data()),
-                        success: function(result) {
-                            alert(result)
+                        success: function(_) {
+                            toastr.success('已保存修改！');
+                            //alert(JSON.stringify($('#result').data()))
                         }
                     });
-                    //alert(JSON.stringify($('#result').data()))
+                }
+                {% if groups %}
+                    $("#toggle_group_edit_flow").on("click", function(){
+                        $(".collapse-link").trigger("click");
+                    });
+                    $(".sortable-list-group").sortable({
+                            tolerance:"pointer", forcePlaceholderSize:!0, opacity:.8, axis: 'y',cursor: 'move',
+                            stop: function(){
+                                $('#result').data('flow', $(this).sortable("toArray"));
+                                save();
+                            },
+                            create: function( event, ui ) {
+                                $('#result').data('id', {{flow.id}});
+                                $('#result').data('flow', $(this).sortable("toArray"));
+                            }
+                        }).disableSelection()
+                    {% for group in groups %}
+                        $(".sortable-list-task-{{group.group.id}}").sortable({
+                            tolerance:"pointer", forcePlaceholderSize:!0, opacity:.8, axis: 'y',cursor: 'move',
+                            stop: function(){
+                                $('#result').data('group_'+{{group.group.id}} , $(this).sortable("toArray"));
+                                save();
+                            },
+                            create: function( event, ui ) {
+                                $('#result').data('group_'+{{group.group.id}} , $(this).sortable("toArray"));
+                            }
+                        }).disableSelection();
+                        $('#edit_task_{{group.group.id}}').on('click', function() {
+                            var edit_task_{{group.group.id}}_layer = layer.open({
+                                  type: 2,
+                                  title: '编辑组[' + '{{ group.group.name }}' + ']',
+                                  area: ['700px', '530px'],
+                                  fix: false, //不固定
+                                  maxmin: true,
+                                  content: "{%url 'om:edit_group' group.group.id %}"
+                                });
+                                layer.full(edit_task_{{group.group.id}}_layer);
+                        });
+                        $('#add_task_{{group.group.id}}').on('click', function() {
+                            var add_task_{{group.group.id}}_layer = layer.open({
+                                  type: 2,
+                                  title: '编辑作业[' + '{{ job.name }}' + ']',
+                                  area: ['700px', '530px'],
+                                  fix: false, //不固定
+                                  maxmin: true,
+                                  content: "{%url 'om:new_job_for_group' group.group.id %}"
+                                });
+                                layer.full(add_task_{{group.group.id}}_layer);
+                        });
+                        $('#del_task_{{group.group.id}}').on('click', function(){
+                            $.ajax({
+                                type: 'GET',
+                                url: "{%url 'om:del_group' group.group.id %}",
+                                data: JSON.stringify($('#result').data()),
+                                success: function(result) {
+                                    layer.confirm(
+                                            '是否确认删除？', {
+                                                btn: ['确认','取消']
+                                            },
+                                            function(){
+                                                if (result.result == 'OK') {
+                                                    $('#group_{{group.group.id}}').remove()
+                                                    layer.msg('删除成功!');
+                                                }
+                                                else {
+                                                    layer.msg('删除失败!');
+                                                }
+                                            });
+                                }
+                            });
+                        });
+                        {% for job in group.job_list %}
+                            $('#edit_task_{{group.group.id}}_{{job.id}}').on('click', function(){
+                                var edit_task_{{group.group.id}}_{{job.id}}_layer = layer.open({
+                                  type: 2,
+                                  title: '编辑作业[' + '{{ job.name }}' + ']',
+                                  area: ['700px', '530px'],
+                                  fix: false, //不固定
+                                  maxmin: true,
+                                  content: "{%url 'om:edit_job' job.id %}"
+                                });
+                                layer.full(edit_task_{{group.group.id}}_{{job.id}}_layer);
+                            });
+                            $('#del_task_{{group.group.id}}_{{job.id}}').on('click', function(){
+                                var task = $(this).parent()
+                                $.ajax({
+                                    type: 'GET',
+                                    url: "{%url 'om:del_job_in_group' group.group.id job.id %}",
+                                    data: JSON.stringify($('#result').data()),
+                                    success: function(result) {
+                                        layer.confirm(
+                                                '是否确认删除？', {
+                                                    btn: ['确认','取消']
+                                                },
+                                                function(){
+                                                    if (result.result == 'OK') {
+                                                        task.remove();
+                                                        layer.msg('删除成功!');
+                                                    }
+                                                    else {
+                                                        layer.msg('删除失败!');
+                                                    }
+                                                });
+                                    }
+                                });
+                            });
+                        {% endfor %}
+                    {% endfor %}
+                    $('#get_back').on('click', function(){
+                        var index = parent.layer.getFrameIndex(window.name);
+                        parent.layer.close(index);
+                    });
+                    $(".i-checks").iCheck({checkboxClass:"icheckbox_square-green",radioClass:"iradio_square-green",})
+                {% endif %}
+                $("#add_group_edit_flow").on("click", function(){
+                    var add_group_edit_flow_layer = layer.open({
+                        type: 2,
+                        title: '编辑作业[' + '{{ job.name }}' + ']',
+                        area: ['700px', '530px'],
+                        fix: false, //不固定
+                        maxmin: true,
+                        content: "{%url 'om:new_group' flow.id %}"
+                    });
+                    layer.full(add_group_edit_flow_layer);
                 });
-                $(".i-checks").iCheck({checkboxClass:"icheckbox_square-green",radioClass:"iradio_square-green",})
             }
         );
     </script>
-</body>
 {% endblock %}

@@ -1,33 +1,9 @@
 {% extends 'om/base.html' %}
-<!DOCTYPE html>
-<html>
-{% block head %}
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="renderer" content="webkit">
-    <meta http-equiv="Cache-Control" content="no-siteapp" />
-    <title>运维工作平台 - 编辑任务属性</title>
-    {% load staticfiles %}
-    <meta name="keywords" content="H+">
-    <meta name="description" content="H+">
-
-    <!--[if lt IE 9]>
-    <meta http-equiv="refresh" content="0;ie.html" />
-    <![endif]-->
-    {% block head_link %}
-    <link rel="shortcut icon" href="{% static 'om/favicon.ico' %}">
-    <link href="{% static 'om/css/font-awesome.min93e3.css' %}" rel="stylesheet">
-    <link href="{% static 'om/css/plugins/bootstrap-table/bootstrap-table.min.css' %}" rel="stylesheet">
-    <link href="{% static 'om/css/animate.min.css' %}" rel="stylesheet">
-    <link href="{% static 'om/css/style.min862f.css' %}" rel="stylesheet">
-    <link href="{% static 'om/css/bootstrap.min14ed.css' %}" rel="stylesheet">
-    {% endblock %}
-</head>
-{% endblock %}
-{% block body %}
 {% load staticfiles %}
+{% block body_begin %}
 <body class="gray-bg">
+{% endblock %}
+{% block body_content %}
     <div class="wrapper wrapper-content  animated fadeInRight">
         <div class="row">
             <div class="col-sm-12">
@@ -68,31 +44,30 @@
             </div>
         </div>
     </div>
-    {% block script %}
-    <script src="{% static 'om/js/jquery.min.js' %}"></script>
-    <script src="{% static 'om/js/bootstrap.min.js' %}"></script>
-    <script src="{% static 'om/js/content.min.js' %}"></script>
+{% endblock %}
+{% block other_js %}
     <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table.min.js' %}"></script>
     <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table-mobile.min.js' %}"></script>
     <script src="{% static 'om/js/plugins/bootstrap-table/locale/bootstrap-table-zh-CN.min.js' %}"></script>
     <script src="{% static 'om/layer/layer.js' %}"></script>
+    <!--suppress JSUnresolvedVariable, JSUnusedLocalSymbols -->
     <script type="text/javascript">
         function actionFormatter(value, row, index) {
             return [
                 '<a class="flow_exec_now" href="javascript:void(0)" title="立即执行"><i class="fa fa-check">立即执行</i></a>|',
                 '<a class="flow_edit" href="javascript:void(0)" title="编辑"><i class="fa fa-edit">编辑</i></a>|',
-                 '<a class="flow_clone" href="javascript:void(0)" title="克隆"><i class="fa fa-clone">克隆</i></a>|',
+                '<a class="flow_clone" href="javascript:void(0)" title="克隆"><i class="fa fa-clone">克隆</i></a>|',
                 '<a class="flow_delete" href="javascript:void(0)" title="删除"><i class="fa fa-remove">删除</i></a>',
             ].join('');
         }
         window.actionEvents = {
-            'click .flow_exec_now': function (e, value, row, index) {
+            'click .flow_exec_now': function (e, value, row, _) {
                 $('#table').bootstrapTable('remove', {field: 'server_ip', values: [row.server_ip]});
             },
-            'click .flow_edit': function (e, value, row, index) {
+            'click .flow_edit': function (e, value, row, _) {
                 var flow_edit_layer = layer.open({
                   type: 2,
-                  title: "编辑作业流：" + row.name,
+                  title: '编辑作业流[' + row.name + ']',
                   area: ['700px', '530px'],
                   fix: false, //不固定
                   maxmin: true,
@@ -109,6 +84,4 @@
             },
         };
     </script>
-    {% endblock %}
-</body>
 {% endblock %}

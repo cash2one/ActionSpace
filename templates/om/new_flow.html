@@ -1,7 +1,9 @@
 {% extends 'om/base.html' %}
-{% block body %}
 {% load staticfiles %}
+{% block body_begin %}
 <body class="gray-bg">
+{% endblock %}
+{% block body_content %}
     <div class="wrapper wrapper-content  animated fadeInRight">
         <div class="col-sm-12">
             <div class="ibox float-e-margins">
@@ -153,10 +155,9 @@
             </div>
         </div>
     </div>
-    <script src="{% static 'om/js/jquery.min.js' %}"></script>
-    <script src="{% static 'om/js/bootstrap.min.js' %}"></script>
+{% endblock %}
+{% block other_js %}
     <script src="{% static 'om/js/plugins/peity/jquery.peity.min.js' %}"></script>
-    <script src="{% static 'om/js/content.min.js' %}"></script>
     <script src="{% static 'om/js/plugins/jquery-ui/jquery-ui.min.js' %}"></script>
     <script src="{% static 'om/js/plugins/iCheck/icheck.min.js' %}"></script>
     <script src="{% static 'om/js/demo/peity-demo.min.js' %}"></script>
@@ -217,5 +218,4 @@
             layer.full(add_task_layer);
         });
     </script>
-</body>
 {% endblock %}

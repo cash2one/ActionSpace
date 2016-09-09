@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html>
-{% block head %}
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,18 +13,33 @@
     <!--[if lt IE 9]>
     <meta http-equiv="refresh" content="0;ie.html" />
     <![endif]-->
-    {% block head_link %}
+    
     <link rel="shortcut icon" href="{% static 'om/favicon.ico' %}">
     <link href="{% static 'om/css/bootstrap.min14ed.css' %}" rel="stylesheet">
     <link href="{% static 'om/css/font-awesome.min93e3.css' %}" rel="stylesheet">
     <link href="{% static 'om/css/animate.min.css' %}" rel="stylesheet">
     <link href="{% static 'om/css/style.min862f.css' %}" rel="stylesheet">
-    <link href="{% static 'om/css/plugins/iCheck/custom.css' %}" rel="stylesheet">
-    {% endblock %}
+    <link href="{% static 'om/css/plugins/codemirror/theme/ambiance.css' %}" rel="stylesheet">
+    <link href="{% static 'om/css/plugins/codemirror/codemirror.css' %}" rel="stylesheet">
+    <link href="{% static 'om/css/plugins/awesome-bootstrap-checkbox/awesome-bootstrap-checkbox.css' %}" rel="stylesheet">
+    <link href="{% static 'om/css/plugins/chosen/chosen.css' %}" rel="stylesheet">
+    <link href="{% static 'om/css/plugins/bootstrap-table/bootstrap-table.min.css' %}" rel="stylesheet">
+    <link href="{% static 'om/css/plugins/toastr/toastr.min.css' %}" rel="stylesheet">
 </head>
+
+{% block body_begin %}<body class="fixed-sidebar full-height-layout gray-bg" style="overflow:hidden">{% endblock %}
+
+{% block body_content %}{% endblock %}
+
+{% block script %}
+    <script src="{% static 'om/js/jquery.min.js' %}"></script>
+    <script src="{% static 'om/js/bootstrap.min.js' %}"></script>
+    <script src="{% static 'om/js/content.min.js' %}"></script>
 {% endblock %}
-{% block body %}
-    {% block script %}
-    {% endblock %}
-{% endblock %}
+
+{% block other_js %}{% endblock %}
+
+{% block body_end %}
+</body>
 </html>
+{% endblock %}

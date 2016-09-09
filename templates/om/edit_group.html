@@ -1,0 +1,104 @@
+{% extends 'om/base.html' %}
+{% load form_extra_tag %}
+{% load staticfiles %}
+{% block body_begin %}
+<body class="gray-bg">
+{% endblock %}
+{% block body_content %}
+    {% if save.saved and save.result %}
+        <script src="{% static 'om/js/jquery.min.js' %}"></script>
+        <script src="{% static 'om/js/bootstrap.min.js' %}"></script>
+        <script src="{% static 'om/layer/layer.js' %}"></script>
+        <script type="text/javascript">
+            var index = parent.layer.getFrameIndex(window.name);
+            {% if save.result %}
+                layer.alert('保存成功！',{icon: 6}, function(){
+                    window.parent.location.reload();
+                    parent.layer.close(index);
+                });
+            {% endif %}
+        </script>
+    {% else %}
+        {% if save.saved and not save.result %}
+            <script src="{% static 'om/js/jquery.min.js' %}"></script>
+            <script src="{% static 'om/js/bootstrap.min.js' %}"></script>
+            <script src="{% static 'om/layer/layer.js' %}"></script>
+            <script type="text/javascript">
+                layer.alert('保存失败！[' + '{{ save.error_msg }}' +']',{icon: 5});
+            </script>
+        {% endif %}
+        <div class="wrapper wrapper-content  animated fadeInRight">
+            <div class="row">
+                <div class="col-sm-12">
+                    <div class="ibox ">
+                        <div class="ibox-title">
+                            <h5>编辑任务属性</h5>
+                        </div>
+                        <div class="ibox-content">
+                            <form class="form-horizontal" method='post'>
+                                {% csrf_token %}
+                                {% for field in form %}
+                                    <div class="form-group">
+                                        <label class="col-sm-2 control-label">{{ field.label_tag }}</label>
+                                        <div class="col-sm-8" style='display:block;'>
+                                            {% if field.name in check_field_list %}
+                                                <div class="switch">
+                                                    <div class="onoffswitch">
+                                                        {{ field | set_attr:'class=onoffswitch-checkbox' }}
+                                                        <label class="onoffswitch-label" for="{{ field.id_for_label }}">
+                                                            <span class="onoffswitch-inner"></span>
+                                                            <span class="onoffswitch-switch"></span>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            {% elif field.name in disable_field_list %}
+                                                {{ field | set_attr:'readonly=readonly' }}
+                                            {% else %}
+                                                {{ field | set_attr:'class=form-control' }}
+                                            {% endif %}
+                                            {{ field.errors }}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                                <div class="form-group">
+                                    <div class="col-sm-10 col-sm-offset-5">
+                                        <button class="btn btn-primary" type="submit" value="save">保存</button>
+                                        <button class="btn btn-white" id="cancel_form" type="button" value="cancel">取消</button>
+                                    </div>
+                                </div>
+                        </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% block other_js %}
+            <script src="{% static 'om/js/plugins/peity/jquery.peity.min.js' %}"></script>
+            <script src="{% static 'om/js/plugins/codemirror/codemirror.js' %}"></script>
+            <script src="{% static 'om/js/plugins/codemirror/mode/shell/shell.js' %}"></script>
+            <script src="{% static 'om/js/plugins/codemirror/mode/python/python.js' %}"></script>
+            <script src="{% static 'om/js/plugins/codemirror/mode/perl/perl.js' %}"></script>
+            <script src="{% static 'om/js/plugins/prettyfile/bootstrap-prettyfile.js' %}"></script>
+            <script>
+                $(document).ready(function() {
+                    $('#cancel_form').click(function (e) {
+                        parent.layer.close(parent.layer.getFrameIndex(window.name));
+                    });
+                    function set_job_list() {
+                        var all = [];
+                        $('#id_job_list').find('option:selected').each(function() {
+                            console.log($(this)[0].value)
+                            all.push($(this)[0].value);
+                        });
+                        $('#id_job_list_comma_sep').val(all.join(','));
+                    }
+                    $('#id_job_list').change(function(){
+                        set_job_list()
+                    });
+                    set_job_list();
+                });
+            </script>
+        {% endblock %}
+    {% endif %}
+</body>
+{% endblock %}

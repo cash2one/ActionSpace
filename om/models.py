@@ -1,6 +1,7 @@
 # coding=utf-8
 from __future__ import unicode_literals
 from django.db import models
+from django.core.validators import validate_comma_separated_integer_list, validate_ipv46_address
 
 
 # Create your models here.
@@ -32,7 +33,7 @@ class Entity(models.Model):
 class Computer(models.Model):
     entity = models.ManyToManyField(Entity, verbose_name='所属实体')
     host = models.CharField(max_length=100, verbose_name='主机名')
-    ip = models.CharField(max_length=100, verbose_name='IP地址')
+    ip = models.CharField(max_length=100, verbose_name='IP地址', validators=[validate_ipv46_address])
     installed_agent = models.BooleanField(default=False, verbose_name='是否已安装AGENT')
     agent_name = models.CharField(max_length=100, verbose_name='AGENT名称')
     desc = models.TextField(verbose_name='备注')
@@ -47,12 +48,12 @@ class Computer(models.Model):
 
 class Flow(models.Model):
     name = models.CharField(max_length=100, verbose_name='作业流名称')
-    founder = models.CharField(max_length=50, verbose_name='创建人')
-    last_modified_by = models.CharField(max_length=50, verbose_name='最后修改人')
-    created_time = models.DateTimeField(verbose_name="创建时间")
-    last_modified_time = models.DateTimeField(verbose_name="最后修改时间")
+    founder = models.CharField(max_length=50, verbose_name='创建人', default='NA')
+    last_modified_by = models.CharField(max_length=50, verbose_name='最后修改人', default='NA')
+    created_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    last_modified_time = models.DateTimeField(verbose_name="最后修改时间", auto_now=True)
     # job_group顺序内容，id用逗号分隔
-    job_group_list = models.CharField(max_length=500, default='', verbose_name="作业组序列")
+    job_group_list = models.CharField(max_length=500, default='', validators=[validate_comma_separated_integer_list], verbose_name='作业组列表')
     pause_when_finish = models.BooleanField(default=False, verbose_name='执行完成后是否暂停')
     pause_when_error = models.BooleanField(default=True, verbose_name='执行失败后是否暂停')
     desc = models.TextField(verbose_name='备注')
@@ -67,10 +68,14 @@ class Flow(models.Model):
 
 class JobGroup(models.Model):
     name = models.CharField(max_length=100, verbose_name='作业组名称')
+    founder = models.CharField(max_length=50, verbose_name='创建人', default='NA')
+    last_modified_by = models.CharField(max_length=50, verbose_name='最后修改人', default='NA')
+    created_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    last_modified_time = models.DateTimeField(verbose_name="最后修改时间", auto_now=True)
     pause_when_finish = models.BooleanField(default=False, verbose_name='执行完成后是否暂停')
     pause_when_error = models.BooleanField(default=True, verbose_name='执行失败后是否暂停')
     # job_group顺序内容，id用逗号分隔
-    job_list = models.CharField(max_length=500, default='', verbose_name="作业组序列")
+    job_list = models.CharField(max_length=500, default='', verbose_name='作业列表')
     desc = models.TextField(verbose_name='备注')
 
     def __unicode__(self):
@@ -95,19 +100,24 @@ class ExecUser(models.Model):
 
 class Job(models.Model):
     name = models.CharField(max_length=100, verbose_name='作业名称')
+    founder = models.CharField(max_length=50, verbose_name='创建人', default='NA')
+    last_modified_by = models.CharField(max_length=50, verbose_name='最后修改人', default='NA')
+    created_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    last_modified_time = models.DateTimeField(verbose_name="最后修改时间", auto_now=True)
     TYPE_CHOOSE = (('SCRIPT', '脚本执行'), ('FILE', '文件传输'))
     job_type = models.CharField(max_length=50, choices=TYPE_CHOOSE, default='SCRIPT', verbose_name='作业类型')
     SCRIPT_CHOOSE = (('PY', 'python脚本'), ('SHELL', 'shell脚本'), ('BAT', '批处理脚本'))
     script_type = models.CharField(max_length=50, choices=SCRIPT_CHOOSE, default='PY', blank=True, verbose_name='脚本类型')
-    exec_user = models.ForeignKey(ExecUser, verbose_name='执行用户')
-    pause_when_finish = models.BooleanField(default=False, verbose_name='执行完成后是否暂停')
+    exec_user = models.ForeignKey(ExecUser, verbose_name='执行用户', blank=False)
+    pause_when_finish = models.BooleanField(verbose_name='执行完成后是否暂停', default=False)
     pause_finish_tip = models.CharField(max_length=100, verbose_name='执行完成暂停提示', default='执行完成，请确认后继续。')
-    pause_when_error = models.BooleanField(default=True, verbose_name='执行失败后是否暂停')
+    pause_when_error = models.BooleanField(verbose_name='执行失败后是否暂停', default=True)
     pause_error_tip = models.CharField(max_length=100, verbose_name='执行错误暂停提示', default='执行出错，请确认。')
-    script_content = models.TextField(verbose_name='脚本内容')
-    file_from_local = models.BooleanField(default=True, verbose_name='是否使用本地上传的文件')
-    file_target_path = models.CharField(max_length=100, verbose_name='上传目标路径')
-    desc = models.TextField(verbose_name='备注')
+    script_content = models.TextField(verbose_name='脚本内容', blank=True)
+    file_from_local = models.BooleanField(verbose_name='是否使用本地上传的文件', default=False)
+    file_target_path = models.CharField(max_length=100, verbose_name='上传目标路径', default='NA')
+    server_list = models.CharField(max_length=500, blank=True, default='', verbose_name="服务器列表")
+    desc = models.TextField(verbose_name='备注', default='NA')
 
     def __unicode__(self):
         return self.name

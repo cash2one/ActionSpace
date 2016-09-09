@@ -1,37 +1,9 @@
 {% extends 'om/base.html' %}
-<!DOCTYPE html>
-<html>
-{% block head %}
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="renderer" content="webkit">
-    <meta http-equiv="Cache-Control" content="no-siteapp" />
-    <title>运维工作平台 - 编辑任务属性</title>
-    {% load staticfiles %}
-    <meta name="keywords" content="H+">
-    <meta name="description" content="H+">
-
-    <!--[if lt IE 9]>
-    <meta http-equiv="refresh" content="0;ie.html" />
-    <![endif]-->
-    {% block head_link %}
-    <link rel="shortcut icon" href="{% static 'om/favicon.ico' %}">
-    <link href="{% static 'om/css/bootstrap.min14ed.css' %}" rel="stylesheet">
-    <link href="{% static 'om/css/font-awesome.min93e3.css' %}" rel="stylesheet">
-    <link href="{% static 'om/css/animate.min.css' %}" rel="stylesheet">
-    <link href="{% static 'om/css/plugins/codemirror/theme/ambiance.css' %}" rel="stylesheet">
-    <link href="{% static 'om/css/plugins/codemirror/codemirror.css' %}" rel="stylesheet">
-    <link href="{% static 'om/css/style.min862f.css' %}" rel="stylesheet">
-    <link href="{% static 'om/css/plugins/awesome-bootstrap-checkbox/awesome-bootstrap-checkbox.css' %}" rel="stylesheet">
-    <link href="{% static 'om/css/plugins/chosen/chosen.css' %}" rel="stylesheet">
-    <link href="{% static 'om/css/plugins/bootstrap-table/bootstrap-table.min.css' %}" rel="stylesheet">
-    {% endblock %}
-</head>
-{% endblock %}
-{% block body %}
 {% load staticfiles %}
+{% block body_begin %}
 <body class="gray-bg">
+{% endblock %}
+{% block body_content %}
     <div class="wrapper wrapper-content  animated fadeInRight">
         <div class="row">
             <div class="col-sm-12">
@@ -172,16 +144,14 @@ if __name__ == '__main__':
             </div>
         </div>
     </div>
-    {% block script %}
-    <script src="{% static 'om/js/jquery.min.js' %}"></script>
-    <script src="{% static 'om/js/bootstrap.min.js' %}"></script>
+{% endblock %}
+{% block other_js %}
     <script src="{% static 'om/js/plugins/peity/jquery.peity.min.js' %}"></script>
     <script src="{% static 'om/js/plugins/chosen/chosen.jquery.js' %}"></script>
     <script src="{% static 'om/js/plugins/codemirror/codemirror.js' %}"></script>
     <script src="{% static 'om/js/plugins/codemirror/mode/javascript/javascript.js' %}"></script>
     <script src="{% static 'om/js/plugins/codemirror/mode/python/python.js' %}"></script>
     <script src="{% static 'om/js/plugins/codemirror/mode/perl/perl.js' %}"></script>
-    <script src="{% static 'om/js/content.min.js' %}"></script>
     <script src="{% static 'om/layer/layer.js' %}"></script>
     <script src="{% static 'om/js/plugins/prettyfile/bootstrap-prettyfile.js' %}"></script>
     <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table.min.js' %}"></script>
@@ -270,6 +240,4 @@ if __name__ == '__main__':
             }
         });
     </script>
-    {% endblock %}
-</body>
 {% endblock %}
