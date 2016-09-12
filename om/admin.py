@@ -1,6 +1,6 @@
 # coding=utf-8
 from django.contrib import admin
-from om.models import System, Entity, Computer, Flow, JobGroup, ExecUser, Job, LogType, Log
+from om.models import System, Entity, Computer, Flow, JobGroup, ExecUser, Job, LogType, Log, Task
 from django.db import models
 from django.contrib.flatpages.admin import FlatPageAdmin
 from django.contrib.flatpages.models import FlatPage
@@ -54,7 +54,7 @@ class ComputerAdmin(admin.ModelAdmin):
 class FlowAdmin(admin.ModelAdmin):
     readonly_fields = ('created_time', 'last_modified_time',)
     list_display = (
-        'name', 'founder', 'last_modified_by', 'pause_when_finish',
+        'name', 'founder', 'is_quick_flow', 'last_modified_by', 'pause_when_finish',
         'pause_when_error', 'job_group_list', 'desc'
         )
 
@@ -75,7 +75,7 @@ class ExecUserAdmin(admin.ModelAdmin):
 @admin.register(Job)
 class JobAdmin(admin.ModelAdmin):
     list_display_links = ('name',)
-    readonly_fields = ('created_time', 'last_modified_time',)
+    readonly_fields = ('created_time', 'last_modified_time')
     list_display = (
         'id', 'name', 'founder', 'last_modified_by', 'job_type', 'script_type',
         'exec_user', 'pause_when_finish', 'pause_when_error',
@@ -88,8 +88,8 @@ class JobAdmin(admin.ModelAdmin):
         }),
         ('高级选项', {
             'classes': ('collapse',),
-            'fields': ('pause_when_finish', 'pause_when_error',
-                       'script_content', 'file_from_local', 'file_target_path', 'server_list', 'desc'),
+            'fields': ('pause_when_finish', 'pause_when_error', 'script_content',
+                       'script_param', 'file_from_local', 'file_target_path', 'server_list', 'desc'),
         }),
     )
 
@@ -105,3 +105,10 @@ class LogAdmin(admin.ModelAdmin):
     date_hierarchy = 'log_time'
     actions_on_top = False
     actions_on_bottom = True
+
+
+@admin.register(Task)
+class TaskAdmin(admin.ModelAdmin):
+    readonly_fields = ('start_time', 'end_time')
+    list_display = ('id', 'exec_user', 'exec_flow', 'start_time', 'end_time', 'task_status')
+    list_display_links = ('id', 'exec_user')

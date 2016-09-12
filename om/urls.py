@@ -23,6 +23,6 @@ urlpatterns = [
     url(r'^new_job/(?P<job_group_id>[0-9]+)/$', views.new_job, name='new_job_for_group'),
     url(r'^new_group/(?P<flow_id>[0-9]+)/$', views.new_group, name='new_group'),
     url(r'^del_job_in_group/(?P<group_id>[0-9]+)/(?P<job_id>[0-9]+)/$', views.del_job_in_group, name='del_job_in_group'),
-    url(r'^del_group/(?P<group_id>[0-9]+)/$', views.del_group, name='del_group'),
+    url(r'^del_group_inf_flow/(?P<flow_id>[0-9]+)/(?P<group_id>[0-9]+)/$', views.del_group_in_flow, name='del_group_in_flow'),
     url(r'^edit_group/(?P<group_id>[0-9]+)/$', views.edit_group, name='edit_group'),
 ]

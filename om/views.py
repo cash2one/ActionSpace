@@ -1,13 +1,14 @@
 # coding=utf-8
-from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, render
-from models import Flow, JobGroup, Job
-from form import JobForm, JobGroupForm, OrderedMultiSelect
 import random
 import socket
 import struct
 import simplejson
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, render
+from form import JobForm, JobGroupForm
+from models import Flow, JobGroup, Job, Task
+from datetime import datetime
 
 
 # Create your views here.
@@ -178,18 +179,32 @@ def edit_job(request, job_id):
 
 @login_required
 def del_job_in_group(request, group_id, job_id):
-    group = get_object_or_404(JobGroup, pk=group_id)
-    joblist = group.job_list.split(',')
-    joblist.remove(job_id)
-    group.job_list = ','.join(joblist)
-    group.save()
-    return JsonResponse({'result': 'OK'})
+    json = {'result': 'OK'}
+    try:
+        group = JobGroup.objects.get(pk=group_id)
+        job_list = group.job_list.split(',')
+        if job_id in job_list:
+            job_list.remove(job_id)
+            group.job_list = ','.join(job_list)
+            group.save()
+    except JobGroup.DoesNotExist as _:
+        json['result'] = '作业组不存在'
+    return JsonResponse(json)
 
 
 @login_required
-def del_group(request, group_id):
-    get_object_or_404(JobGroup, pk=group_id).delete()
-    return JsonResponse({'result': 'OK'})
+def del_group_in_flow(request, flow_id, group_id):
+    json = {'result': 'OK'}
+    try:
+        flow = Flow.objects.get(pk=flow_id)
+        group_list = flow.job_group_list.split(',')
+        if group_id in group_list:
+            group_list.remove(group_id)
+            flow.job_group_list = ','.join(group_list)
+            flow.save()
+    except Flow.DoesNotExist as _:
+        json['result'] = '作业流不存在'
+    return JsonResponse(json)
 
 
 @login_required
@@ -324,37 +339,16 @@ def get_server_list(_):
 
 @login_required
 def get_action_history_list(_):
-    return JsonResponse([
-        {
-            'task_name': '检查REDIS状态',
-            'run_user': '韦权祖',
-            'task_status': '执行成功',
-            'start_time': '2015-12-02 18:16:14',
-            'end_time': '2015-12-02 18:12:02',
-            'cost_time': '500',
-        },
-        {
-            'task_name': '重启REDIS',
-            'run_user': '韦权祖',
-            'task_status': '执行成功',
-            'start_time': '2015-12-02 18:16:14',
-            'end_time': '2015-12-02 18:12:02',
-            'cost_time': '500',
-        },
-        {
-            'task_name': '检查DSP-CCS-ACTIVE状态',
-            'run_user': '韦权祖',
-            'task_status': '执行失败',
-            'start_time': '2015-12-02 18:16:14',
-            'end_time': '2015-12-02 18:12:02',
-            'cost_time': '500',
-        },
-        {
-            'task_name': '重启DSP-CCS-ACTIVE',
-            'run_user': '韦权祖',
-            'task_status': '执行成功',
-            'start_time': '2015-12-02 18:16:14',
-            'end_time': '2015-12-02 18:12:02',
-            'cost_time': '500',
-        },
-    ], safe=False)
+    result = []
+    fmt = '%Y年%m月%d日 %H:%M:%S'
+    for task in Task.objects.all():
+        result.append({
+            'task_name': task.exec_flow.name,
+            'run_user': task.exec_user,
+            'task_status': task.get_task_status_display(),
+            'start_time': datetime.strftime(task.start_time, fmt),
+            'end_time': datetime.strftime(task.end_time, fmt),
+            'cost_time': (task.end_time-task.start_time).total_seconds(),
+        })
+
+    return JsonResponse(result, safe=False)
