@@ -54,17 +54,14 @@ class ComputerAdmin(admin.ModelAdmin):
 class FlowAdmin(admin.ModelAdmin):
     readonly_fields = ('created_time', 'last_modified_time',)
     list_display = (
-        'name', 'founder', 'is_quick_flow', 'last_modified_by', 'pause_when_finish',
-        'pause_when_error', 'job_group_list', 'desc'
+        'name', 'founder', 'is_quick_flow', 'last_modified_by', 'job_group_list', 'desc'
         )
 
 
 @admin.register(JobGroup)
 class JobGroupAdmin(admin.ModelAdmin):
     readonly_fields = ('created_time', 'last_modified_time',)
-    list_display = (
-        'id', 'name', 'founder', 'last_modified_by', 'pause_when_finish',
-        'pause_when_error', 'job_list', 'desc')
+    list_display = ('id', 'name', 'founder', 'last_modified_by', 'job_list', 'desc')
 
 
 @admin.register(ExecUser)
@@ -78,7 +75,7 @@ class JobAdmin(admin.ModelAdmin):
     readonly_fields = ('created_time', 'last_modified_time')
     list_display = (
         'id', 'name', 'founder', 'last_modified_by', 'job_type', 'script_type',
-        'exec_user', 'pause_when_finish', 'pause_when_error',
+        'exec_user', 'pause_when_finish', 'pause_finish_tip',
         'file_from_local', 'file_target_path', 'server_list', 'desc'
     )
 
@@ -88,7 +85,7 @@ class JobAdmin(admin.ModelAdmin):
         }),
         ('高级选项', {
             'classes': ('collapse',),
-            'fields': ('pause_when_finish', 'pause_when_error', 'script_content',
+            'fields': ('pause_when_finish', 'pause_finish_tip', 'script_content',
                        'script_param', 'file_from_local', 'file_target_path', 'server_list', 'desc'),
         }),
     )
@@ -109,6 +106,7 @@ class LogAdmin(admin.ModelAdmin):
 
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
-    readonly_fields = ('start_time', 'end_time')
-    list_display = ('id', 'exec_user', 'exec_flow', 'start_time', 'end_time', 'task_status')
+    exclude = ('detail',)
+    readonly_fields = ('id', 'exec_user', 'exec_flow', 'start_time', 'end_time', 'status')
+    list_display = ('id', 'exec_user', 'exec_flow', 'start_time', 'end_time', 'status')
     list_display_links = ('id', 'exec_user')

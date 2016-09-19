@@ -93,6 +93,23 @@
         });
         $(document).ready(
             function(){
+                $("#exec_edit_flow").on("click", function(){
+                    $.get('/om/go_exec/'+'{{ flow.id }}'+'/-1', {'csrfmiddlewaretoken': '{{ csrf_token }}'},function(result) {
+                        if (result.result == 'Y') {
+                            var flow_edit_layer = layer.open({
+                              type: 2,
+                              title: '执行作业流[' + '{{ flow.name }}' + ']',
+                              area: ['700px', '530px'],
+                              fix: false, //不固定
+                              maxmin: true,
+                              content:"/om/action_detail/"+result.task+"/"
+                            });
+                            layer.full(flow_edit_layer);
+                        } else {
+                            layer.msg(result.desc,{time: 2000});
+                        }
+                    });
+                });
                 function save() {
                     $.ajax({
                         type: 'POST',

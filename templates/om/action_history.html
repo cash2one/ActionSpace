@@ -17,6 +17,7 @@
                            data-show-footer="false" data-url="{% url 'om:get_action_history_list' %}">
                             <thead>
                                 <tr>
+                                    <th data-field="task_id">ID</th>
                                     <th data-field="task_name">任务名称</th>
                                     <th data-field="run_user">启动人</th>
                                     <th data-field="task_status">任务状态</th>
@@ -38,6 +39,7 @@
     <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table-mobile.min.js' %}"></script>
     <script src="{% static 'om/js/plugins/bootstrap-table/locale/bootstrap-table-zh-CN.min.js' %}"></script>
     <script src="{% static 'om/layer/layer.js' %}"></script>
+    <!--suppress JSUnusedLocalSymbols, JSUnresolvedVariable -->
     <script type="text/javascript">
         function actionFormatter(value, row, index) {
             return [
@@ -49,23 +51,35 @@
                 '</a>'
             ].join('');
         }
-        function show_detail(){
+        function show_detail(task_id){
             var detail_layer = layer.open({
                   type: 2,
                   area: ['700px', '530px'],
                   fix: false, //不固定
                   maxmin: true,
-                  content: "{%url 'om:action_detail'%}"
+                  content: "/om/action_detail/" + task_id
                 });
                 layer.full(detail_layer);
         }
         window.actionEvents = {
             'click .redo': function (e, value, row, index) {
-                alert('即将执行: ' + row['task_name']);
-                console.log(value, row, index);
+                $.get('/om/redo_exec/'+row.task_id, {'csrfmiddlewaretoken': '{{ csrf_token }}'},function(result) {
+                    if (result.result == 'Y') {
+                        var detail_layer = layer.open({
+                            type: 2,
+                            area: ['700px', '530px'],
+                            fix: false, //不固定
+                            maxmin: true,
+                            content: "/om/action_detail/" + result.task
+                        });
+                        layer.full(detail_layer);
+                    } else {
+                        layer.msg(result.desc,{time: 2000});
+                    }
+                });
             },
             'click .detail': function (e, value, row, index) {
-                show_detail();
+                show_detail(row.task_id);
             }
         };
     </script>

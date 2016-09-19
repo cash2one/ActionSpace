@@ -1,0 +1,80 @@
+<div id="vertical-timeline" class="vertical-container light-timeline">
+    {% for group_id, group in detail.group.items %}
+        <div class="vertical-timeline-block">
+            <div class="vertical-timeline-icon yellow-bg"><i class="fa fa-angle-double-down"></i></div>
+            <div class="vertical-timeline-content"><h2>{{ group.name }}</h2></div>
+        </div>
+        {% for job_id, job in group.job.items %}
+            <div class="vertical-timeline-block" id="group_{{ job_id }}">
+                {% if job.status == 'finish' %}
+                    <div class="vertical-timeline-icon navy-bg"><i class="fa fa-check"></i></div>
+                {% elif job.status == 'running' %}
+                    <div class="vertical-timeline-icon blue-bg"><i class="fa fa-spinner"></i></div>
+                {% else %}
+                    <div class="vertical-timeline-icon lazur-bg"><i class="fa fa-coffee"></i></div>
+                {% endif %}
+                <div class="vertical-timeline-content">
+                    <p>{{ job.name }}
+                        <button style="display: none" id="go_on-{{ group_id }}_{{ job_id }}">
+                            <i class="fa fa-toggle-right">继续</i>
+                        </button>
+                    </p>
+                    <button class="btn btn-sm btn-primary" id="show_out-{{ group_id }}_{{ job_id }}">查看结果</button>
+                    <div>
+                        <span class="vertical-date">
+                            <label>状态:</label>
+                            {% if job.status == 'finish' %}
+                            <span class="label label-primary">已完成</span>
+                            {% elif job.status == 'running' %}
+                            <span class="label label-primary">运行中</span>
+                            {% else %}
+                            <span class="label label-default">未运行</span>
+                            {% endif %}
+                            <label>开始时间:</label><span class="label label-primary">{{ job.begin_time }}</span>
+                            <label>完成时间:</label><span class="label label-primary">{{ job.end_time }}</span>
+                        </span>
+                    </div>
+                </div>
+            <script>
+                $('#show_out-{{ group_id }}_{{ job_id }}').click(function () {
+                    layer.open({
+                        type: 1,
+                        title: '作业执行结果',
+                        area: ['600px', '400px'],
+                        shadeClose: true,
+                        content: '{{ job.exec_output }}'
+                    });
+                });
+                {% if job.wait %}
+                    $('#go_on-{{ group_id }}_{{ job_id }}').click(function () {
+                        $.get("{%url 'om:confirm_task' task.id flow.id group_id job_id %}", {'csrfmiddlewaretoken': '{{ csrf_token }}'}, function () {
+                            layer.msg('将继续往下执行！',{time: 2000, icon: 1});
+                            $('#go_on-{{ group_id }}_{{ job_id }}').hide();
+                        });
+                    });
+                    function job_confirm(){
+                        layer.confirm('{{ job.wait_tip }}', {
+                            title: '作业[{{ job.name }}]已完成',
+                            btn: ['继续','先等等']
+                        }, function(){
+                            $.get("{%url 'om:confirm_task' task.id flow.id group_id job_id %}", {'csrfmiddlewaretoken': '{{ csrf_token }}'}, function () {
+                                layer.msg('将继续往下执行！',{time: 2000, icon: 1});
+                                $('#go_on-{{ group_id }}_{{ job_id }}').hide();
+                            });
+                        }, function(){
+                            $('#go_on-{{ group_id }}_{{ job_id }}').show();
+                        });
+                    }
+                    job_confirm();
+                {% endif %}
+            </script>
+        {% endfor %}
+    {% endfor %}
+    {% if status == 'finish' %}
+        <div class="vertical-timeline-block">
+            <div class="vertical-timeline-icon blue-bg">
+                <i class="fa fa-power-off"></i>
+            </div>
+        </div>
+    {% endif %}
+</div>
