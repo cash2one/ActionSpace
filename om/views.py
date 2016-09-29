@@ -7,8 +7,9 @@ from om.util import *
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
-from form import JobForm, JobGroupForm
-from models import Flow, JobGroup, Job, Task
+from django.utils import timezone
+from om.form import JobForm, JobGroupForm, FlowForm
+from om.models import Flow, JobGroup, Job, Task
 from datetime import datetime
 
 
@@ -20,12 +21,24 @@ def index(request):
 
 @login_required
 def default_content(request):
-    return render(request, 'om/home.html')
+    utc_date = timezone.datetime.utcnow().replace(tzinfo=timezone.utc)
+    this_month_task_list = Task.objects.filter(
+        start_time__year=utc_date.year,
+        start_time__month=utc_date.month
+    )
+    context = {
+        'today_task_count': Task.objects.filter(start_time__gte=utc_date.date()).count(),
+        'month_task_running': this_month_task_list.filter(status='running').count(),
+        'month_task_finish': this_month_task_list.filter(status='finish').count(),
+        'month_task_run_fail': this_month_task_list.filter(status='run_fail').count(),
+        'month_task_no_run': this_month_task_list.filter(status='no_run').count(),
+    }
+    return render(request, 'om/home.html', context)
 
 
 @login_required
 def index_content(request):
-    return render(request, 'om/home.html')
+    return default_content(request)
 
 
 @login_required
@@ -47,54 +60,69 @@ def exec_flow(request):
     return render(request, 'om/exec_flow.html', context)
 
 
-def flow_has_group(flow):
-    group_list = str2arr(flow.job_group_list)
-    return len(group_list) > 0
-
-
-@login_required
-def go_exec(request, flow_id, job_id):
+def send_task_to_exec(user_name, task):
     result = {'result': 'Y', 'task': '-1', 'desc': ''}
-    if flow_id == -1 and job_id != -1:
-        flow = Flow.objects.create(is_quick_flow=True)
-        flow.save()
-        job = get_object_or_404(Job, pk=job_id)
-        group = JobGroup.objects.create(name='临时组', job_list=job.id)
-        group.save()
-    else:
-        flow = get_object_or_404(Flow, pk=flow_id)
-    if flow_has_group(flow):
-        task = Task.objects.create(exec_user=request.user.username, exec_flow=flow)
-        task.save()
-        task.set_detail(Task.TaskLog(task).result)
-        task.save()
-        send_task_to_exec(task.id)
-        result['task'] = task.id
-
-    else:
-        result['result'] = 'N'
-        result['task'] = '-1'
-        result['desc'] = '作业流没有执行内容'
-    return JsonResponse(result)
-
-
-@login_required
-def redo_exec(request, task_id):
-    result = {'result': 'Y', 'task': '-1', 'desc': ''}
-    task = Task.objects.get(pk=task_id)
-    if flow_has_group(task.exec_flow):
-        task.status = 'no_run'
+    if str2arr(task.exec_flow.job_group_list):
         task.pk = None
         task.save()
         task.set_detail(Task.TaskLog(task).result)
         task.save()
-        send_task_to_exec(task.id)
+        res = exec_task.delay(task.id, user_name)
+        task.async_result = res.id
+        task.save()
         result['task'] = task.id
     else:
         result['result'] = 'N'
         result['task'] = '-1'
         result['desc'] = '作业流没有执行内容'
-    return JsonResponse(result)
+    return result
+
+
+def new_task(username, flow_id, job_id):
+    if flow_id == -1 and job_id != -1:  # flow不存在， job存在说明是快速执行任务来的
+        job = get_object_or_404(Job, pk=job_id)
+        group = JobGroup.objects.create(name='临时组', job_list=str(job.id))
+        group.save()
+        flow = Flow.objects.create(is_quick_flow=True, job_group_list=str(group.id))
+        flow.save()
+    else:
+        flow = get_object_or_404(Flow, pk=flow_id)
+    task = Task.objects.create(exec_user=username, exec_flow=flow)
+    task.save()
+    return task
+
+
+def clone_task(tid):
+    task = Task.objects.get(pk=tid)
+    task.pk = None
+    task.save()
+    task.set_detail(Task.TaskLog(task).result)
+    task.save()
+    return task
+
+
+@login_required
+def go_exec(request, flow_id, job_id):
+    return JsonResponse(send_task_to_exec(
+        request.user.username, new_task(request.user.username, flow_id, job_id)))
+
+
+@login_required
+def redo_exec(request, task_id):
+    return JsonResponse(send_task_to_exec(request.user.username, clone_task(task_id)))
+
+
+@login_required
+def task_status(request, task_id):
+    task = get_object_or_404(Task, pk=task_id)
+    context = {
+        'can_get_result': False,
+        'result': ''
+    }
+    if task.async_result != '':
+        context['can_get_result'] = True
+        context['result'] = get_task_result(task.async_result)
+    return render(request, 'om/task_status.html', context)
 
 
 @login_required
@@ -106,8 +134,8 @@ def get_flow_list(_):
              'name': x.name,
              'founder': x.founder,
              'last_modified_by': x.last_modified_by,
-             'created_time': datetime.strftime(x.created_time, fmt),
-             'last_modified_time': datetime.strftime(x.last_modified_time, fmt),
+             'created_time': datetime.strftime(timezone.localtime(x.created_time), fmt),
+             'last_modified_time': datetime.strftime(timezone.localtime(x.last_modified_time), fmt),
              'desc': x.desc
          } for x in Flow.objects.all() if not x.is_quick_flow
          ],
@@ -130,7 +158,28 @@ def flow_delete(_, flow_id):
 
 @login_required
 def new_flow(request):
-    return render(request, 'om/new_flow.html')
+    save = {
+        'saved': False,
+        'result': False,
+        'error_msg': 'NA'
+    }
+    if request.method == 'POST':
+        save['saved'] = True
+        flow_form = FlowForm(data=request.POST)
+        flow_form.save()
+        flow_form.instance.founder = request.user.username
+        flow_form.instance.last_modified_by = request.user.username
+        flow_form.save()
+        save['result'] = True
+    else:
+        flow_form = FlowForm()
+    context = {
+        'form': flow_form,
+        'check_field_list': ['pause_when_finish', 'pause_when_error'],
+        'disable_field_list': ['job_list_comma_sep'],
+        'save': save,
+    }
+    return render(request, 'om/new_flow.html', context)
 
 
 @login_required
@@ -300,6 +349,7 @@ def edit_flow(request, flow_id):
         [context['groups'].append(
             {'group': g, 'job_list': [get_object_or_404(Job, pk=x) for x in str2arr(g.job_list)]}
         ) for g in groups]
+        # Job.objects.filter(id__in=str2arr(g.job_list))
     return render(request, 'om/edit_flow.html', context)
 
 
@@ -344,27 +394,31 @@ def action_detail(request, task_id):
 @login_required
 def detail_content(request, task_id, first):
     if first == '0':
-        wait(JOB_CHANGED, ALL)
-    task = get_object_or_404(Task, pk=task_id)
+        TaskChange(task_id).wait_change()
+    t = get_object_or_404(Task, pk=task_id)
+    cost_time = 0
+    if t.status == 'finish':
+        cost_time = (t.end_time - t.start_time).total_seconds()
     context = {
-        'task': task,
-        'flow': task.exec_flow,
-        'status': task.status,
-        'detail': task.get_detail()
+        'task': t,
+        'flow': t.exec_flow,
+        'status': t.status,
+        'detail': t.get_detail(),
+        'cost_time': cost_time
     }
     return render(request, 'om/detail_content.html', context)
 
 
 @login_required
 def confirm_task(request, task_id, flow_id, group_id, job_id):
-    send(JOB_CONFIRM, '%s-%s-%s-%s' % (task_id, flow_id, group_id, job_id))
+    TaskConfirm('%s-%s-%s-%s' % (task_id, flow_id, group_id, job_id)).send_confirm()
     return JsonResponse({'result': 'OK'})
 
 
 @login_required
 def get_task_status(request, task_id):
-    task = get_object_or_404(Task, pk=task_id)
-    return JsonResponse({'status': task.status})
+    t = get_object_or_404(Task, pk=task_id)
+    return JsonResponse({'status': t.status})
 
 
 @login_required
@@ -424,15 +478,15 @@ def get_server_list(_):
 def get_action_history_list(_):
     result = []
     fmt = '%Y年%m月%d日 %H:%M:%S'
-    for task in Task.objects.all():
+    for t in Task.objects.order_by('-id'):
         result.append({
-            'task_id': task.id,
-            'task_name': task.exec_flow.name,
-            'run_user': task.exec_user,
-            'task_status': task.get_status_display(),
-            'start_time': datetime.strftime(task.start_time, fmt) if task.status != 'no_run' else '还没开始',
-            'end_time': datetime.strftime(task.end_time, fmt) if task.status == 'finish' else '没有执行',
-            'cost_time': (task.end_time-task.start_time).total_seconds(),
+            'task_id': t.id, 'task_name': t.exec_flow.name,
+            'run_user': t.exec_user, 'task_status': t.get_status_display(),
+            'start_time': datetime.strftime(timezone.localtime(t.start_time),
+                                            fmt) if t.status != 'no_run' else '还没开始',
+            'end_time': datetime.strftime(timezone.localtime(t.end_time),
+                                          fmt) if t.status == 'finish' else '没有跑完',
+            'cost_time': (t.end_time - t.start_time).total_seconds(),
         })
 
     return JsonResponse(result, safe=False)

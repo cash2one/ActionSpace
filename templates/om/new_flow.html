@@ -1,221 +1,71 @@
 {% extends 'om/base.html' %}
+{% load form_extra_tag %}
 {% load staticfiles %}
 {% block body_begin %}
 <body class="gray-bg">
 {% endblock %}
 {% block body_content %}
-    <div class="wrapper wrapper-content  animated fadeInRight">
-        <div class="col-sm-12">
-            <div class="ibox float-e-margins">
-                <div class="ibox-title">
-                    <h5>上传操作脚本到DSP-CCS</h5>
-                    <div class="ibox-tools">
-                        <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
-                        <a class="dropdown-toggle" data-toggle="dropdown" href="draggable_panels.html#">
-                            <i class="fa fa-wrench"></i>
-                        </a>
-                        <ul class="dropdown-menu dropdown-user todo-list m-t">
-                            <li>
-                                <input type="checkbox" value="" name="" class="i-checks" />
-                                <span class="m-l-xs">执行完成是否暂停</span>
-                            </li>
-                            <li>
-                                <input type="checkbox" value="" name="" class="i-checks" checked/>
-                                <span class="m-l-xs">执行报错是否暂停</span>
-                            </li>
-                        </ul>
-                        <a class="close-link"><i class="fa fa-times"></i></a>
-                    </div>
-                </div>
-                <div class="ibox-content">
-                    <ul class="sortable-list-file connectList-file agile-list" id="file">
-                        <li class="warning-element"  id="file_INFO">
-                            [1]上传操作脚本到DSP-INFO
-                            <div class="agile-detail">
-                                <a href="#" class="pull-right btn btn-xs btn-white">编辑步骤</a>
-                            </div>
-                        </li>
-                        <li class="success-element"  id="file_IPUSH">
-                            [2]上传操作脚本到DSP-IPUSH
-                            <div class="agile-detail">
-                                <a href="#" class="pull-right btn btn-xs btn-white" id="edit_IPUSH">编辑步骤</a>
-                            </div>
-                        </li>
-                        <li class="info-element"  id="file_ACTIVITY">
-                            [3]上传操作脚本到DSP-ACTIVITY
-                            <div class="agile-detail">
-                                <a href="#" class="pull-right btn btn-xs btn-white">编辑步骤</a>
-                            </div>
-                        </li>
-                    </ul>
-                    <button type="button" class="btn btn-block btn-outline btn-primary" id="add_task"><i class="fa fa-plus"></i>增加节点</button>
-                    <div id="result">
+    {% if save.saved and save.result %}
+        <script src="{% static 'om/js/jquery.min.js' %}"></script>
+        <script src="{% static 'om/js/bootstrap.min.js' %}"></script>
+        <script src="{% static 'om/layer/layer.js' %}"></script>
+        <script type="text/javascript">
+            var index = parent.layer.getFrameIndex(window.name);
+            {% if save.result %}
+                layer.alert('保存成功！',{icon: 6}, function(){
+                    window.parent.location.reload();
+                    parent.layer.close(index);
+                });
+            {% endif %}
+        </script>
+    {% else %}
+        {% if save.saved and not save.result %}
+            <script src="{% static 'om/js/jquery.min.js' %}"></script>
+            <script src="{% static 'om/js/bootstrap.min.js' %}"></script>
+            <script src="{% static 'om/layer/layer.js' %}"></script>
+            <script type="text/javascript">
+                layer.alert('保存失败！[' + '{{ save.error_msg }}' +']',{icon: 5});
+            </script>
+        {% endif %}
+        <div class="wrapper wrapper-content  animated fadeInRight">
+            <div class="row">
+                <div class="col-sm-12">
+                    <div class="ibox ">
+                        <div class="ibox-title">
+                            <h5>编辑任务属性</h5>
+                        </div>
+                        <div class="ibox-content">
+                            <form class="form-horizontal" method='post'>
+                                {% csrf_token %}
+                                {% for field in form %}
+                                    <div class="form-group">
+                                        <label class="col-sm-2 control-label">{{ field.label_tag }}</label>
+                                        <div class="col-sm-8" style='display:block;'>
+                                            {{ field | set_attr:'class=form-control' }}
+                                            {{ field.errors }}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                                <div class="form-group">
+                                    <div class="col-sm-10 col-sm-offset-5">
+                                        <button class="btn btn-primary" type="submit" value="save">保存</button>
+                                        <button class="btn btn-white" id="cancel_form" type="button" value="cancel">取消</button>
+                                    </div>
+                                </div>
+                        </form>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-sm-12">
-            <div class="ibox float-e-margins">
-                <div class="ibox-title">
-                    <h5>重启DSP-CCS</h5>
-                    <div class="ibox-tools">
-                        <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
-                        <a class="dropdown-toggle" data-toggle="dropdown" href="draggable_panels.html#">
-                            <i class="fa fa-wrench"></i>
-                        </a>
-                        <ul class="dropdown-menu dropdown-user todo-list m-t">
-                            <li>
-                                <input type="checkbox" value="" name="" class="i-checks" />
-                                <span class="m-l-xs">执行完成是否暂停</span>
-                            </li>
-                            <li>
-                                <input type="checkbox" value="" name="" class="i-checks" checked/>
-                                <span class="m-l-xs">执行报错是否暂停</span>
-                            </li>
-                        </ul>
-                        <a class="close-link"><i class="fa fa-times"></i></a>
-                    </div>
-                </div>
-                <div class="ibox-content">
-                    <ul class="sortable-list-script connectList-script agile-list">
-                        <li class="warning-element">
-                            重启DSP-INFO
-                            <div class="agile-detail">
-                                <a href="#" class="pull-right btn btn-xs btn-white">编辑步骤</a>
-                            </div>
-                        </li>
-                        <li class="success-element">
-                            重启DSP-IPUSH
-                            <div class="agile-detail">
-                                <a href="#" class="pull-right btn btn-xs btn-white">编辑步骤</a>
-                            </div>
-                        </li>
-                        <li class="info-element">
-                            重启DSP-ACTIVITY
-                            <div class="agile-detail">
-                                <a href="#" class="pull-right btn btn-xs btn-white">编辑步骤</a>
-                            </div>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-12">
-            <div class="ibox float-e-margins">
-                <div class="ibox-title">
-                    <h5>验证服务是否正常</h5>
-                    <div class="ibox-tools">
-                        <a class="collapse-link"><i class="fa fa-chevron-up"></i></a>
-                        <a class="dropdown-toggle" data-toggle="dropdown" href="draggable_panels.html#">
-                            <i class="fa fa-wrench"></i>
-                        </a>
-                        <ul class="dropdown-menu dropdown-user todo-list m-t">
-                            <li>
-                                <input type="checkbox" value="" name="" class="i-checks" />
-                                <span class="m-l-xs">执行完成是否暂停</span>
-                            </li>
-                            <li>
-                                <input type="checkbox" value="" name="" class="i-checks" checked/>
-                                <span class="m-l-xs">执行报错是否暂停</span>
-                            </li>
-                        </ul>
-                        <a class="close-link"><i class="fa fa-times"></i></a>
-                    </div>
-                </div>
-                <div class="ibox-content">
-                    <ul class="sortable-list-end connectList-end agile-list">
-                        <li class="warning-element">
-                            验证DSP-INFO
-                            <div class="agile-detail">
-                                <a href="#" class="pull-right btn btn-xs btn-white">编辑步骤</a>
-                            </div>
-                        </li>
-                        <li class="success-element">
-                            验证DSP-IPUSH
-                            <div class="agile-detail">
-                                <a href="#" class="pull-right btn btn-xs btn-white">编辑步骤</a>
-                            </div>
-                        </li>
-                        <li class="info-element">
-                            验证DSP-ACTIVITY
-                            <div class="agile-detail">
-                                <a href="#" class="pull-right btn btn-xs btn-white">编辑步骤</a>
-                            </div>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-        <div class="hr-line-dashed"></div>
-        <div class="form-group">
-            <div class="col-sm-10 col-sm-offset-5">
-                <button class="btn btn-primary" type="submit"><i class="fa fa-plus"></i>增加步骤</button>
-                <button class="btn btn-primary" type="submit">保存</button>
-                <button class="btn btn-white" type="submit">取消</button>
-            </div>
-        </div>
-    </div>
-{% endblock %}
-{% block other_js %}
-    <script src="{% static 'om/js/plugins/peity/jquery.peity.min.js' %}"></script>
-    <script src="{% static 'om/js/plugins/jquery-ui/jquery-ui.min.js' %}"></script>
-    <script src="{% static 'om/js/plugins/iCheck/icheck.min.js' %}"></script>
-    <script src="{% static 'om/js/demo/peity-demo.min.js' %}"></script>
-    <script src="{% static 'om/layer/layer.js' %}"></script>
-    <script src="{% static 'om/js/plugins/validate/jquery.validate.min.js' %}"></script>
-    <script src="{% static 'om/js/plugins/validate/messages_zh.min.js' %}"></script>
-    <script src="{% static 'om/js/plugins/iCheck/icheck.min.js' %}"></script>
-    <script>
-        $(document).ready(
-            function(){
-                $("[class*=col]").sortable({
-                    handle:".ibox-title",
-                    connectWith:"[class*=col]",
-                    tolerance:"pointer",
-                    forcePlaceholderSize:!0,
-                    opacity:.8,
-                    axis: 'y',
-                }).disableSelection()
-                $(".sortable-list-file").sortable({
-                    connectWith:".connectList-file", 
-                    cursor: 'move',
-                    axis: 'y',
-                    stop: function(){ 
-                        $("#result").text($(".sortable-list-file").sortable('serialize'));
-                    }
-                }).disableSelection()
-                $(".sortable-list-script").sortable({
-                    connectWith:".connectList-script", 
-                    cursor: 'move',
-                    axis: 'y',
-                }).disableSelection()
-                $(".sortable-list-end").sortable({
-                    connectWith:".connectList-end", 
-                    cursor: 'move',
-                    axis: 'y',
-                }).disableSelection();
-                $(".i-checks").iCheck({checkboxClass:"icheckbox_square-green",radioClass:"iradio_square-green",})
-            }
-        );
-        $('#edit_IPUSH').on('click', function(){
-            var edit_IPUSH_layer = layer.open({
-              type: 2,
-              area: ['700px', '530px'],
-              fix: false, //不固定
-              maxmin: true,
-              content: "{%url 'om:edit_job' 1 %}"
-            });
-            layer.full(edit_IPUSH_layer);
-        });
-        $('#add_task').on('click', function(){
-            var add_task_layer = layer.open({
-              type: 2,
-              area: ['700px', '530px'],
-              fix: false, //不固定
-              maxmin: true,
-              content: "{%url 'om:edit_job' 1 %}"
-            });
-            layer.full(add_task_layer);
-        });
-    </script>
+        {% block other_js %}
+            <script src="{% static 'om/js/plugins/peity/jquery.peity.min.js' %}"></script>
+            <script src="{% static 'om/js/plugins/codemirror/codemirror.js' %}"></script>
+            <script src="{% static 'om/js/plugins/codemirror/mode/shell/shell.js' %}"></script>
+            <script src="{% static 'om/js/plugins/codemirror/mode/python/python.js' %}"></script>
+            <script src="{% static 'om/js/plugins/codemirror/mode/perl/perl.js' %}"></script>
+            <script src="{% static 'om/js/plugins/prettyfile/bootstrap-prettyfile.js' %}"></script>
+        {% endblock %}
+    {% endif %}
+</body>
 {% endblock %}

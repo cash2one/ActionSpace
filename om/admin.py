@@ -5,6 +5,7 @@ from django.db import models
 from django.contrib.flatpages.admin import FlatPageAdmin
 from django.contrib.flatpages.models import FlatPage
 from ckeditor.widgets import CKEditorWidget
+from guardian.admin import GuardedModelAdmin
 
 
 # Register your models here.
@@ -26,7 +27,7 @@ class EntityInline(admin.StackedInline):
 
 
 @admin.register(System)
-class SystemAdmin(admin.ModelAdmin):
+class SystemAdmin(GuardedModelAdmin):
     list_display = ('name', 'desc')
     inlines = [EntityInline]
 
@@ -38,66 +39,67 @@ class ComputerInline(admin.TabularInline):
 
 
 @admin.register(Entity)
-class EntityAdmin(admin.ModelAdmin):
+class EntityAdmin(GuardedModelAdmin):
     list_display = ('name', 'system', 'desc')
     inlines = [ComputerInline]
 
 
 @admin.register(Computer)
-class ComputerAdmin(admin.ModelAdmin):
+class ComputerAdmin(GuardedModelAdmin):
     list_display = ('host', 'ip', 'desc', 'installed_agent', 'agent_name')
     # filter_vertical = ('entity',)
     filter_horizontal = ('entity',)
 
 
 @admin.register(Flow)
-class FlowAdmin(admin.ModelAdmin):
+class FlowAdmin(GuardedModelAdmin):
+    list_display_links = ('id', 'name')
     readonly_fields = ('created_time', 'last_modified_time',)
     list_display = (
-        'name', 'founder', 'is_quick_flow', 'last_modified_by', 'job_group_list', 'desc'
+        'id', 'name', 'founder', 'is_quick_flow', 'last_modified_by', 'job_group_list', 'desc'
         )
 
 
 @admin.register(JobGroup)
-class JobGroupAdmin(admin.ModelAdmin):
+class JobGroupAdmin(GuardedModelAdmin):
     readonly_fields = ('created_time', 'last_modified_time',)
     list_display = ('id', 'name', 'founder', 'last_modified_by', 'job_list', 'desc')
 
 
 @admin.register(ExecUser)
-class ExecUserAdmin(admin.ModelAdmin):
+class ExecUserAdmin(GuardedModelAdmin):
     list_display = ('name', 'desc')
 
 
 @admin.register(Job)
-class JobAdmin(admin.ModelAdmin):
+class JobAdmin(GuardedModelAdmin):
     list_display_links = ('name',)
     readonly_fields = ('created_time', 'last_modified_time')
     list_display = (
-        'id', 'name', 'founder', 'last_modified_by', 'job_type', 'script_type',
+        'id', 'name', 'founder', # , 'job_type', 'script_type',
         'exec_user', 'pause_when_finish', 'pause_finish_tip',
         'file_from_local', 'file_target_path', 'server_list', 'desc'
     )
 
-    fieldsets = (
-        (None, {
-            'fields': ('name', 'job_type', 'exec_user', 'script_type')
-        }),
-        ('高级选项', {
-            'classes': ('collapse',),
-            'fields': ('pause_when_finish', 'pause_finish_tip', 'script_content',
-                       'script_param', 'file_from_local', 'file_target_path', 'server_list', 'desc'),
-        }),
-    )
+    # fieldsets = (
+    #     (None, {
+    #         'fields': ('name', 'job_type', 'exec_user', 'script_type')
+    #     }),
+    #     ('高级选项', {
+    #         'classes': ('collapse',),
+    #         'fields': ('pause_when_finish', 'pause_finish_tip', 'script_content',
+    #                    'script_param', 'file_from_local', 'file_target_path', 'server_list', 'desc'),
+    #     }),
+    # )
 
 
 @admin.register(LogType)
-class LogTypeAdmin(admin.ModelAdmin):
+class LogTypeAdmin(GuardedModelAdmin):
     list_display = ('name', 'desc')
 
 
 @admin.register(Log)
-class LogAdmin(admin.ModelAdmin):
+class LogAdmin(GuardedModelAdmin):
     list_display = ('id', 'log_type', 'topic', 'log_time', 'content')
     date_hierarchy = 'log_time'
     actions_on_top = False
@@ -105,7 +107,7 @@ class LogAdmin(admin.ModelAdmin):
 
 
 @admin.register(Task)
-class TaskAdmin(admin.ModelAdmin):
+class TaskAdmin(GuardedModelAdmin):
     exclude = ('detail',)
     readonly_fields = ('id', 'exec_user', 'exec_flow', 'start_time', 'end_time', 'status')
     list_display = ('id', 'exec_user', 'exec_flow', 'start_time', 'end_time', 'status')

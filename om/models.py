@@ -67,15 +67,14 @@ class Flow(models.Model):
         return self.name
 
     def validate_job_group_list(self, save=True):
-        if ',' in self.job_group_list:
-            new_job_group_id_list = str2arr(self.job_group_list)
-            for group_id in new_job_group_id_list:
-                if not JobGroup.objects.filter(pk=int(group_id)).exists():
-                    new_job_group_id_list.remove(group_id)
-            if len(new_job_group_id_list) != len(str2arr(self.job_group_list)):
-                self.job_group_list = ','.join(new_job_group_id_list)
-                if save:
-                    self.save()
+        new_job_group_id_list = str2arr(self.job_group_list)
+        for group_id in new_job_group_id_list:
+            if not JobGroup.objects.filter(pk=int(group_id)).exists():
+                new_job_group_id_list.remove(group_id)
+        if len(new_job_group_id_list) != len(str2arr(self.job_group_list)):
+            self.job_group_list = ','.join(new_job_group_id_list)
+            if save:
+                self.save()
         return self
 
     class Meta:
@@ -90,22 +89,21 @@ class JobGroup(models.Model):
     created_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     last_modified_time = models.DateTimeField(verbose_name="最后修改时间", auto_now=True)
     # job_group顺序内容，id用逗号分隔
-    job_list = models.CharField(max_length=500, default='', verbose_name='作业列表')
+    job_list = models.CharField(max_length=500, default='', blank=True, verbose_name='作业列表')
     desc = models.TextField(verbose_name='备注')
 
     def __unicode__(self):
         return self.name
 
     def validate_job_list(self, save=True):
-        if ',' in self.job_list:
-            new_job_id_list = str2arr(self.job_list)
-            for job_id in new_job_id_list:
-                if not Job.objects.filter(pk=int(job_id)).exists():
-                    new_job_id_list.remove(job_id)
-            if len(new_job_id_list) != len(str2arr(self.job_list)):
-                self.job_group_list = ','.join(new_job_id_list)
-                if save:
-                    self.save()
+        new_job_id_list = str2arr(self.job_list)
+        for job_id in new_job_id_list:
+            if not Job.objects.filter(pk=int(job_id)).exists():
+                new_job_id_list.remove(job_id)
+        if len(new_job_id_list) != len(str2arr(self.job_list)):
+            self.job_group_list = ','.join(new_job_id_list)
+            if save:
+                self.save()
         return self
 
     class Meta:
@@ -187,10 +185,12 @@ class Task(models.Model):
     STATUS = (
         ('finish', '已执行'),
         ('running', '正在执行'),
-        ('no_run', '未执行')
+        ('no_run', '未执行'),
+        ('run_fail', '执行失败')
     )
     status = models.CharField(max_length=50, choices=STATUS, default='no_run', verbose_name='当前状态')
     detail = models.TextField(verbose_name='执行细节', default='')
+    async_result = models.CharField(max_length=80, default='', verbose_name='Celery的task id')
 
     def set_detail(self, val, auto_save=True):
         self.detail = p.dumps(val)
@@ -218,14 +218,13 @@ class Task(models.Model):
             }
             for group in [JobGroup.objects.get(pk=x) for x in str2arr(task.exec_flow.job_group_list)]:
                 self.result['group'][str(group.id)] = {'name': group.name, 'job': OrderedDict()}
-                if ',' in group.job_list:
-                    jobs = [Job.objects.get(pk=x) for x in str2arr(group.job_list)]
-                    for job in jobs:
-                        self.result['group'][str(group.id)]['job'][str(job.id)] = {
-                            'name': job.name, 'type': job.script_type, 'content': job.script_content,
-                            'begin_time': self.now(), 'end_time': self.now(), 'status': 'no_run',
-                            'wait': False, 'wait_tip': job.pause_finish_tip, 'exec_output': ''
-                        }
+                jobs = [Job.objects.get(pk=x) for x in str2arr(group.job_list)]
+                for job in jobs:
+                    self.result['group'][str(group.id)]['job'][str(job.id)] = {
+                        'name': job.name, 'type': job.script_type, 'content': job.script_content,
+                        'begin_time': self.now(), 'end_time': self.now(), 'status': 'no_run',
+                        'wait': False, 'wait_tip': job.pause_finish_tip, 'exec_output': ''
+                    }
 
         def now(self):
             return datetime.strftime(timezone.now(), self.fmt)

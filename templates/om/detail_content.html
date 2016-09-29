@@ -19,7 +19,9 @@
                             <i class="fa fa-toggle-right">继续</i>
                         </button>
                     </p>
-                    <button class="btn btn-sm btn-primary" id="show_out-{{ group_id }}_{{ job_id }}">查看结果</button>
+                    {% if job.status == 'finish' %}
+                        <button class="btn btn-sm btn-primary" id="show_out-{{ group_id }}_{{ job_id }}">查看结果</button>
+                    {% endif %}
                     <div>
                         <span class="vertical-date">
                             <label>状态:</label>
@@ -35,6 +37,7 @@
                         </span>
                     </div>
                 </div>
+            </div>
             <script>
                 $('#show_out-{{ group_id }}_{{ job_id }}').click(function () {
                     layer.open({
@@ -72,8 +75,14 @@
     {% endfor %}
     {% if status == 'finish' %}
         <div class="vertical-timeline-block">
-            <div class="vertical-timeline-icon blue-bg">
-                <i class="fa fa-power-off"></i>
+            <div class="vertical-timeline-icon blue-bg"><i class="fa fa-power-off"></i></div>
+            <div class="vertical-timeline-content">
+                <h2>执行完成</h2>
+                <div>
+                    <span class="vertical-date">
+                        <label>耗时（秒）:</label>{{ cost_time }}
+                    </span>
+                </div>
             </div>
         </div>
     {% endif %}

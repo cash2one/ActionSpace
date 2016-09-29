@@ -2,8 +2,7 @@
 from django import forms
 from django.utils.encoding import force_text
 from django.utils.html import format_html
-
-from models import Job, JobGroup, Computer
+from om.models import Job, JobGroup, Computer, Flow
 
 
 class OrderedMultiSelect(forms.SelectMultiple):
@@ -40,7 +39,7 @@ class OrderedMultiSelect(forms.SelectMultiple):
 
 
 class JobForm(forms.ModelForm):
-    server_list = forms.ModelMultipleChoiceField(queryset=Computer.objects.all(), label=u'服务器列表')
+    server_list = forms.ModelMultipleChoiceField(queryset=Computer.objects.all(), required=False, label=u'服务器列表')
 
     def save_form(self, request, commit=True, create=False):
         self.instance.last_modified_by = request.user.username
@@ -58,8 +57,13 @@ class JobForm(forms.ModelForm):
 
 
 class JobGroupForm(forms.ModelForm):
-    job_list_comma_sep = forms.CharField(label=u'已选择作业列表')
-    job_list = forms.ModelMultipleChoiceField(queryset=Job.objects.all(), widget=OrderedMultiSelect, label=u'作业列表')
+    job_list_comma_sep = forms.CharField(required=False, label=u'已选择作业列表')
+    job_list = forms.ModelMultipleChoiceField(
+        queryset=Job.objects.all(),
+        widget=OrderedMultiSelect,
+        required=False,
+        label=u'作业列表'
+    )
 
     def save_form(self, request, commit=True, create=False):
         self.instance.last_modified_by = request.user.username
@@ -72,3 +76,10 @@ class JobGroupForm(forms.ModelForm):
         model = JobGroup
         fields = '__all__'
         exclude = ('last_modified_by', 'founder')
+
+
+class FlowForm(forms.ModelForm):
+    class Meta:
+        model = Flow
+        fields = '__all__'
+        exclude = ('last_modified_by', 'founder', 'job_group_list', 'is_quick_flow')

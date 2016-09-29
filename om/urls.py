@@ -29,6 +29,7 @@ urlpatterns = [
     url(r'^del_group_inf_flow/(?P<flow_id>[0-9]+)/(?P<group_id>[0-9]+)/$', views.del_group_in_flow, name='del_group_in_flow'),
     url(r'^edit_group/(?P<group_id>[0-9]+)/$', views.edit_group, name='edit_group'),
     url(r'^get_task_status/(?P<task_id>[0-9]+)/$', views.get_task_status, name='get_task_status'),
+    url(r'^task_status/(?P<task_id>[0-9]+)/$', views.task_status, name='task_status'),
     url(r'^detail_content/(?P<task_id>[0-9]+)/(?P<first>[0-9])/$', views.detail_content, name='detail_content'),
     url(r'^confirm_task/(?P<task_id>[0-9]+)/(?P<flow_id>[0-9]+)/(?P<group_id>[0-9]+)/(?P<job_id>[0-9]+)/$', views.confirm_task, name='confirm_task'),
     url(r'^go_exec/(?P<flow_id>[\-0-9]+)/(?P<job_id>[\-0-9]+)/$', views.go_exec, name='go_exec'),

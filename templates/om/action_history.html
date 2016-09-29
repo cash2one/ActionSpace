@@ -43,12 +43,9 @@
     <script type="text/javascript">
         function actionFormatter(value, row, index) {
             return [
-                '<a class="redo" href="javascript:void(0)" title="重做">',
-                '<button type="button" class="btn btn-success">重做</button>',
-                '</a>',
-                '<a class="detail" href="javascript:void(0)" title="查看详情">',
-                '<button type="button" class="btn btn-info">查看详情</button>',
-                '</a>'
+                '<a class="redo" href="javascript:void(0)" title="重做"><i class="fa fa-repeat">重做</i></a>|',
+                '<a class="detail" href="javascript:void(0)" title="详情"><i class="fa fa-bar-chart">详情</i></a>|',
+                '<a class="status" href="javascript:void(0)" title="结果"><i class="fa fa-rss">结果</i></a>'
             ].join('');
         }
         function show_detail(task_id){
@@ -61,7 +58,20 @@
                 });
                 layer.full(detail_layer);
         }
+        function show_task_status(task_id){
+            var task_status = layer.open({
+                  type: 2,
+                  area: ['700px', '530px'],
+                  fix: false, //不固定
+                  maxmin: true,
+                  content: "/om/task_status/" + task_id
+                });
+            layer.full(task_status);
+        }
         window.actionEvents = {
+            'click .status': function (e, value, row, index) {
+                show_task_status(row.task_id);
+            },
             'click .redo': function (e, value, row, index) {
                 $.get('/om/redo_exec/'+row.task_id, {'csrfmiddlewaretoken': '{{ csrf_token }}'},function(result) {
                     if (result.result == 'Y') {

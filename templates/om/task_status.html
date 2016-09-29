@@ -1,0 +1,84 @@
+{% extends 'om/base.html' %}
+{% load staticfiles %}
+{% block body_begin %}
+<body class="gray-bg" xmlns="http://www.w3.org/1999/html">
+{% endblock %}
+{% block body_content %}
+    <div class="wrapper wrapper-content  animated fadeInRight">
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="ibox ">
+                    <div class="ibox-title">
+                        <h5>任务状态</h5>
+                    </div>
+                    <div class="ibox-content">
+                        {% if can_get_result %}
+                            <form class="form-horizontal">
+                                <div class="form-group">
+                                    <label class="col-sm-2 control-label"><label for="id_state">任务状态:</label></label>
+                                    <div class="col-sm-8">
+                                        <p id="id_state" class="form-control-static">{{ result.state }}</p>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-sm-2 control-label"><label for="id_result">任务结果:</label></label>
+                                    <div class="col-sm-8">
+                                        <p id="id_result" class="form-control-static">{{ result.result }}</p>
+                                    </div>
+                                </div>
+                                {% if result.failed %}
+                                    <div class="form-group">
+                                        <label class="col-sm-2 control-label"><label for="id_trace">任务跟踪:</label></label>
+                                        <div class="col-sm-8">
+                                            <textarea rows="12" class="form-control" readonly>{{ result.traceback }}</textarea>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </form>
+                        {% else %}
+                            无法查看结果，可能任务未发起。
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block other_js %}
+    <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table-mobile.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/bootstrap-table/locale/bootstrap-table-zh-CN.min.js' %}"></script>
+    <script src="{% static 'om/layer/layer.js' %}"></script>
+    <script src="{% static 'om/js/plugins/peity/jquery.peity.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/prettyfile/bootstrap-prettyfile.js' %}"></script>
+    <script>
+        $(document).ready(function(){
+            $("#lightVersion").click(function(event){
+                event.preventDefault();
+                $("#ibox-content").removeClass("ibox-content");
+                $("#vertical-timeline").removeClass("dark-timeline");
+                $("#vertical-timeline").addClass("light-timeline")
+            });
+            $("#darkVersion").click(function(event){
+                event.preventDefault();
+                $("#ibox-content").addClass("ibox-content");
+                $("#vertical-timeline").removeClass("light-timeline");
+                $("#vertical-timeline").addClass("dark-timeline")
+            });
+            $("#leftVersion").click(function(event){
+                event.preventDefault();
+                $("#vertical-timeline").toggleClass("center-orientation")
+            });
+            $.get('/om/detail_content/'+'{{ task }}/'+1, {'csrfmiddlewaretoken': '{{ csrf_token }}'},function(result) {
+                    $("#ibox-content").html(result);
+                });
+            function update() {
+                $.get('/om/detail_content/'+'{{ task }}/'+0, {'csrfmiddlewaretoken': '{{ csrf_token }}'},function(result) {
+                    $("#ibox-content").html(result);
+                    update()
+                });
+            }
+            update()
+        });
+    </script>
+{% endblock %}
