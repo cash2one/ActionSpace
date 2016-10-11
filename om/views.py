@@ -9,7 +9,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 from om.form import JobForm, JobGroupForm, FlowForm
-from om.models import Flow, JobGroup, Job, Task
+from om.models import Flow, JobGroup, Job, Task, TaskFlow, TaskJobGroup, TaskJob
 from datetime import datetime
 
 
@@ -62,11 +62,8 @@ def exec_flow(request):
 
 def send_task_to_exec(user_name, task):
     result = {'result': 'Y', 'task': '-1', 'desc': ''}
-    if str2arr(task.exec_flow.job_group_list):
-        task.pk = None
-        task.save()
-        task.set_detail(Task.TaskLog(task).result)
-        task.save()
+    if task.taskflow_set.count() > 0:
+        # exec_task(task.id, user_name)
         res = exec_task.delay(task.id, user_name)
         task.async_result = res.id
         task.save()
@@ -87,18 +84,44 @@ def new_task(username, flow_id, job_id):
         flow.save()
     else:
         flow = get_object_or_404(Flow, pk=flow_id)
-    task = Task.objects.create(exec_user=username, exec_flow=flow)
+
+    task = Task.objects.create(name=flow.name, exec_user=username)
+    t_flow = TaskFlow.objects.create(name=flow.name, flow_id=flow.pk, task=task)
+
+    for group_id in str2arr(flow.job_group_list):
+        group = JobGroup.objects.get(pk=group_id)
+        t_group = TaskJobGroup.objects.create(name=group.name, group_id=group.pk, flow=t_flow)
+        for job_id in str2arr(group.job_list):
+            job = Job.objects.get(pk=job_id)
+            TaskJob.objects.create(
+                name=job.name, job_id=job.pk, group=t_group, job_type=job.job_type,
+                script_type=job.script_type, script_content=job.script_content,
+                begin_time=timezone.now(), end_time=timezone.now(), status='no_run',
+                pause_when_finish=job.pause_when_finish,
+                pause_finish_tip=job.pause_finish_tip, exec_output=''
+            )
+
     task.save()
     return task
 
 
 def clone_task(tid):
     task = Task.objects.get(pk=tid)
-    task.pk = None
-    task.save()
-    task.set_detail(Task.TaskLog(task).result)
-    task.save()
-    return task
+    t_flow = task.taskflow_set.first()
+    new_t_task = Task.objects.create(name=task.name, exec_user=task.exec_user)
+    new_t_flow = TaskFlow.objects.create(name=t_flow.name, flow_id=t_flow.flow_id, task=new_t_task)
+    for task_group in t_flow.taskjobgroup_set.all():
+        t_group = TaskJobGroup.objects.create(name=task_group.name, group_id=task_group.group_id, flow=new_t_flow)
+        for task_job in task_group.taskjob_set.all():
+            TaskJob.objects.create(
+                name=task_job.name, job_id=task_job.job_id, group=t_group, job_type=task_job.job_type,
+                script_type=task_job.script_type, script_content=task_job.script_content,
+                begin_time=timezone.now(), end_time=timezone.now(), status='no_run',
+                pause_when_finish=task_job.pause_when_finish,
+                pause_finish_tip=task_job.pause_finish_tip, exec_output=''
+            )
+    new_t_task.save()
+    return new_t_task
 
 
 @login_required
@@ -395,15 +418,13 @@ def action_detail(request, task_id):
 def detail_content(request, task_id, first):
     if first == '0':
         TaskChange(task_id).wait_change()
-    t = get_object_or_404(Task, pk=task_id)
+    task = get_object_or_404(Task, pk=task_id)
     cost_time = 0
-    if t.status == 'finish':
-        cost_time = (t.end_time - t.start_time).total_seconds()
+    if task.status == 'finish':
+        cost_time = (task.end_time - task.start_time).total_seconds()
     context = {
-        'task': t,
-        'flow': t.exec_flow,
-        'status': t.status,
-        'detail': t.get_detail(),
+        'task': task,
+        'flow'
         'cost_time': cost_time
     }
     return render(request, 'om/detail_content.html', context)
@@ -480,7 +501,7 @@ def get_action_history_list(_):
     fmt = '%Y年%m月%d日 %H:%M:%S'
     for t in Task.objects.order_by('-id'):
         result.append({
-            'task_id': t.id, 'task_name': t.exec_flow.name,
+            'task_id': t.id, 'task_name': t.name,
             'run_user': t.exec_user, 'task_status': t.get_status_display(),
             'start_time': datetime.strftime(timezone.localtime(t.start_time),
                                             fmt) if t.status != 'no_run' else '还没开始',

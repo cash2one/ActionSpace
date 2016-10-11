@@ -1,12 +1,12 @@
 # coding=utf-8
 from __future__ import print_function
 from __future__ import unicode_literals
-from collections import OrderedDict
+#  from collections import OrderedDict
 from django.db import models
 from django.core.validators import validate_comma_separated_integer_list, validate_ipv46_address
-from datetime import datetime
-import pickle as p
-from django.utils import timezone
+#  from datetime import datetime
+#  import pickle as p
+#  from django.utils import timezone
 from om.util import *
 
 
@@ -16,7 +16,7 @@ class System(models.Model):
     desc = models.TextField(verbose_name='备注')
 
     def __unicode__(self):
-        return self.name
+        return get_name(self.name)
 
     class Meta:
         verbose_name = '系统'
@@ -29,7 +29,7 @@ class Entity(models.Model):
     desc = models.TextField(verbose_name='备注')
 
     def __unicode__(self):
-        return self.name
+        return get_name(self.name)
 
     class Meta:
         verbose_name = '实体'
@@ -45,7 +45,7 @@ class Computer(models.Model):
     desc = models.TextField(verbose_name='备注')
 
     def __unicode__(self):
-        return self.ip
+        return get_name(self.ip)
 
     class Meta:
         verbose_name = '主机'
@@ -64,7 +64,7 @@ class Flow(models.Model):
     desc = models.TextField(verbose_name='备注')
 
     def __unicode__(self):
-        return self.name
+        return get_name(self.name)
 
     def validate_job_group_list(self, save=True):
         new_job_group_id_list = str2arr(self.job_group_list)
@@ -93,7 +93,7 @@ class JobGroup(models.Model):
     desc = models.TextField(verbose_name='备注')
 
     def __unicode__(self):
-        return self.name
+        return get_name(self.name)
 
     def validate_job_list(self, save=True):
         new_job_id_list = str2arr(self.job_list)
@@ -116,7 +116,7 @@ class ExecUser(models.Model):
     desc = models.TextField(verbose_name='备注')
 
     def __unicode__(self):
-        return self.name
+        return get_name(self.name)
 
     class Meta:
         verbose_name = '执行用户'
@@ -144,42 +144,16 @@ class Job(models.Model):
     desc = models.TextField(verbose_name='备注', default='NA')
 
     def __unicode__(self):
-        return self.name
+        return get_name(self.name)
 
     class Meta:
         verbose_name = '作业'
         verbose_name_plural = '作业'
 
 
-class LogType(models.Model):
-    name = models.CharField(max_length=100, verbose_name='日志类型')
-    desc = models.TextField(verbose_name='备注')
-
-    def __unicode__(self):
-        return self.name
-
-    class Meta:
-        verbose_name = '日志类型'
-        verbose_name_plural = '日志类型'
-
-
-class Log(models.Model):
-    log_type = models.ForeignKey(LogType, verbose_name='类型')
-    topic = models.CharField(max_length=100, verbose_name='主题')
-    log_time = models.DateTimeField(verbose_name='时间')
-    content = models.TextField(verbose_name='内容')
-
-    def __unicode__(self):
-        return self.topic
-
-    class Meta:
-        verbose_name = '日志'
-        verbose_name_plural = '日志'
-
-
 class Task(models.Model):
+    name = models.CharField(max_length=100, default='', verbose_name='作业流名称')
     exec_user = models.CharField(max_length=100, default='NA', verbose_name='执行人')
-    exec_flow = models.ForeignKey(Flow, verbose_name='执行内容')
     start_time = models.DateTimeField(verbose_name='开始时间', auto_now_add=True)  # 可以手工修改这个字段
     end_time = models.DateTimeField(verbose_name='结束时间', auto_now=True)
     STATUS = (
@@ -189,16 +163,7 @@ class Task(models.Model):
         ('run_fail', '执行失败')
     )
     status = models.CharField(max_length=50, choices=STATUS, default='no_run', verbose_name='当前状态')
-    detail = models.TextField(verbose_name='执行细节', default='')
     async_result = models.CharField(max_length=80, default='', verbose_name='Celery的task id')
-
-    def set_detail(self, val, auto_save=True):
-        self.detail = p.dumps(val)
-        if auto_save:
-            self.save()
-
-    def get_detail(self):
-        return p.loads(self.detail)
 
     def run(self):
         self.start_time = timezone.now()
@@ -208,47 +173,66 @@ class Task(models.Model):
         self.end_time = timezone.now()
         self.status = 'finish'
 
-    class TaskLog(object):
-        def __init__(self, task):
-            self.task = task
-            self.fmt = '%Y-%m-%d %H:%M:%S'
-            self.result = {
-                'flow_id': task.exec_flow.id,
-                'flow_name': task.exec_flow.name, 'group': OrderedDict()
-            }
-            for group in [JobGroup.objects.get(pk=x) for x in str2arr(task.exec_flow.job_group_list)]:
-                self.result['group'][str(group.id)] = {'name': group.name, 'job': OrderedDict()}
-                jobs = [Job.objects.get(pk=x) for x in str2arr(group.job_list)]
-                for job in jobs:
-                    self.result['group'][str(group.id)]['job'][str(job.id)] = {
-                        'name': job.name, 'type': job.script_type, 'content': job.script_content,
-                        'begin_time': self.now(), 'end_time': self.now(), 'status': 'no_run',
-                        'wait': False, 'wait_tip': job.pause_finish_tip, 'exec_output': ''
-                    }
-
-        def now(self):
-            return datetime.strftime(timezone.now(), self.fmt)
-
-        def set_out(self, group, job, val):
-            self.result['group'][str(group.id)]['job'][str(job.id)]['exec_output'] = val
-            self.task.set_detail(self.result)
-
-        def wait(self, group, job, is_wait=True):
-            self.result['group'][str(group.id)]['job'][str(job.id)]['wait'] = is_wait
-            self.task.set_detail(self.result)
-
-        def begin_job(self, group, job):
-            self.result['group'][str(group.id)]['job'][str(job.id)]['begin_time'] = self.now()
-            self.result['group'][str(group.id)]['job'][str(job.id)]['status'] = 'running'
-            self.task.set_detail(self.result)
-
-        def finish_job(self, group, job):
-            self.result['group'][str(group.id)]['job'][str(job.id)]['end_time'] = self.now()
-            self.result['group'][str(group.id)]['job'][str(job.id)]['status'] = 'finish'
-            self.task.set_detail(self.result)
-            self.task.save()
+    def __unicode__(self):
+        return get_name(self.name)
 
     class Meta:
         verbose_name = '任务'
         verbose_name_plural = '任务'
 
+
+class TaskFlow(models.Model):
+    name = models.CharField(max_length=100, verbose_name='作业流名称')
+    flow_id = models.IntegerField(verbose_name='作业组ID')
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, verbose_name='任务')
+
+    class Meta:
+        verbose_name = '[任务]作业流'
+        verbose_name_plural = '[任务]作业流'
+
+    def __unicode__(self):
+        return get_name(self.name)
+
+
+class TaskJobGroup(models.Model):
+    name = models.CharField(max_length=100, verbose_name='作业组名称')
+    group_id = models.IntegerField(verbose_name='作业组ID')
+    flow = models.ForeignKey(TaskFlow, on_delete=models.CASCADE, verbose_name='作业流')
+
+    class Meta:
+        verbose_name = '[任务]作业组'
+        verbose_name_plural = '[任务]作业组'
+
+    def __unicode__(self):
+        return get_name(self.name)
+
+
+class TaskJob(models.Model):
+    name = models.CharField(max_length=100, verbose_name='作业名称')
+    job_id = models.IntegerField(verbose_name='作业ID')
+    group = models.ForeignKey(TaskJobGroup, on_delete=models.CASCADE, verbose_name='作业组')
+    TYPE_CHOOSE = (('SCRIPT', '脚本执行'), ('FILE', '文件传输'))
+    job_type = models.CharField(max_length=50, choices=TYPE_CHOOSE, default='SCRIPT', verbose_name='作业类型')
+    SCRIPT_CHOOSE = (('PY', 'python脚本'), ('SHELL', 'shell脚本'), ('BAT', '批处理脚本'))
+    script_type = models.CharField(max_length=50, choices=SCRIPT_CHOOSE, default='PY', blank=True, verbose_name='脚本类型')
+    script_content = models.TextField(verbose_name='脚本内容', blank=True)
+    begin_time = models.DateTimeField(verbose_name='开始时间')
+    end_time = models.DateTimeField(verbose_name='结束时间')
+    STATUS = (
+        ('finish', '已执行'),
+        ('running', '正在执行'),
+        ('no_run', '未执行'),
+        ('run_fail', '执行失败')
+    )
+    status = models.CharField(max_length=50, choices=STATUS, default='no_run', verbose_name='当前状态')
+    pause_need_confirm = models.BooleanField(verbose_name='暂停是否已确认', default=False)
+    pause_when_finish = models.BooleanField(verbose_name='执行完成后是否暂停', default=False)
+    pause_finish_tip = models.CharField(max_length=100, verbose_name='执行完成暂停提示', default='执行完成，请确认后继续。')
+    exec_output = models.TextField(verbose_name='执行结果输出', blank=True)
+
+    class Meta:
+        verbose_name = '[任务]作业'
+        verbose_name_plural = '[任务]作业'
+
+    def __unicode__(self):
+        return get_name(self.name)

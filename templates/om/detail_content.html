@@ -1,11 +1,11 @@
 <div id="vertical-timeline" class="vertical-container light-timeline">
-    {% for group_id, group in detail.group.items %}
+    {% for group in task.taskflow_set.first.taskjobgroup_set.all %}
         <div class="vertical-timeline-block">
             <div class="vertical-timeline-icon yellow-bg"><i class="fa fa-angle-double-down"></i></div>
             <div class="vertical-timeline-content"><h2>{{ group.name }}</h2></div>
         </div>
-        {% for job_id, job in group.job.items %}
-            <div class="vertical-timeline-block" id="group_{{ job_id }}">
+        {% for job in group.taskjob_set.all %}
+            <div class="vertical-timeline-block" id="group_{{ job.job_id }}">
                 {% if job.status == 'finish' %}
                     <div class="vertical-timeline-icon navy-bg"><i class="fa fa-check"></i></div>
                 {% elif job.status == 'running' %}
@@ -15,12 +15,12 @@
                 {% endif %}
                 <div class="vertical-timeline-content">
                     <p>{{ job.name }}
-                        <button style="display: none" id="go_on-{{ group_id }}_{{ job_id }}">
+                        <button style="display: none" id="go_on-{{ group.group_id }}_{{ job.job_id }}">
                             <i class="fa fa-toggle-right">继续</i>
                         </button>
                     </p>
                     {% if job.status == 'finish' %}
-                        <button class="btn btn-sm btn-primary" id="show_out-{{ group_id }}_{{ job_id }}">查看结果</button>
+                        <button class="btn btn-sm btn-primary" id="show_out-{{ group.group_id }}_{{ job.job_id }}">查看结果</button>
                     {% endif %}
                     <div>
                         <span class="vertical-date">
@@ -39,7 +39,7 @@
                 </div>
             </div>
             <script>
-                $('#show_out-{{ group_id }}_{{ job_id }}').click(function () {
+                $('#show_out-{{ group.group_id }}_{{ job.job_id }}').click(function () {
                     layer.open({
                         type: 1,
                         title: '作业执行结果',
@@ -48,11 +48,11 @@
                         content: '{{ job.exec_output }}'
                     });
                 });
-                {% if job.wait %}
-                    $('#go_on-{{ group_id }}_{{ job_id }}').click(function () {
-                        $.get("{%url 'om:confirm_task' task.id flow.id group_id job_id %}", {'csrfmiddlewaretoken': '{{ csrf_token }}'}, function () {
+                {% if job.pause_need_confirm %}
+                    $('#go_on-{{ group.group_id }}_{{ job.job_id }}').click(function () {
+                        $.get("{%url 'om:confirm_task' task.id task.taskflow_set.first.flow_id group.group_id job.job_id %}", {'csrfmiddlewaretoken': '{{ csrf_token }}'}, function () {
                             layer.msg('将继续往下执行！',{time: 2000, icon: 1});
-                            $('#go_on-{{ group_id }}_{{ job_id }}').hide();
+                            $('#go_on-{{ group.group_id }}_{{ job.job_id }}').hide();
                         });
                     });
                     function job_confirm(){
@@ -60,12 +60,12 @@
                             title: '作业[{{ job.name }}]已完成',
                             btn: ['继续','先等等']
                         }, function(){
-                            $.get("{%url 'om:confirm_task' task.id flow.id group_id job_id %}", {'csrfmiddlewaretoken': '{{ csrf_token }}'}, function () {
+                            $.get("{%url 'om:confirm_task' task.id task.taskflow_set.first.flow_id group.group_id job.job_id %}", {'csrfmiddlewaretoken': '{{ csrf_token }}'}, function () {
                                 layer.msg('将继续往下执行！',{time: 2000, icon: 1});
-                                $('#go_on-{{ group_id }}_{{ job_id }}').hide();
+                                $('#go_on-{{ group.group_id }}_{{ job.job_id }}').hide();
                             });
                         }, function(){
-                            $('#go_on-{{ group_id }}_{{ job_id }}').show();
+                            $('#go_on-{{ group.group_id }}_{{ job.job_id }}').show();
                         });
                     }
                     job_confirm();
@@ -73,7 +73,7 @@
             </script>
         {% endfor %}
     {% endfor %}
-    {% if status == 'finish' %}
+    {% if task.status == 'finish' %}
         <div class="vertical-timeline-block">
             <div class="vertical-timeline-icon blue-bg"><i class="fa fa-power-off"></i></div>
             <div class="vertical-timeline-content">

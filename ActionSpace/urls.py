@@ -16,14 +16,21 @@ Including another URLconf
 from django.conf.urls import url, include
 from django.contrib import admin
 from django.views.generic import RedirectView
-from django.contrib.auth import views as auth_views
+from view import UserViewSet, GroupViewSet
+from rest_framework import routers
 
+
+# Routers provide an easy way of automatically determining the URL conf.
+router = routers.DefaultRouter()
+router.register(r'users', UserViewSet)
+router.register(r'groups', GroupViewSet)
 
 urlpatterns = [
     url(r'^$', RedirectView.as_view(url='/om/'), name='index'),
-    url(r'^accounts/login/$', auth_views.login, name='login'),
+    url(r'^api/', include(router.urls)),
     url(r'^om/', include('om.urls')),
     url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
     url(r'^admin/', admin.site.urls),
     url(r'^ckeditor/', include('ckeditor_uploader.urls')),
+    url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
 ]

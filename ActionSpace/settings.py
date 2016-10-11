@@ -14,10 +14,20 @@ https://docs.djangoproject.com/en/1.9/ref/settings/
 from __future__ import absolute_import
 import os
 
-# Celery setting#
-BROKER_URL = 'amqp://action_space:action_space@localhost:5672/%2F'
+USE_DJANGO_CELERY = False
+
+if USE_DJANGO_CELERY:
+    import djcelery
+    djcelery.setup_loader()
+    BROKER_URL = 'django://'
+    CELERY_RESULT_BACKEND = 'djcelery.backends.database:DatabaseBackend'
+    CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
+else:
+    # Celery setting#
+    BROKER_URL = 'amqp://action_space:action_space@localhost:5672/%2F'
+    CELERY_RESULT_BACKEND = 'amqp'
+    CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
 CELERY_TIMEZONE = 'Asia/Shanghai'
-CELERY_RESULT_BACKEND = 'amqp'
 # CELERY_ACCEPT_CONTENT = ['json']
 # CELERY_TASK_SERIALIZER = 'json'
 # CELERY_RESULT_SERIALIZER = 'json'
@@ -34,7 +44,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'p497&f@ey9wu33lc*)pa(ruj!58cq%=vfatufny6)y!u!))0f4'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['*', ]
 
@@ -42,7 +52,6 @@ ALLOWED_HOSTS = ['*', ]
 # Application definition
 
 INSTALLED_APPS = [
-    'om.apps.OmConfig',
     'django.contrib.admin',
     'django.contrib.admindocs',
     'django.contrib.auth',
@@ -55,15 +64,39 @@ INSTALLED_APPS = [
     'ckeditor',
     'ckeditor_uploader',
     'django_extensions',
-    'guardian'
+    'guardian',
+    'rest_framework',
+    'om.apps.OmConfig',
 ]
 
+
+if USE_DJANGO_CELERY:
+    INSTALLED_APPS += ['djcelery', 'kombu.transport.django']
+
+REST_FRAMEWORK = {
+    # Use Django's standard `django.contrib.auth` permissions,
+    # or allow read-only access for unauthenticated users.
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAdminUser'
+    ],
+    'DEFAULT_RENDERER_CLASSES': (
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
+    ),
+    'DEFAULT_PARSER_CLASSES': (
+        'rest_framework.parsers.JSONParser',
+    ),
+    # 'DEFAULT_PERMISSION_CLASSES': ('rest_framework.permissions.IsAdminUser',),
+    'PAGE_SIZE': 10
+}
+
 AUTHENTICATION_BACKENDS = (
-    'django.contrib.auth.backends.ModelBackend', # default
+    'django.contrib.auth.backends.ModelBackend',  # default
     'guardian.backends.ObjectPermissionBackend',
 )
 
 MIDDLEWARE_CLASSES = [
+    #  'django.middleware.locale.LocaleMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -150,7 +183,7 @@ STATICFILES_DIRS = (
     ("admin", os.path.join(STATIC_ROOT, 'admin')),
 )
 STATIC_URL = '/static/'
-#CKEDITOR_JQUERY_URL = '//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js'
+# CKEDITOR_JQUERY_URL = '//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js'
 CKEDITOR_JQUERY_URL = '//cdn.bootcss.com/jquery/3.1.0/jquery.min.js'
 CKEDITOR_UPLOAD_PATH = "uploads/"
 CKEDITOR_CONFIGS = {
@@ -168,14 +201,5 @@ CKEDITOR_CONFIGS = {
     }
 }
 
-SUIT_CONFIG = {  
-    'ADMIN_NAME': '运维工作平台',  
-    'MENU': (  
-        'sites',  
-        {'app': 'accounts', 'label': '帐户'},  
-        {'app': 'zinnia', 'label': '博客'},  
-        {'app': 'auth', 'label': '认证管理'},  
-    ),  
-}
-
-LOGIN_URL = '/admin/login/'
+#  LOGIN_URL = '/admin/login/'
+LOGIN_URL = '/api-auth/login/'

@@ -1,15 +1,28 @@
 # coding=utf-8
 from django.contrib import admin
-from om.models import System, Entity, Computer, Flow, JobGroup, ExecUser, Job, LogType, Log, Task
+from om.models import *
 from django.db import models
 from django.contrib.flatpages.admin import FlatPageAdmin
 from django.contrib.flatpages.models import FlatPage
 from ckeditor.widgets import CKEditorWidget
 from guardian.admin import GuardedModelAdmin
+from django.conf import settings
 
+
+if settings.USE_DJANGO_CELERY:
+    from kombu.transport.django import models as kombu_models
+    admin.site.register(kombu_models.Message)
 
 # Register your models here.
 admin.site.unregister(FlatPage)
+
+
+# noinspection PyProtectedMember
+class ReadOnlyModelAdmin(GuardedModelAdmin):
+    def get_readonly_fields(self, request, obj=None):
+        if obj:
+            self.readonly_fields = [field.name for field in obj.__class__._meta.fields]
+        return self.readonly_fields
 
 
 @admin.register(FlatPage)
@@ -93,22 +106,26 @@ class JobAdmin(GuardedModelAdmin):
     # )
 
 
-@admin.register(LogType)
-class LogTypeAdmin(GuardedModelAdmin):
-    list_display = ('name', 'desc')
-
-
-@admin.register(Log)
-class LogAdmin(GuardedModelAdmin):
-    list_display = ('id', 'log_type', 'topic', 'log_time', 'content')
-    date_hierarchy = 'log_time'
-    actions_on_top = False
-    actions_on_bottom = True
-
-
 @admin.register(Task)
-class TaskAdmin(GuardedModelAdmin):
+class TaskAdmin(ReadOnlyModelAdmin):
     exclude = ('detail',)
-    readonly_fields = ('id', 'exec_user', 'exec_flow', 'start_time', 'end_time', 'status')
-    list_display = ('id', 'exec_user', 'exec_flow', 'start_time', 'end_time', 'status')
+    list_display = ('id', 'exec_user', 'start_time', 'end_time', 'status')
     list_display_links = ('id', 'exec_user')
+
+
+@admin.register(TaskFlow)
+class TaskFlowAdmin(ReadOnlyModelAdmin):
+    list_display = ('id', 'name', 'flow_id', 'task')
+    list_display_links = ('id', 'name')
+
+
+@admin.register(TaskJobGroup)
+class TaskJobGroupAdmin(ReadOnlyModelAdmin):
+    list_display = ('id', 'name', 'group_id', 'flow')
+    list_display_links = ('id', 'name')
+
+
+@admin.register(TaskJob)
+class TaskJobAdmin(ReadOnlyModelAdmin):
+    list_display = ('id', 'name', 'job_id', 'group', 'status')
+    list_display_links = ('id', 'name')
