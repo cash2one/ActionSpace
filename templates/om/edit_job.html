@@ -53,6 +53,8 @@
                                                 </div>
                                             {% elif field.name in disable_field_list %}
                                                 {{ field | set_attr:'readonly=readonly' }}
+                                            {% elif field.name in normal_check_list %}
+                                                {{ field }}
                                             {% else %}
                                                 {{ field | set_attr:'class=form-control' }}
                                             {% endif %}

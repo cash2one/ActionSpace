@@ -35,3 +35,4 @@ urlpatterns = [
     url(r'^go_exec/(?P<flow_id>[\-0-9]+)/(?P<job_id>[\-0-9]+)/$', views.go_exec, name='go_exec'),
     url(r'^redo_exec/(?P<task_id>[0-9]+)/$', views.redo_exec, name='redo_exec'),
 ]
+

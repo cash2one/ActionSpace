@@ -3,13 +3,14 @@ from django import forms
 from django.utils.encoding import force_text
 from django.utils.html import format_html
 from om.models import Job, JobGroup, Computer, Flow
+# from itertools import chain
 
 
 class OrderedMultiSelect(forms.SelectMultiple):
     """
     多选组件，能保持已选中的顺序，并且把已选中的置于最前端，剩下的放在最后
     """
-    def render_options(self, selected_choices):
+    def render_options(self, choices, selected_choices):
         output = []
         new_choices_info = []
         int_selected = []
@@ -27,6 +28,7 @@ class OrderedMultiSelect(forms.SelectMultiple):
             # 将选中项变为list，避免出现3 in 33为True的情况
             new_selected = [x for x in selected_choices.split(',')]
 
+        # for option_value, option_label in chain(self.choices, new_choices_info):
         for option_value, option_label in new_choices_info:
             if isinstance(option_label, (list, tuple)):
                 output.append(format_html('<optgroup label="{}">', force_text(option_value)))
@@ -39,13 +41,17 @@ class OrderedMultiSelect(forms.SelectMultiple):
 
 
 class JobForm(forms.ModelForm):
-    server_list = forms.ModelMultipleChoiceField(queryset=Computer.objects.all(), required=False, label=u'服务器列表')
+    server_list = forms.ModelMultipleChoiceField(
+        queryset=Computer.objects.all(),
+        widget=forms.CheckboxSelectMultiple,
+        required=False, label=u'服务器列表'
+    )
 
     def save_form(self, request, commit=True, create=False):
         self.instance.last_modified_by = request.user.username
         if not hasattr(self, 'cleaned_data'):
             super(JobForm, self).save()
-        self.instance.server_list = ','.join([str(x.id) for x in self.cleaned_data['server_list']])
+        # self.instance.server_list = ','.join([str(x.id) for x in self.cleaned_data['server_list']])
         if not create:
             self.instance.founder = request.user.username
         return super(JobForm, self).save(commit)

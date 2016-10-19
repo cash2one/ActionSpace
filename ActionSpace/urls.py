@@ -16,21 +16,31 @@ Including another URLconf
 from django.conf.urls import url, include
 from django.contrib import admin
 from django.views.generic import RedirectView
-from view import UserViewSet, GroupViewSet
+from ActionSpace.view import UserViewSet, GroupViewSet, ServerViewSet
 from rest_framework import routers
-
+from django.conf import settings
 
 # Routers provide an easy way of automatically determining the URL conf.
 router = routers.DefaultRouter()
 router.register(r'users', UserViewSet)
 router.register(r'groups', GroupViewSet)
+router.register(r'servers', ServerViewSet)
 
 urlpatterns = [
-    url(r'^$', RedirectView.as_view(url='/om/'), name='index'),
+    url(r'^$', RedirectView.as_view(pattern_name='om:index', permanent=False), name='index'),
     url(r'^api/', include(router.urls)),
-    url(r'^om/', include('om.urls')),
+    url(r'^om/', include('om.urls', namespace='om')),
     url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
     url(r'^admin/', admin.site.urls),
     url(r'^ckeditor/', include('ckeditor_uploader.urls')),
     url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
 ]
+
+if settings.DEBUG and settings.USE_DEBUG_TOOLBAR:
+    import debug_toolbar
+    urlpatterns += [
+        url(r'^__debug__/', include(debug_toolbar.urls)),
+    ]
+
+if settings.USE_ALL_AUTH:
+    urlpatterns += [url(r'^accounts/', include('allauth.urls'))]

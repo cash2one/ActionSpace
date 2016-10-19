@@ -37,31 +37,47 @@ class EntityInline(admin.StackedInline):
     model = Entity
     show_change_link = True
     extra = 0
+    verbose_name = '实体'
+    verbose_name_plural = '实体'
 
 
 @admin.register(System)
 class SystemAdmin(GuardedModelAdmin):
     list_display = ('name', 'desc')
     inlines = [EntityInline]
+    search_fields = ('name',)
 
 
 class ComputerInline(admin.TabularInline):
     model = Computer.entity.through
     raw_id_fields = ('entity',)
-    extra = 0
+    show_change_link = True
+    extra = 3
+    verbose_name = '主机'
+    verbose_name_plural = '主机'
+
+
+class JobInline(admin.TabularInline):
+    model = Job.server_list.through
+    extra = 3
+    show_change_link = True
+    verbose_name = '作业'
+    verbose_name_plural = '作业'
 
 
 @admin.register(Entity)
 class EntityAdmin(GuardedModelAdmin):
     list_display = ('name', 'system', 'desc')
     inlines = [ComputerInline]
+    search_fields = ('name', 'system__name')
 
 
 @admin.register(Computer)
 class ComputerAdmin(GuardedModelAdmin):
-    list_display = ('host', 'ip', 'desc', 'installed_agent', 'agent_name')
-    # filter_vertical = ('entity',)
+    list_display = ('entity_name', 'env', 'host', 'ip', 'desc', 'installed_agent', 'agent_name')
     filter_horizontal = ('entity',)
+    inlines = [JobInline]
+    search_fields = ('entity__name', 'env', 'host', 'ip', 'installed_agent')
 
 
 @admin.register(Flow)
@@ -88,10 +104,10 @@ class ExecUserAdmin(GuardedModelAdmin):
 class JobAdmin(GuardedModelAdmin):
     list_display_links = ('name',)
     readonly_fields = ('created_time', 'last_modified_time')
+    filter_vertical = ('server_list',)
     list_display = (
-        'id', 'name', 'founder', # , 'job_type', 'script_type',
-        'exec_user', 'pause_when_finish', 'pause_finish_tip',
-        'file_from_local', 'file_target_path', 'server_list', 'desc'
+        'id', 'name', 'founder', 'exec_user', 'pause_when_finish',
+        'pause_finish_tip', 'file_from_local', 'file_target_path', 'desc'
     )
 
     # fieldsets = (

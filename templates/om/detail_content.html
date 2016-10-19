@@ -38,6 +38,7 @@
                     </div>
                 </div>
             </div>
+            <!--suppress JSUnresolvedFunction -->
             <script>
                 $('#show_out-{{ group.group_id }}_{{ job.job_id }}').click(function () {
                     layer.open({
@@ -49,10 +50,16 @@
                     });
                 });
                 {% if job.pause_need_confirm %}
+                    // var ws_scheme = window.location.protocol == "https:" ? "wss" : "ws";
+                    // var inst = new ReconnectingWebSocket(ws_scheme + '://' + window.location.host + window.location.pathname);
+                    // inst.onmessage = function(message) {
+                    //     console.log(message);
+                    // };
                     $('#go_on-{{ group.group_id }}_{{ job.job_id }}').click(function () {
                         $.get("{%url 'om:confirm_task' task.id task.taskflow_set.first.flow_id group.group_id job.job_id %}", {'csrfmiddlewaretoken': '{{ csrf_token }}'}, function () {
                             layer.msg('将继续往下执行！',{time: 2000, icon: 1});
                             $('#go_on-{{ group.group_id }}_{{ job.job_id }}').hide();
+                            // inst.send(JSON.stringify('{{ task.id }} {{ task.taskflow_set.first.flow_id }} {{ group.group_id }} {{ job.job_id}}'));
                         });
                     });
                     function job_confirm(){
@@ -69,6 +76,7 @@
                         });
                     }
                     job_confirm();
+
                 {% endif %}
             </script>
         {% endfor %}

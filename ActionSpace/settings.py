@@ -15,6 +15,9 @@ from __future__ import absolute_import
 import os
 
 USE_DJANGO_CELERY = False
+USE_DEBUG_TOOLBAR = True
+DEBUG_TOOLBAR_CHG_TAG = False
+USE_ALL_AUTH = False
 
 if USE_DJANGO_CELERY:
     import djcelery
@@ -66,12 +69,84 @@ INSTALLED_APPS = [
     'django_extensions',
     'guardian',
     'rest_framework',
+    # 'channels',
     'om.apps.OmConfig',
 ]
 
+if USE_DEBUG_TOOLBAR:
+    INSTALLED_APPS += ['template_profiler_panel', 'debug_toolbar']
 
 if USE_DJANGO_CELERY:
     INSTALLED_APPS += ['djcelery', 'kombu.transport.django']
+
+if USE_ALL_AUTH:
+    INSTALLED_APPS += [
+        'allauth',
+        'allauth.account',
+        'allauth.socialaccount',
+        # ... include the providers you want to enable:
+        'allauth.socialaccount.providers.amazon',
+        'allauth.socialaccount.providers.angellist',
+        'allauth.socialaccount.providers.asana',
+        'allauth.socialaccount.providers.baidu',
+        'allauth.socialaccount.providers.basecamp',
+        'allauth.socialaccount.providers.bitbucket',
+        'allauth.socialaccount.providers.bitbucket_oauth2',
+        'allauth.socialaccount.providers.bitly',
+        'allauth.socialaccount.providers.coinbase',
+        'allauth.socialaccount.providers.digitalocean',
+        'allauth.socialaccount.providers.douban',
+        'allauth.socialaccount.providers.draugiem',
+        'allauth.socialaccount.providers.dropbox',
+        'allauth.socialaccount.providers.dropbox_oauth2',
+        'allauth.socialaccount.providers.edmodo',
+        'allauth.socialaccount.providers.eveonline',
+        'allauth.socialaccount.providers.evernote',
+        'allauth.socialaccount.providers.facebook',
+        'allauth.socialaccount.providers.feedly',
+        'allauth.socialaccount.providers.flickr',
+        'allauth.socialaccount.providers.foursquare',
+        'allauth.socialaccount.providers.fxa',
+        'allauth.socialaccount.providers.github',
+        'allauth.socialaccount.providers.gitlab',
+        'allauth.socialaccount.providers.google',
+        'allauth.socialaccount.providers.hubic',
+        'allauth.socialaccount.providers.instagram',
+        'allauth.socialaccount.providers.linkedin',
+        'allauth.socialaccount.providers.linkedin_oauth2',
+        'allauth.socialaccount.providers.mailru',
+        'allauth.socialaccount.providers.odnoklassniki',
+        'allauth.socialaccount.providers.openid',
+        'allauth.socialaccount.providers.orcid',
+        'allauth.socialaccount.providers.paypal',
+        'allauth.socialaccount.providers.persona',
+        'allauth.socialaccount.providers.pinterest',
+        'allauth.socialaccount.providers.reddit',
+        'allauth.socialaccount.providers.robinhood',
+        'allauth.socialaccount.providers.shopify',
+        'allauth.socialaccount.providers.slack',
+        'allauth.socialaccount.providers.soundcloud',
+        'allauth.socialaccount.providers.spotify',
+        'allauth.socialaccount.providers.stackexchange',
+        'allauth.socialaccount.providers.stripe',
+        'allauth.socialaccount.providers.tumblr',
+        'allauth.socialaccount.providers.twentythreeandme',
+        'allauth.socialaccount.providers.twitch',
+        'allauth.socialaccount.providers.twitter',
+        'allauth.socialaccount.providers.untappd',
+        'allauth.socialaccount.providers.vimeo',
+        'allauth.socialaccount.providers.vk',
+        'allauth.socialaccount.providers.weibo',
+        'allauth.socialaccount.providers.weixin'
+    ]
+
+    SOCIALACCOUNT_PROVIDERS = {
+        'weixin': {
+            'AUTHORIZE_URL': 'https://open.weixin.qq.com/connect/oauth2/authorize',  # for media platform
+        }
+    }
+
+    SITE_ID = 2
 
 REST_FRAMEWORK = {
     # Use Django's standard `django.contrib.auth` permissions,
@@ -93,7 +168,11 @@ REST_FRAMEWORK = {
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',  # default
     'guardian.backends.ObjectPermissionBackend',
+    'allauth.account.auth_backends.AuthenticationBackend'
 )
+
+if USE_ALL_AUTH:
+    AUTHENTICATION_BACKENDS += ('allauth.account.auth_backends.AuthenticationBackend', )
 
 MIDDLEWARE_CLASSES = [
     #  'django.middleware.locale.LocaleMiddleware',
@@ -108,6 +187,9 @@ MIDDLEWARE_CLASSES = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.contrib.admindocs.middleware.XViewMiddleware'
 ]
+
+if USE_DEBUG_TOOLBAR:
+    MIDDLEWARE_CLASSES = ['debug_toolbar.middleware.DebugToolbarMiddleware'] + MIDDLEWARE_CLASSES
 
 ROOT_URLCONF = 'ActionSpace.urls'
 
@@ -126,6 +208,9 @@ TEMPLATES = [
         },
     },
 ]
+
+if USE_ALL_AUTH:
+    TEMPLATES[0]['OPTIONS']['context_processors'] += ['django.template.context_processors.request']
 
 WSGI_APPLICATION = 'ActionSpace.wsgi.application'
 
@@ -203,3 +288,48 @@ CKEDITOR_CONFIGS = {
 
 #  LOGIN_URL = '/admin/login/'
 LOGIN_URL = '/api-auth/login/'
+
+CHANNEL_LAYERS = {
+    'default': {
+        # 'BACKEND': 'asgi_redis.RedisChannelLayer',
+        'BACKEND': 'asgiref.inmemory.ChannelLayer',
+        # 'CONFIG': {
+        #     'hosts': [os.environ.get('REDIS_URL', 'redis://10.25.161.126:6382')],
+        # },
+        'ROUTING': 'ActionSpace.routing.channel_routing'
+    }
+}
+
+if USE_DEBUG_TOOLBAR:
+    DEBUG_TOOLBAR_PANELS = [
+        'ddt_request_history.panels.request_history.RequestHistoryPanel',
+        'template_profiler_panel.panels.template.TemplateProfilerPanel',
+        'debug_toolbar.panels.versions.VersionsPanel',
+        'debug_toolbar.panels.timer.TimerPanel',
+        'debug_toolbar.panels.settings.SettingsPanel',
+        'debug_toolbar.panels.headers.HeadersPanel',
+        'debug_toolbar.panels.request.RequestPanel',
+        'debug_toolbar.panels.sql.SQLPanel',
+        'debug_toolbar.panels.staticfiles.StaticFilesPanel',
+        'debug_toolbar.panels.templates.TemplatesPanel',
+        'debug_toolbar.panels.cache.CachePanel',
+        'debug_toolbar.panels.signals.SignalsPanel',
+        'debug_toolbar.panels.logging.LoggingPanel',
+        'debug_toolbar.panels.redirects.RedirectsPanel',
+    ]
+
+    DEBUG_TOOLBAR_CONFIG = {
+        'SHOW_TOOLBAR_CALLBACK': 'ddt_request_history.panels.request_history.allow_ajax',
+        'RESULTS_STORE_SIZE': 100,
+        'JQUERY_URL': '//cdn.bootcss.com/jquery/3.1.0/jquery.min.js',
+        'SHOW_COLLAPSED': True,
+        'ENABLE_STACKTRACES': True,
+        'SHOW_TEMPLATE_CONTEXT': True
+    }
+
+    if DEBUG_TOOLBAR_CHG_TAG:
+        DEBUG_TOOLBAR_CONFIG = {
+            'TAG': 'div',
+        }
+
+    INTERNAL_IPS = ('127.0.0.1', )

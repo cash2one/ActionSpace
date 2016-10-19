@@ -9,8 +9,8 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 from om.form import JobForm, JobGroupForm, FlowForm
-from om.models import Flow, JobGroup, Job, Task, TaskFlow, TaskJobGroup, TaskJob
-from datetime import datetime
+from om.models import Flow, JobGroup, Job, Task, TaskFlow, TaskJobGroup, TaskJob, Computer, System
+from datetime import datetime as dt
 
 
 # Create your views here.
@@ -63,7 +63,9 @@ def exec_flow(request):
 def send_task_to_exec(user_name, task):
     result = {'result': 'Y', 'task': '-1', 'desc': ''}
     if task.taskflow_set.count() > 0:
-        # exec_task(task.id, user_name)
+        # import threading
+        # t1 = threading.Thread(target=exec_task, args=(task.id, 'wqz'))
+        # t1.start()
         res = exec_task.delay(task.id, user_name)
         task.async_result = res.id
         task.save()
@@ -87,17 +89,18 @@ def new_task(username, flow_id, job_id):
 
     task = Task.objects.create(name=flow.name, exec_user=username)
     t_flow = TaskFlow.objects.create(name=flow.name, flow_id=flow.pk, task=task)
-
     for group_id in str2arr(flow.job_group_list):
         group = JobGroup.objects.get(pk=group_id)
         t_group = TaskJobGroup.objects.create(name=group.name, group_id=group.pk, flow=t_flow)
         for job_id in str2arr(group.job_list):
             job = Job.objects.get(pk=job_id)
+            server_ip_list = ','.join([x.ip for x in job.server_list.all()])
             TaskJob.objects.create(
                 name=job.name, job_id=job.pk, group=t_group, job_type=job.job_type,
                 script_type=job.script_type, script_content=job.script_content,
                 begin_time=timezone.now(), end_time=timezone.now(), status='no_run',
-                pause_when_finish=job.pause_when_finish,
+                pause_when_finish=job.pause_when_finish, script_param=job.script_param,
+                server_list=server_ip_list,
                 pause_finish_tip=job.pause_finish_tip, exec_output=''
             )
 
@@ -117,8 +120,9 @@ def clone_task(tid):
                 name=task_job.name, job_id=task_job.job_id, group=t_group, job_type=task_job.job_type,
                 script_type=task_job.script_type, script_content=task_job.script_content,
                 begin_time=timezone.now(), end_time=timezone.now(), status='no_run',
-                pause_when_finish=task_job.pause_when_finish,
-                pause_finish_tip=task_job.pause_finish_tip, exec_output=''
+                pause_when_finish=task_job.pause_when_finish, script_param=task_job.script_param,
+                server_list=task_job.server_list, pause_finish_tip=task_job.pause_finish_tip,
+                exec_output=''
             )
     new_t_task.save()
     return new_t_task
@@ -150,15 +154,15 @@ def task_status(request, task_id):
 
 @login_required
 def get_flow_list(_):
-    fmt = '%Y年%m月%d日 %H:%M:%S'
+    fmt = '%Y-%m-%d %H:%M:%S'
     return JsonResponse(
         [{
              'id': x.id,
              'name': x.name,
              'founder': x.founder,
              'last_modified_by': x.last_modified_by,
-             'created_time': datetime.strftime(timezone.localtime(x.created_time), fmt),
-             'last_modified_time': datetime.strftime(timezone.localtime(x.last_modified_time), fmt),
+             'created_time': dt.strftime(timezone.localtime(x.created_time), fmt),
+             'last_modified_time': dt.strftime(timezone.localtime(x.last_modified_time), fmt),
              'desc': x.desc
          } for x in Flow.objects.all() if not x.is_quick_flow
          ],
@@ -326,6 +330,7 @@ def edit_job(request, job_id):
         'form': job_form,
         'check_field_list': ['pause_when_finish', 'pause_when_error', 'file_from_local'],
         'disable_field_list': ['last_modified_by', 'founder'],
+        'normal_check_list': ['server_list'],
         'save': save,
     }
     return render(request, 'om/edit_job.html', context)
@@ -380,7 +385,7 @@ def edit_flow(request, flow_id):
 def save_edit_flow(request):
     result = ['FLOW_INIT', 'TASK_INIT']
     if request.method == 'POST' and request.POST.keys():
-        info = json.loads(request.POST.keys()[0])
+        info = json.loads(list(request.POST.keys())[0])
         flow_sort = info['flow']
         if flow_sort:
             flow = Flow.objects.get(pk=int(info['id']))
@@ -447,66 +452,47 @@ def choose_server(request):
     return render(request, 'om/choose_server.html')
 
 
-RANDOM_IP_POOL = ['192.168.10.222/0']
-
-
-def __get_random_ip():
-    str_ip = RANDOM_IP_POOL[random.randint(0, len(RANDOM_IP_POOL) - 1)]
-    str_ip_addr = str2arr(str_ip, '/', False)[0]
-    str_ip_mask = str2arr(str_ip, '/', False)[1]
-    ip_addr = struct.unpack('>I', socket.inet_aton(str_ip_addr))[0]
-    mask = 0x0
-    for i in range(31, 31 - int(str_ip_mask), -1):
-        mask |= 1 << i
-    ip_addr_min = ip_addr & (mask & 0xffffffff)
-    ip_addr_max = ip_addr | (~mask & 0xffffffff)
-    return str(socket.inet_ntoa(
-        struct.pack('>I', random.randint(ip_addr_min, ip_addr_max))))
-
-
 @login_required
 def choose_server_result(_):
-    status = ['Agent正常', 'Agent不正常']
     server_list = []
-    for i in range(50):
+    for computer in Computer.objects.all():
         server_list.append({
-            'server_ip': __get_random_ip(),
-            'server_hostname': __get_random_ip() + '-' + str(i),
-            'server_status': status[random.randint(0, len(status) - 1)],
+            'server_ip': computer.ip,
+            'server_hostname': computer.host,
+            'server_status': computer.installed_agent,
         })
     return JsonResponse(server_list, safe=False)
 
 
 @login_required
 def get_server_list(_):
-    system_list = ['SODS-CORE', 'SACRM-MIC', 'SAMPMS-CORE', 'SRDM-CORE']
-    env_list = ['uat', 'prd']
-    status = ['Agent正常', 'Agent不正常']
     server_list = []
-    for i in range(3000):
-        server_list.append({
-            'system': system_list[random.randint(0, len(system_list) - 1)],
-            'env': env_list[random.randint(0, len(env_list) - 1)],
-            'entity': system_list[random.randint(0, len(system_list) - 1)] + '-' + str(i),
-            'server_ip': __get_random_ip(),
-            'server_hostname': __get_random_ip() + '-' + str(i),
-            'server_status': status[random.randint(0, len(status) - 1)],
-        })
+    for system in System.objects.all():
+        for entity in system.entity_set.all():
+            for computer in entity.computer_set.all():
+                server_list.append({
+                    'system': system.name,
+                    'env': computer.env,
+                    'entity': entity.name,
+                    'server_ip': computer.ip,
+                    'server_hostname': computer.host,
+                    'server_status': computer.installed_agent,
+                })
     return JsonResponse(server_list, safe=False)
 
 
 @login_required
 def get_action_history_list(_):
     result = []
-    fmt = '%Y年%m月%d日 %H:%M:%S'
+    fmt = '%Y-%m-%d %H:%M:%S'
     for t in Task.objects.order_by('-id'):
         result.append({
-            'task_id': t.id, 'task_name': t.name,
+            'task_id': t.id, 'task_name': t.name, 'approval_status': t.get_approval_status_display(),
             'run_user': t.exec_user, 'task_status': t.get_status_display(),
-            'start_time': datetime.strftime(timezone.localtime(t.start_time),
-                                            fmt) if t.status != 'no_run' else '还没开始',
-            'end_time': datetime.strftime(timezone.localtime(t.end_time),
-                                          fmt) if t.status == 'finish' else '没有跑完',
+            'start_time': dt.strftime(timezone.localtime(t.start_time),
+                                      fmt) if t.status != 'no_run' else '未开始',
+            'end_time': dt.strftime(timezone.localtime(t.end_time),
+                                    fmt) if t.status == 'finish' else '未完成',
             'cost_time': (t.end_time - t.start_time).total_seconds(),
         })
 
