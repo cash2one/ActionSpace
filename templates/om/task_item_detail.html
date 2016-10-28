@@ -1,0 +1,58 @@
+{% extends 'om/base.html' %}
+{% load form_extra_tag %}
+{% load staticfiles %}
+{% block body_begin %}
+<body class="gray-bg">
+{% endblock %}
+{% block body_content %}
+    <div class="wrapper wrapper-content  animated fadeInRight">
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="ibox ">
+                    <div class="ibox-title">
+                        <h5>查看任务属性</h5>
+                    </div>
+                    <div class="ibox-content">
+                        <form class="form-horizontal" method='post'>
+                            {% csrf_token %}
+                            {% for field in form %}
+                                <div class="form-group">
+                                    <label class="col-sm-2 control-label">{{ field.label_tag }}</label>
+                                    <div class="col-sm-8" style='display:block;'>
+                                        {{ field | set_attr:'class=form-control,readonly=true' }}
+                                        {{ field.errors }}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                            <div class="form-group">
+                                <div class="col-sm-10 col-sm-offset-5">
+                                    <button class="btn btn-primary" id="close_page" type="button" value="cancel">关闭</button>
+                                </div>
+                            </div>
+                    </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% block other_js %}
+        <script src="{% static 'om/js/plugins/peity/jquery.peity.min.js' %}"></script>
+        <script src="{% static 'om/js/plugins/codemirror/codemirror.js' %}"></script>
+        <script src="{% static 'om/js/plugins/codemirror/mode/shell/shell.js' %}"></script>
+        <script src="{% static 'om/js/plugins/codemirror/mode/python/python.js' %}"></script>
+        <script src="{% static 'om/js/plugins/codemirror/mode/perl/perl.js' %}"></script>
+        <script src="{% static 'om/js/plugins/prettyfile/bootstrap-prettyfile.js' %}"></script>
+        <script type="text/javascript">
+        $(document).ready(
+                function() {
+                    $('#close_page').on('click', function(){
+                        var index = parent.layer.getFrameIndex(window.name);
+                        parent.layer.close(index);
+                    });
+                    $("select").prop("disabled", true);
+                }
+        );
+        </script>
+    {% endblock %}
+</body>
+{% endblock %}

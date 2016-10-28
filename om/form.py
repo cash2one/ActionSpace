@@ -2,7 +2,9 @@
 from django import forms
 from django.utils.encoding import force_text
 from django.utils.html import format_html
-from om.models import Job, JobGroup, Computer, Flow
+from om.models import Job, JobGroup, Computer, Flow, TaskJob, Entity
+
+
 # from itertools import chain
 
 
@@ -10,7 +12,7 @@ class OrderedMultiSelect(forms.SelectMultiple):
     """
     多选组件，能保持已选中的顺序，并且把已选中的置于最前端，剩下的放在最后
     """
-    def render_options(self, choices, selected_choices):
+    def render_options(self, selected_choices):
         output = []
         new_choices_info = []
         int_selected = []
@@ -41,10 +43,15 @@ class OrderedMultiSelect(forms.SelectMultiple):
 
 
 class JobForm(forms.ModelForm):
+    # def __init__(self, *args, **kwargs):
+    #     super(JobForm, self).__init__(*args, **kwargs)
+    #     server_list_choices = [(e.name, [(x.ip, x.ip) for x in e.computer_set.all()]) for e in Entity.objects.all()]
+    #     self.fields['server_list'].choices = server_list_choices
+
     server_list = forms.ModelMultipleChoiceField(
-        queryset=Computer.objects.all(),
-        widget=forms.CheckboxSelectMultiple,
-        required=False, label=u'服务器列表'
+        queryset=Computer.objects.order_by('ip'),
+        # widget=forms.CheckboxSelectMultiple,
+        required=False
     )
 
     def save_form(self, request, commit=True, create=False):
@@ -89,3 +96,13 @@ class FlowForm(forms.ModelForm):
         model = Flow
         fields = '__all__'
         exclude = ('last_modified_by', 'founder', 'job_group_list', 'is_quick_flow')
+
+
+class TaskItemForm(forms.ModelForm):
+    class Meta:
+        model = TaskJob
+        fields = '__all__'
+        exclude = (
+            'job_id', 'group', 'status', 'pause_need_confirm',
+            'pause_when_finish', 'pause_finish_tip', 'exec_output'
+        )

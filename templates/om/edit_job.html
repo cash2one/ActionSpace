@@ -54,7 +54,7 @@
                                             {% elif field.name in disable_field_list %}
                                                 {{ field | set_attr:'readonly=readonly' }}
                                             {% elif field.name in normal_check_list %}
-                                                {{ field }}
+                                                {{ field | set_attr:'size=30,style=width:200px;font-size:16px' }}
                                             {% else %}
                                                 {{ field | set_attr:'class=form-control' }}
                                             {% endif %}
@@ -90,6 +90,15 @@
         $(document).ready(function() {
             $("#code_source_select").hide();
             $( 'input[type="file"]' ).prettyFile();
+            {% for field_select in normal_check_list %}
+                $('#id_{{ field_select }}').multiselect({
+                    enableClickableOptGroups: true,
+                    enableCollapsibleOptGroups: true,
+                    enableFiltering: true,
+                    includeSelectAllOption: true,
+                    maxHeight: 300
+            });
+            {% endfor %}
         });
          var editor = CodeMirror.fromTextArea($("#id_script_content")[0], {
             mode: 'python', lineNumbers: true, indentUnit: 4,

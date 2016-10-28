@@ -84,6 +84,7 @@
         <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table.min.js' %}"></script>
         <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table-mobile.min.js' %}"></script>
         <script src="{% static 'om/js/plugins/bootstrap-table/locale/bootstrap-table-zh-CN.min.js' %}"></script>
+        <!--suppress JSUnusedLocalSymbols -->
         <script>
             $(".chosen-select").chosen();
             $('#choose_server').on('click', function(){
@@ -100,7 +101,7 @@
            function actionFormatter(value, row, index) {
                 return [
                     '<a class="delete_server" href="javascript:void(0)" title="删除">',
-                    '<button type="button" class="btn btn-info">删除</button>',
+                    '<button type="button" class="btn btn-xs btn-info">删除</button>',
                     '</a>'
                 ].join('');
             }

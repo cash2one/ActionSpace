@@ -1,0 +1,21 @@
+{% extends 'om/base.html' %}
+{% load form_extra_tag %}
+{% load staticfiles %}
+{% block body_begin %}
+<body class="gray-bg">
+{% endblock %}
+{% block body_content %}
+    <div class="middle-box text-center animated fadeInDown">
+        <h1>403</h1>
+        <h3 class="font-bold">您没有该操作权限</h3>
+        <div class="error-desc">
+            请联系管理员！
+        </div>
+    </div>
+    {% block other_js %}
+        <script src="{% static 'om/js/jquery.min.js' %}"></script>
+        <script src="{% static 'om/js/plugins/peity/jquery.peity.min.js' %}"></script>
+        <script src="{% static 'om/js/plugins/prettyfile/bootstrap-prettyfile.js' %}"></script>
+    {% endblock %}
+</body>
+{% endblock %}

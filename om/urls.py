@@ -6,6 +6,7 @@ app_name = 'om'
 urlpatterns = [
     url(r'^$', views.index, name='index'),
     url(r'^default_content/$', views.default_content, name='default_content'),
+    url(r'^no_permission/$', views.no_permission, name='no_permission'),
     url(r'^index_content/$', views.index_content, name='index_content'),
     url(r'^quick_exec_script/$', views.quick_exec_script, name='quick_exec_script'),
     url(r'^quick_upload_file/$', views.quick_upload_file, name='quick_upload_file'),
@@ -32,7 +33,10 @@ urlpatterns = [
     url(r'^task_status/(?P<task_id>[0-9]+)/$', views.task_status, name='task_status'),
     url(r'^detail_content/(?P<task_id>[0-9]+)/(?P<first>[0-9])/$', views.detail_content, name='detail_content'),
     url(r'^confirm_task/(?P<task_id>[0-9]+)/(?P<flow_id>[0-9]+)/(?P<group_id>[0-9]+)/(?P<job_id>[0-9]+)/$', views.confirm_task, name='confirm_task'),
-    url(r'^go_exec/(?P<flow_id>[\-0-9]+)/(?P<job_id>[\-0-9]+)/$', views.go_exec, name='go_exec'),
-    url(r'^redo_exec/(?P<task_id>[0-9]+)/$', views.redo_exec, name='redo_exec'),
+    url(r'^create_task/(?P<flow_id>[\-0-9]+)/(?P<job_id>[\-0-9]+)/$', views.create_task, name='create_task'),
+    url(r'^redo_create_task/(?P<task_id>[0-9]+)/$', views.redo_create_task, name='redo_create_task'),
+    url(r'^exec_task/(?P<task_id>[0-9]+)/$', views.exec_task, name='exec_task'),
+    url(r'^approval_task/(?P<task_id>[0-9]+)/$', views.approval_task, name='approval_task'),
+    url(r'^task_item_detail/(?P<task_job_id>[0-9]+)/$', views.task_item_detail, name='task_item_detail'),
 ]
 

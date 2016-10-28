@@ -1,14 +1,16 @@
 # coding=utf-8
-import random
-import socket
-import struct
 import json
+
+from django.http import HttpResponseRedirect
+# from guardian.shortcuts import get_perms
+
 from om.util import *
 from django.contrib.auth.decorators import login_required
+# from guardian.decorators import permission_required
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
-from om.form import JobForm, JobGroupForm, FlowForm
+from om.form import JobForm, JobGroupForm, FlowForm, TaskItemForm
 from om.models import Flow, JobGroup, Job, Task, TaskFlow, TaskJobGroup, TaskJob, Computer, System
 from datetime import datetime as dt
 
@@ -16,7 +18,7 @@ from datetime import datetime as dt
 # Create your views here.
 @login_required
 def index(request):
-    return render(request, 'om/index.html')
+    return render(request, 'om/index.html', {'user': request.user})
 
 
 @login_required
@@ -32,6 +34,7 @@ def default_content(request):
         'month_task_finish': this_month_task_list.filter(status='finish').count(),
         'month_task_run_fail': this_month_task_list.filter(status='run_fail').count(),
         'month_task_no_run': this_month_task_list.filter(status='no_run').count(),
+        'server_count': Computer.objects.count()
     }
     return render(request, 'om/home.html', context)
 
@@ -54,30 +57,13 @@ def quick_upload_file(request):
 @login_required
 def exec_flow(request):
     context = {
-        'flows': Flow.objects.all(),
         'fields': [x for x in Flow._meta.fields if x.name not in ['job_group_list', 'is_quick_flow']]
     }
     return render(request, 'om/exec_flow.html', context)
 
 
-def send_task_to_exec(user_name, task):
-    result = {'result': 'Y', 'task': '-1', 'desc': ''}
-    if task.taskflow_set.count() > 0:
-        # import threading
-        # t1 = threading.Thread(target=exec_task, args=(task.id, 'wqz'))
-        # t1.start()
-        res = exec_task.delay(task.id, user_name)
-        task.async_result = res.id
-        task.save()
-        result['task'] = task.id
-    else:
-        result['result'] = 'N'
-        result['task'] = '-1'
-        result['desc'] = '作业流没有执行内容'
-    return result
-
-
-def new_task(username, flow_id, job_id):
+@login_required
+def create_task(request, flow_id, job_id):
     if flow_id == -1 and job_id != -1:  # flow不存在， job存在说明是快速执行任务来的
         job = get_object_or_404(Job, pk=job_id)
         group = JobGroup.objects.create(name='临时组', job_list=str(job.id))
@@ -87,7 +73,7 @@ def new_task(username, flow_id, job_id):
     else:
         flow = get_object_or_404(Flow, pk=flow_id)
 
-    task = Task.objects.create(name=flow.name, exec_user=username)
+    task = Task.objects.create(name=flow.name, exec_user=request.user.username, approval_time=timezone.now())
     t_flow = TaskFlow.objects.create(name=flow.name, flow_id=flow.pk, task=task)
     for group_id in str2arr(flow.job_group_list):
         group = JobGroup.objects.get(pk=group_id)
@@ -105,13 +91,12 @@ def new_task(username, flow_id, job_id):
             )
 
     task.save()
-    return task
+    return JsonResponse({'result': 'N', 'desc': '任务已创建！'})
 
 
-def clone_task(tid):
-    task = Task.objects.get(pk=tid)
+def clone_task(task):
     t_flow = task.taskflow_set.first()
-    new_t_task = Task.objects.create(name=task.name, exec_user=task.exec_user)
+    new_t_task = Task.objects.create(name=task.name, exec_user=task.exec_user, approval_time=timezone.now())
     new_t_flow = TaskFlow.objects.create(name=t_flow.name, flow_id=t_flow.flow_id, task=new_t_task)
     for task_group in t_flow.taskjobgroup_set.all():
         t_group = TaskJobGroup.objects.create(name=task_group.name, group_id=task_group.group_id, flow=new_t_flow)
@@ -129,14 +114,38 @@ def clone_task(tid):
 
 
 @login_required
-def go_exec(request, flow_id, job_id):
-    return JsonResponse(send_task_to_exec(
-        request.user.username, new_task(request.user.username, flow_id, job_id)))
+def exec_task(request, task_id):
+    try:
+        task = Task.objects.get(pk=task_id)
+        if task.status == 'running':
+            return JsonResponse({'result': 'N', 'desc': '任务[{tid}]正在执行中，请刷新页面查看状态。'.format(tid=task.id)})
+        if task.async_result != '':
+            return JsonResponse({'result': 'N', 'desc': '任务[{tid}]已发起过，请刷新页面查看状态。'.format(tid=task.id)})
+        if task.approval_status == 'N':
+            return JsonResponse({'result': 'N', 'desc': '任务[{tid}]尚未审批，请联系管理员审批。'.format(tid=task.id)})
+        elif task.approval_status == 'R':
+            return JsonResponse({'result': 'N', 'desc': '任务[{tid}]审批不通过，不能执行。'.format(tid=task.id)})
+        if task.taskflow_set.count() > 0:
+            res = celery_exec_task.delay(task.id, request.user.username)
+            task.async_result = res.id
+            task.exec_user = request.user.username
+            task.save()
+            return JsonResponse({'result': 'Y', 'desc': '任务[{tid}]已发送到后台执行。'.format(tid=task.id)})
+        else:
+            return JsonResponse({'result': 'N', 'desc': '任务[{tid}]不包含任何作业流。'.format(tid=task.id)})
+    except Task.DoesNotExist as e:
+        print(e)
+        return JsonResponse({'result': 'N', 'desc': '任务[{tid}]不存在！'.format(tid=task_id)})
 
 
 @login_required
-def redo_exec(request, task_id):
-    return JsonResponse(send_task_to_exec(request.user.username, clone_task(task_id)))
+def redo_create_task(request, task_id):
+    for task in Task.objects.filter(pk=task_id):
+        new_task = clone_task(task)
+        new_task.exec_user = request.user.username
+        new_task.save()
+        return JsonResponse({'result': 'Y', 'desc': 'ID为[{tid}]的任务已创建。'.format(tid=new_task.id)})
+    return JsonResponse({'result': 'N', 'desc': 'ID为[{tid}]任务不存在！'.format(tid=task_id)})
 
 
 @login_required
@@ -164,7 +173,7 @@ def get_flow_list(_):
              'created_time': dt.strftime(timezone.localtime(x.created_time), fmt),
              'last_modified_time': dt.strftime(timezone.localtime(x.last_modified_time), fmt),
              'desc': x.desc
-         } for x in Flow.objects.all() if not x.is_quick_flow
+         } for x in Flow.objects.order_by('-id') if not x.is_quick_flow
          ],
         safe=False)
 
@@ -299,6 +308,7 @@ def new_job(request, job_group_id):
     context = {
         'form': job_form,
         'check_field_list': ['pause_when_finish', 'pause_when_error', 'file_from_local'],
+        'normal_check_list': ['server_list'],
         'save': save,
     }
     return render(request, 'om/edit_job.html', context)
@@ -416,7 +426,8 @@ def action_history(request):
 
 @login_required
 def action_detail(request, task_id):
-    return render(request, 'om/action_detail.html', {'task': get_object_or_404(Task, pk=task_id).id})
+    task = get_object_or_404(Task, pk=task_id)
+    return render(request, 'om/action_detail.html', {'task': task.id})
 
 
 @login_required
@@ -429,7 +440,6 @@ def detail_content(request, task_id, first):
         cost_time = (task.end_time - task.start_time).total_seconds()
     context = {
         'task': task,
-        'flow'
         'cost_time': cost_time
     }
     return render(request, 'om/detail_content.html', context)
@@ -488,12 +498,36 @@ def get_action_history_list(_):
     for t in Task.objects.order_by('-id'):
         result.append({
             'task_id': t.id, 'task_name': t.name, 'approval_status': t.get_approval_status_display(),
+            'approver': t.approver, 'approval_desc': t.approval_desc,
             'run_user': t.exec_user, 'task_status': t.get_status_display(),
             'start_time': dt.strftime(timezone.localtime(t.start_time),
                                       fmt) if t.status != 'no_run' else '未开始',
             'end_time': dt.strftime(timezone.localtime(t.end_time),
                                     fmt) if t.status == 'finish' else '未完成',
-            'cost_time': (t.end_time - t.start_time).total_seconds(),
+            'cost_time': (t.end_time - t.start_time).total_seconds() if t.approval_status == 'Y' else '未完成',
         })
 
     return JsonResponse(result, safe=False)
+
+
+# @permission_required('om.can_approval_task', login_url='/om/no_permission/')
+@login_required
+def approval_task(request, task_id):
+    context = {'saved': request.method == 'POST', 'task_id': task_id}
+    task = get_object_or_404(Task, pk=task_id)
+    # if 'can_approval_task' not in get_perms(request.user, task):
+    if not request.user.has_perm('om.can_approval_task', task):
+        return HttpResponseRedirect("/om/no_permission/")
+    if request.method == 'POST':
+        task.approval(request.user.username, request.POST['result'], request.POST['reason'])
+    return render(request, 'om/approval_task.html', context)
+
+
+@login_required
+def task_item_detail(request, task_job_id):
+    task_job = get_object_or_404(TaskJob, pk=task_job_id)
+    return render(request, 'om/task_item_detail.html', {'form': TaskItemForm(instance=task_job)})
+
+
+def no_permission(request):
+    return render(request, 'om/403.html')

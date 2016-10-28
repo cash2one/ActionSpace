@@ -1,6 +1,0 @@
-nginx
-1 nginx -c nginx/nginx.conf
-2 python manage.py runserver
-
-apache
-httpd

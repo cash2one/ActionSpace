@@ -162,25 +162,29 @@ class Task(models.Model):
     STATUS = (('finish', '已执行'), ('running', '正在执行'), ('no_run', '未执行'), ('run_fail', '执行失败'))
     status = models.CharField(max_length=50, choices=STATUS, default='no_run', verbose_name='当前状态')
     async_result = models.CharField(max_length=80, default='', verbose_name='Celery的task id')
-    APPROVAL_STATUS = (('Y', '审批通过'), ('N', '未审批'), ('R', '审批被拒绝'))
+    APPROVAL_STATUS = (('Y', '通过'), ('N', '未审'), ('R', '拒绝'))
     approval_status = models.CharField(max_length=5, choices=APPROVAL_STATUS, default='N', verbose_name='审批状态')
     approval_desc = models.CharField(max_length=100, default='', verbose_name='审批描述')
     approver = models.CharField(max_length=100, default='', verbose_name='审批人')
     approval_time = models.DateTimeField(verbose_name='审批时间')
 
-    def approval(self, approver, approval_status, approval_desc):
+    def approval(self, approver, approval_status, approval_desc, auto_save=True):
         self.approval_status = approval_status
         self.approver = approver
         self.approval_desc = approval_desc
         self.approval_time = timezone.now()
+        if auto_save:
+            self.save()
 
     def run(self):
         self.start_time = timezone.now()
         self.status = 'running'
+        self.save()
 
     def finish(self):
         self.end_time = timezone.now()
         self.status = 'finish'
+        self.save()
 
     def __str__(self):
         return get_name(self.name)

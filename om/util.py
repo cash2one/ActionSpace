@@ -75,6 +75,7 @@ class TaskConfirm(object):
         self.chan.basic_publish(exchange=self.exchange_name, routing_key='', body=self.confirm_key)
         self.__close()
 
+
 def str2arr(val, sep=',', digit_check=True):
     arr = []
     if val:
@@ -94,13 +95,12 @@ def get_name(content):
 
 
 @shared_task
-def exec_task(tid, sender):
+def celery_exec_task(tid, sender):
     from om.models import Task
     task_logger.info('user=[%s], task_id=[%d]' % (sender, tid))
     task = Task.objects.get(pk=tid)
-    task.status = 'no_run'
-    task.run()
     t_flow = task.taskflow_set.first()
+    task.run()
 
     for t_group in task.taskflow_set.first().taskjobgroup_set.all():
         for t_job in t_group.taskjob_set.all():

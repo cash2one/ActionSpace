@@ -3,6 +3,7 @@ from django.http import HttpResponse
 from django.contrib.auth.models import User, Group
 from rest_framework import permissions
 from django.shortcuts import get_object_or_404
+from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 
 from ActionSpace.serializers import UserSerializer, GroupSerializer, ServerSerializer
@@ -36,6 +37,7 @@ class GroupViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class ServerViewSet(viewsets.ReadOnlyModelViewSet):
+    # renderer_classes = (JSONRenderer,)
     queryset = Computer.objects.all()
     serializer_class = ServerSerializer
 
