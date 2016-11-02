@@ -6,11 +6,11 @@ from celery import shared_task
 from celery.utils.log import get_task_logger
 from celery.result import AsyncResult
 from django.utils import timezone
+from ActionSpace import settings
 
 import pika
 import time
 
-MQ_URL = 'amqp://action_space:action_space@localhost:5672/%2F'
 task_logger = get_task_logger(__name__)
 
 
@@ -20,7 +20,7 @@ class TaskChange(object):
         self.task_id = str(tid)
         self.exchange_name = 'task_change'
         self.exchange_type = 'fanout'
-        self.conn = pika.BlockingConnection(pika.URLParameters(MQ_URL))
+        self.conn = pika.BlockingConnection(pika.URLParameters(settings.MQ_URL))
         self.chan = self.conn.channel()
 
     def __task_change_callback(self, ch, method, properties, body):
@@ -51,7 +51,7 @@ class TaskConfirm(object):
         self.confirm_key = key
         self.exchange_name = 'task_confirm'
         self.exchange_type = 'fanout'
-        self.conn = pika.BlockingConnection(pika.URLParameters(MQ_URL))
+        self.conn = pika.BlockingConnection(pika.URLParameters(settings.MQ_URL))
         self.chan = self.conn.channel()
 
     def __task_confirm_callback(self, ch, method, properties, body):

@@ -516,7 +516,7 @@ def approval_task(request, task_id):
     context = {'saved': request.method == 'POST', 'task_id': task_id}
     task = get_object_or_404(Task, pk=task_id)
     # if 'can_approval_task' not in get_perms(request.user, task):
-    if not request.user.has_perm('om.can_approval_task', task):
+    if not request.user.has_perm('om.can_approval_task') and not request.user.has_perm('om.can_approval_task', task):
         return HttpResponseRedirect("/om/no_permission/")
     if request.method == 'POST':
         task.approval(request.user.username, request.POST['result'], request.POST['reason'])

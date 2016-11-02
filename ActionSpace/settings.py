@@ -18,6 +18,8 @@ USE_DJANGO_CELERY = False
 USE_DEBUG_TOOLBAR = True
 DEBUG_TOOLBAR_CHG_TAG = False
 USE_ALL_AUTH = False
+MQ_URL = 'amqp://action_space:action_space@localhost:5672/%2F'
+USE_ORACLE = True
 
 if USE_DJANGO_CELERY:
     import djcelery
@@ -27,7 +29,7 @@ if USE_DJANGO_CELERY:
     CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
 else:
     # Celery setting#
-    BROKER_URL = 'amqp://action_space:action_space@localhost:5672/%2F'
+    BROKER_URL = MQ_URL
     CELERY_RESULT_BACKEND = 'amqp'
     CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
 CELERY_TIMEZONE = 'Asia/Shanghai'
@@ -217,12 +219,22 @@ WSGI_APPLICATION = 'ActionSpace.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.9/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+if USE_ORACLE:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.oracle',
+            'NAME': 'hsctmdb',
+            'USER': 'omdata',
+            'PASSWORD': 'Omdata1234'
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        }
+    }
 
 
 # Password validation

@@ -1,7 +1,7 @@
 # coding=utf-8
 from django.contrib.auth.models import User, Group
-from om.models import Computer, Entity, System
 from rest_framework import serializers
+from om.models import Computer, Entity
 
 
 # Serializers define the API representation.

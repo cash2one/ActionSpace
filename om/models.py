@@ -36,11 +36,11 @@ class Computer(models.Model):
     entity = models.ManyToManyField(Entity, verbose_name='所属实体')
     host = models.CharField(max_length=100, verbose_name='主机名')
     ip = models.CharField(max_length=100, verbose_name='IP地址', validators=[validate_ipv46_address])
-    ENV_TYPE = (('Production', '生产环境'), ('UAT', '测试环境'), ('FAT', '开发环境'))
+    ENV_TYPE = (('PRD', '生产环境'), ('UAT', '测试环境'), ('FAT', '开发环境'))
     env = models.CharField(max_length=20, choices=ENV_TYPE, verbose_name='环境类型', default='FAT')
     installed_agent = models.BooleanField(default=False, verbose_name='是否已安装AGENT')
     agent_name = models.CharField(max_length=100, verbose_name='AGENT名称')
-    desc = models.TextField(verbose_name='备注')
+    desc = models.CharField(max_length=200, verbose_name='备注')
 
     def __str__(self):
         return get_name(self.ip)
@@ -242,7 +242,7 @@ class TaskJob(models.Model):
     pause_when_finish = models.BooleanField(verbose_name='执行完成后是否暂停', default=False)
     pause_finish_tip = models.CharField(max_length=100, verbose_name='执行完成暂停提示', default='执行完成，请确认后继续。')
     exec_output = models.TextField(verbose_name='执行结果输出', blank=True)
-    server_list = models.CharField(max_length=10000, default='', verbose_name='服务器列表')
+    server_list = models.TextField(max_length=10000, default='', verbose_name='服务器列表')
 
     class Meta:
         verbose_name = '[任务]作业'
