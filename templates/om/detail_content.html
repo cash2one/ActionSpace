@@ -19,10 +19,10 @@
                             <i class="fa fa-toggle-right">继续</i>
                         </button>
                     </p>
-                    <button class="btn btn-xs btn-success" id="show_detail-{{ group.group_id }}_{{ job.job_id }}">内容</button>
-                    {% if job.status == 'finish' %}
-                        <button class="btn btn-xs btn-info" id="show_out-{{ group.group_id }}_{{ job.job_id }}">结果</button>
+                    {% if job.status == 'finish' or job.status == 'run_fail' %}
+                        <pre>{{ job.exec_output }}</pre>
                     {% endif %}
+                    <button class="btn btn-xs btn-success" id="show_detail-{{ group.group_id }}_{{ job.job_id }}">内容</button>
                     <div>
                         <span class="vertical-date">
                             <label>状态:</label>
@@ -41,15 +41,6 @@
             </div>
             <!--suppress JSUnresolvedFunction -->
             <script>
-                $('#show_out-{{ group.group_id }}_{{ job.job_id }}').click(function () {
-                    layer.open({
-                        type: 1,
-                        title: '作业执行结果',
-                        area: ['600px', '400px'],
-                        shadeClose: true,
-                        content: '{{ job.exec_output }}'
-                    });
-                });
                 $('#show_detail-{{ group.group_id }}_{{ job.job_id }}').click(function () {
                     var detail_layer = layer.open({
                         type: 2,

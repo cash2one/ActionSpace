@@ -3,6 +3,7 @@ from django import forms
 from django.utils.encoding import force_text
 from django.utils.html import format_html
 from om.models import Job, JobGroup, Computer, Flow, TaskJob
+from ActionSpace.settings import OM_ENV
 
 
 # from itertools import chain
@@ -45,20 +46,20 @@ class OrderedMultiSelect(forms.SelectMultiple):
 class JobForm(forms.ModelForm):
     # def __init__(self, *args, **kwargs):
     #     super(JobForm, self).__init__(*args, **kwargs)
-    #     server_list_choices = [(e.name, [(x.ip, x.ip) for x in e.computer_set.all()]) for e in Entity.objects.all()]
+    #     env_list = ['PRD', 'UAT', 'FAT']
+    #     server_list_choices = [(e, [(c.ip, '%s-%s' % (c.host, c.ip)) for c in Computer.objects.filter(env=e)]) for e in env_list]
     #     self.fields['server_list'].choices = server_list_choices
 
     server_list = forms.ModelMultipleChoiceField(
-        queryset=Computer.objects.order_by('ip'),
+        queryset=Computer.objects.filter(env=OM_ENV).order_by('ip'),
         # widget=forms.CheckboxSelectMultiple,
-        required=False
+        required=False, label='服务器（列表）'
     )
 
     def save_form(self, request, commit=True, create=False):
         self.instance.last_modified_by = request.user.username
         if not hasattr(self, 'cleaned_data'):
             super(JobForm, self).save()
-        # self.instance.server_list = ','.join([str(x.id) for x in self.cleaned_data['server_list']])
         if not create:
             self.instance.founder = request.user.username
         return super(JobForm, self).save(commit)

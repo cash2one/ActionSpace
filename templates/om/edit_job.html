@@ -86,6 +86,7 @@
     <script src="{% static 'om/js/plugins/codemirror/mode/perl/perl.js' %}"></script>
     <script src="{% static 'om/js/plugins/prettyfile/bootstrap-prettyfile.js' %}"></script>
     <script src="{% static 'om/layer/layer.js' %}"></script>
+    <!--suppress JSUnusedGlobalSymbols -->
     <script>
         $(document).ready(function() {
             $("#code_source_select").hide();
@@ -96,7 +97,45 @@
                     enableCollapsibleOptGroups: true,
                     enableFiltering: true,
                     includeSelectAllOption: true,
-                    maxHeight: 300
+                    maxHeight: 450,
+                    buttonClass: 'btn btn-small btn-info',
+                    // numberDisplayed: 100,
+                    enableHTML: true,
+                    // delimiterText: '<br>',
+                    // buttonWidth: '600px',
+                    selectAllText: '全选',
+                    filterPlaceholder: '请输入IP或者HOST',
+                    allSelectedText: '全部被选中',
+                    nonSelectedText: '请选择',
+                    dropUp: false,
+                    buttonTitle: function(options){
+                        var labels = [];
+                        options.each(function () {
+                            labels.push($(this).text());
+                        });
+                        return labels.join(',');
+                    },
+                    buttonText: function(options) {
+                        if (options.length === 0) {
+                            return '请选择';
+                        }
+                        else {
+                            var result = '';
+                            options.each(function(i) {
+                                var val = $(this).html();
+                                if (i > 0) {
+                                    if (i%3 == 0 || val.length > 40) {
+                                        result += '<br>';
+                                    }
+                                    else {
+                                        result += ', ';
+                                    }
+                                }
+                                result += val;
+                            });
+                            return result;
+                         }
+                    }
             });
             {% endfor %}
         });

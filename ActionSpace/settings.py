@@ -13,6 +13,9 @@ https://docs.djangoproject.com/en/1.9/ref/settings/
 
 from __future__ import absolute_import
 import os
+import logging
+import django.utils.log
+import logging.handlers
 
 USE_DJANGO_CELERY = False
 USE_DEBUG_TOOLBAR = True
@@ -20,9 +23,11 @@ DEBUG_TOOLBAR_CHG_TAG = False
 USE_ALL_AUTH = False
 MQ_URL = 'amqp://action_space:action_space@localhost:5672/%2F'
 USE_ORACLE = True
+OM_ENV = 'UAT'
 
 if USE_DJANGO_CELERY:
     import djcelery
+
     djcelery.setup_loader()
     BROKER_URL = 'django://'
     CELERY_RESULT_BACKEND = 'djcelery.backends.database:DatabaseBackend'
@@ -41,7 +46,6 @@ CELERY_TIMEZONE = 'Asia/Shanghai'
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.9/howto/deployment/checklist/
 
@@ -53,6 +57,57 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
+# noinspection PyUnresolvedReferences
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'standard': {
+            'format': '%(asctime)s [%(name)s:%(module)s:%(funcName)s:%(lineno)d] [%(levelname)s]:%(message)s'
+        }
+
+        # 日志格式
+    },
+    'filters': {
+    },
+    'handlers': {
+        'mail_admins': {
+            'level': 'ERROR',
+            'class': 'django.utils.log.AdminEmailHandler',
+            'include_html': True,
+        },
+        'default': {
+            'level': 'DEBUG',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'om.log'),  # 日志输出文件
+            'maxBytes': 1024 * 1024 * 5,  # 文件大小
+            'backupCount': 5,  # 备份份数
+            'formatter': 'standard',  # 使用哪种formatters日志格式
+        },
+        'error': {
+            'level': 'ERROR',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'error.log'),
+            'maxBytes': 1024 * 1024 * 5,
+            'backupCount': 5,
+            'formatter': 'standard',
+        },
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'standard'
+        }
+    },
+    'loggers': {
+        'om': {
+            'handlers': ['default', 'console', 'mail_admins'],
+            'level': 'DEBUG',
+            'propagate': False
+        }
+    }
+}
+
+logger = logging.getLogger('om')
 
 # Application definition
 
@@ -174,7 +229,7 @@ AUTHENTICATION_BACKENDS = (
 )
 
 if USE_ALL_AUTH:
-    AUTHENTICATION_BACKENDS += ('allauth.account.auth_backends.AuthenticationBackend', )
+    AUTHENTICATION_BACKENDS += ('allauth.account.auth_backends.AuthenticationBackend',)
 
 MIDDLEWARE_CLASSES = [
     #  'django.middleware.locale.LocaleMiddleware',
@@ -236,7 +291,6 @@ else:
         }
     }
 
-
 # Password validation
 # https://docs.djangoproject.com/en/1.9/ref/settings/#auth-password-validators
 
@@ -255,11 +309,10 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/1.9/topics/i18n/
 
-LANGUAGE_CODE = 'zh_Hans'
+LANGUAGE_CODE = 'zh-Hans'
 
 TIME_ZONE = 'Asia/Shanghai'
 
@@ -288,7 +341,8 @@ CKEDITOR_CONFIGS = {
         'toolbar': 'Custom',
         'toolbar_Custom': [
             ['Bold', 'Italic', 'Underline'],
-            ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', '-', 'JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock'],
+            ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', '-', 'JustifyLeft', 'JustifyCenter',
+             'JustifyRight', 'JustifyBlock'],
             ['Link', 'Unlink'],
             ['RemoveFormat', 'Source']
         ]
@@ -344,4 +398,4 @@ if USE_DEBUG_TOOLBAR:
             'TAG': 'div',
         }
 
-    INTERNAL_IPS = ('127.0.0.1', )
+    INTERNAL_IPS = ('127.0.0.1',)

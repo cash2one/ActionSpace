@@ -13,16 +13,19 @@ from django.utils import timezone
 from om.form import JobForm, JobGroupForm, FlowForm, TaskItemForm
 from om.models import Flow, JobGroup, Job, Task, TaskFlow, TaskJobGroup, TaskJob, Computer, System
 from datetime import datetime as dt
+from ActionSpace import settings
 
 
 # Create your views here.
 @login_required
 def index(request):
+    settings.logger.info(request.user.username)
     return render(request, 'om/index.html', {'user': request.user})
 
 
 @login_required
 def default_content(request):
+    settings.logger.info(request.user.username)
     utc_date = timezone.datetime.utcnow().replace(tzinfo=timezone.utc)
     this_month_task_list = Task.objects.filter(
         start_time__year=utc_date.year,
@@ -41,21 +44,25 @@ def default_content(request):
 
 @login_required
 def index_content(request):
+    settings.logger.info(request.user.username)
     return default_content(request)
 
 
 @login_required
 def quick_exec_script(request):
+    settings.logger.info(request.user.username)
     return render(request, 'om/quick_exec_script.html')
 
 
 @login_required
 def quick_upload_file(request):
+    settings.logger.info(request.user.username)
     return render(request, 'om/quick_upload_file.html')
 
 
 @login_required
 def exec_flow(request):
+    settings.logger.info(request.user.username)
     context = {
         'fields': [x for x in Flow._meta.fields if x.name not in ['job_group_list', 'is_quick_flow']]
     }
@@ -64,6 +71,7 @@ def exec_flow(request):
 
 @login_required
 def create_task(request, flow_id, job_id):
+    settings.logger.info('%s %s %s ' % (request.user.username, flow_id, job_id))
     if flow_id == -1 and job_id != -1:  # flow不存在， job存在说明是快速执行任务来的
         job = get_object_or_404(Job, pk=job_id)
         group = JobGroup.objects.create(name='临时组', job_list=str(job.id))
@@ -86,7 +94,7 @@ def create_task(request, flow_id, job_id):
                 script_type=job.script_type, script_content=job.script_content,
                 begin_time=timezone.now(), end_time=timezone.now(), status='no_run',
                 pause_when_finish=job.pause_when_finish, script_param=job.script_param,
-                server_list=server_ip_list,
+                exec_user=job.exec_user, server_list=server_ip_list,
                 pause_finish_tip=job.pause_finish_tip, exec_output=''
             )
 
@@ -107,7 +115,7 @@ def clone_task(task):
                 begin_time=timezone.now(), end_time=timezone.now(), status='no_run',
                 pause_when_finish=task_job.pause_when_finish, script_param=task_job.script_param,
                 server_list=task_job.server_list, pause_finish_tip=task_job.pause_finish_tip,
-                exec_output=''
+                exec_user=task_job.exec_user, exec_output=''
             )
     new_t_task.save()
     return new_t_task
@@ -115,6 +123,7 @@ def clone_task(task):
 
 @login_required
 def exec_task(request, task_id):
+    settings.logger.info('%s %s' % (request.user.username, task_id))
     try:
         task = Task.objects.get(pk=task_id)
         if task.status == 'running':
@@ -140,6 +149,7 @@ def exec_task(request, task_id):
 
 @login_required
 def redo_create_task(request, task_id):
+    settings.logger.info('%s %s' % (request.user.username, task_id))
     for task in Task.objects.filter(pk=task_id):
         new_task = clone_task(task)
         new_task.exec_user = request.user.username
@@ -150,6 +160,7 @@ def redo_create_task(request, task_id):
 
 @login_required
 def task_status(request, task_id):
+    settings.logger.info('%s %s' % (request.user.username, task_id))
     task = get_object_or_404(Task, pk=task_id)
     context = {
         'can_get_result': False,
@@ -162,7 +173,8 @@ def task_status(request, task_id):
 
 
 @login_required
-def get_flow_list(_):
+def get_flow_list(request):
+    settings.logger.info(request.user.username)
     fmt = '%Y-%m-%d %H:%M:%S'
     return JsonResponse(
         [{
@@ -180,6 +192,7 @@ def get_flow_list(_):
 
 @login_required
 def flow_clone(request, flow_id):
+    settings.logger.info('%s %s' % (request.user.username, flow_id))
     flow = Flow.objects.get(pk=flow_id)
     flow.pk = None
     flow.save()
@@ -187,13 +200,15 @@ def flow_clone(request, flow_id):
 
 
 @login_required
-def flow_delete(_, flow_id):
+def flow_delete(request, flow_id):
+    settings.logger.info('%s %s' % (request.user.username, flow_id))
     Flow.objects.get(pk=flow_id).delete()
     return JsonResponse({'result': 'OK'})
 
 
 @login_required
 def new_flow(request):
+    settings.logger.info(request.user.username)
     save = {
         'saved': False,
         'result': False,
@@ -220,6 +235,7 @@ def new_flow(request):
 
 @login_required
 def new_group(request, flow_id):
+    settings.logger.info('%s %s' % (request.user.username, flow_id))
     save = {
         'saved': False,
         'result': False,
@@ -238,7 +254,7 @@ def new_group(request, flow_id):
                 save['result'] = True
         except Exception as e:
             save['result'] = False
-            save['error_msg'] = e.message
+            save['error_msg'] = e
     else:
         group_form = JobGroupForm()
 
@@ -253,6 +269,7 @@ def new_group(request, flow_id):
 
 @login_required
 def edit_group(request, group_id):
+    settings.logger.info('%s %s' % (request.user.username, group_id))
     group = get_object_or_404(JobGroup, pk=group_id)
     save = {
         'saved': False,
@@ -268,7 +285,7 @@ def edit_group(request, group_id):
                 save['result'] = True
         except Exception as e:
             save['result'] = False
-            save['error_msg'] = e.message
+            save['error_msg'] = e
     else:
         group_form = JobGroupForm(instance=group)
 
@@ -283,6 +300,7 @@ def edit_group(request, group_id):
 
 @login_required
 def new_job(request, job_group_id):
+    settings.logger.info('%s %s' % (request.user.username, job_group_id))
     save = {
         'saved': False,
         'result': False,
@@ -300,7 +318,7 @@ def new_job(request, job_group_id):
             save['result'] = True
         except Exception as e:
             save['result'] = False
-            save['error_msg'] = e.message
+            save['error_msg'] = e
     else:
         job_form = JobForm()
         job_form.last_modified_by = request.user
@@ -316,6 +334,7 @@ def new_job(request, job_group_id):
 
 @login_required
 def edit_job(request, job_id):
+    settings.logger.info('%s %s' % (request.user.username, job_id))
     save = {
         'saved': False,
         'result': False,
@@ -333,7 +352,7 @@ def edit_job(request, job_id):
                 save['result'] = True
         except Exception as e:
             save['result'] = False
-            save['error_msg'] = e.message
+            save['error_msg'] = e
     else:
         job_form = JobForm(instance=job)
     context = {
@@ -348,6 +367,7 @@ def edit_job(request, job_id):
 
 @login_required
 def del_job_in_group(request, group_id, job_id):
+    settings.logger.info('%s %s %s' % (request.user.username, group_id, job_id))
     context = {'result': 'OK'}
     try:
         group = JobGroup.objects.get(pk=group_id)
@@ -363,6 +383,7 @@ def del_job_in_group(request, group_id, job_id):
 
 @login_required
 def del_group_in_flow(request, flow_id, group_id):
+    settings.logger.info('%s %s %s' % (request.user.username, flow_id, group_id))
     context = {'result': 'OK'}
     try:
         flow = Flow.objects.get(pk=flow_id)
@@ -378,6 +399,7 @@ def del_group_in_flow(request, flow_id, group_id):
 
 @login_required
 def edit_flow(request, flow_id):
+    settings.logger.info('%s %s' % (request.user.username, flow_id))
     flow = get_object_or_404(Flow, pk=flow_id).validate_job_group_list()
     context = {'flow': flow, 'groups': []}
     group_list = str2arr(flow.job_group_list)
@@ -393,6 +415,7 @@ def edit_flow(request, flow_id):
 
 @login_required
 def save_edit_flow(request):
+    settings.logger.info(request.user.username)
     result = ['FLOW_INIT', 'TASK_INIT']
     if request.method == 'POST' and request.POST.keys():
         info = json.loads(list(request.POST.keys())[0])
@@ -421,17 +444,20 @@ def save_edit_flow(request):
 
 @login_required
 def action_history(request):
+    settings.logger.info(request.user.username)
     return render(request, 'om/action_history.html')
 
 
 @login_required
 def action_detail(request, task_id):
+    settings.logger.info('%s %s' % (request.user.username, task_id))
     task = get_object_or_404(Task, pk=task_id)
     return render(request, 'om/action_detail.html', {'task': task.id})
 
 
 @login_required
 def detail_content(request, task_id, first):
+    settings.logger.info('%s %s %s ' % (request.user.username, task_id, first))
     if first == '0':
         TaskChange(task_id).wait_change()
     task = get_object_or_404(Task, pk=task_id)
@@ -447,23 +473,27 @@ def detail_content(request, task_id, first):
 
 @login_required
 def confirm_task(request, task_id, flow_id, group_id, job_id):
+    settings.logger.info('%s %s %s %s %s' % (request.user.username, task_id, flow_id, group_id, job_id))
     TaskConfirm('%s-%s-%s-%s' % (task_id, flow_id, group_id, job_id)).send_confirm()
     return JsonResponse({'result': 'OK'})
 
 
 @login_required
 def get_task_status(request, task_id):
+    settings.logger.info('%s %s' % (request.user.username, task_id))
     t = get_object_or_404(Task, pk=task_id)
     return JsonResponse({'status': t.status})
 
 
 @login_required
 def choose_server(request):
+    settings.logger.info(request.user.username)
     return render(request, 'om/choose_server.html')
 
 
 @login_required
-def choose_server_result(_):
+def choose_server_result(request):
+    settings.logger.info(request.user.username)
     server_list = []
     for computer in Computer.objects.all():
         server_list.append({
@@ -475,7 +505,8 @@ def choose_server_result(_):
 
 
 @login_required
-def get_server_list(_):
+def get_server_list(request):
+    settings.logger.info(request.user.username)
     server_list = []
     for system in System.objects.all():
         for entity in system.entity_set.all():
@@ -492,10 +523,11 @@ def get_server_list(_):
 
 
 @login_required
-def get_action_history_list(_):
+def get_action_history_list(request):
+    settings.logger.info(request.user.username)
     result = []
     fmt = '%Y-%m-%d %H:%M:%S'
-    for t in Task.objects.order_by('-id'):
+    for t in Task.objects.order_by('-start_time'):
         result.append({
             'task_id': t.id, 'task_name': t.name, 'approval_status': t.get_approval_status_display(),
             'approver': t.approver, 'approval_desc': t.approval_desc,
@@ -513,6 +545,7 @@ def get_action_history_list(_):
 # @permission_required('om.can_approval_task', login_url='/om/no_permission/')
 @login_required
 def approval_task(request, task_id):
+    settings.logger.info('%s %s' % (request.user.username, task_id))
     context = {'saved': request.method == 'POST', 'task_id': task_id}
     task = get_object_or_404(Task, pk=task_id)
     # if 'can_approval_task' not in get_perms(request.user, task):
@@ -525,9 +558,11 @@ def approval_task(request, task_id):
 
 @login_required
 def task_item_detail(request, task_job_id):
+    settings.logger.info('%s %s' % (request.user.username, task_job_id))
     task_job = get_object_or_404(TaskJob, pk=task_job_id)
     return render(request, 'om/task_item_detail.html', {'form': TaskItemForm(instance=task_job)})
 
 
 def no_permission(request):
+    settings.logger.info(request.user.username)
     return render(request, 'om/403.html')
