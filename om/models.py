@@ -252,3 +252,18 @@ class TaskJob(models.Model):
 
     def __str__(self):
         return get_name(self.name)
+
+
+class CommonScript(models.Model):
+    name = models.CharField(max_length=100, verbose_name='作业名称')
+    TYPES = (('py', 'python脚本'), ('shell', 'shell脚本'), ('bat', '批处理脚本'))
+    script_type = models.CharField(max_length=50, choices=TYPES, default='shell', verbose_name='脚本类型')
+    content = models.TextField(max_length=10000, default='', verbose_name='脚本内容')
+    desc = models.CharField(max_length=400, default='', verbose_name='说明')
+
+    class Meta:
+        verbose_name = '常用脚本'
+        verbose_name_plural = '常用脚本'
+
+    def __str__(self):
+        return get_name(self.name)

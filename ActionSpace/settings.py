@@ -127,7 +127,7 @@ INSTALLED_APPS = [
     'guardian',
     'rest_framework',
     # 'channels',
-    'om.apps.OmConfig',
+    'om.apps.OmConfig'
 ]
 
 if USE_DEBUG_TOOLBAR:
@@ -278,9 +278,9 @@ if USE_ORACLE:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.oracle',
-            'NAME': 'hsctmdb',
-            'USER': 'omdata',
-            'PASSWORD': 'Omdata1234'
+            'NAME': 'xxx',
+            'USER': 'xxx',
+            'PASSWORD': 'xxx'
         }
     }
 else:
@@ -331,8 +331,10 @@ STATICFILES_DIRS = (
     ("om", os.path.join(STATIC_ROOT, 'om')),
     ("ckeditor", os.path.join(STATIC_ROOT, 'ckeditor')),
     ("admin", os.path.join(STATIC_ROOT, 'admin')),
+    ("codemirror", os.path.join(STATIC_ROOT, 'codemirror')),
 )
 STATIC_URL = '/static/'
+CODEMIRROR_JS_VAR_FORMAT = "%s_editor"
 # CKEDITOR_JQUERY_URL = '//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js'
 CKEDITOR_JQUERY_URL = '//cdn.bootcss.com/jquery/3.1.0/jquery.min.js'
 CKEDITOR_UPLOAD_PATH = "uploads/"
