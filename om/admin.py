@@ -7,8 +7,7 @@ from django.contrib.flatpages.models import FlatPage
 from ckeditor.widgets import CKEditorWidget
 from guardian.admin import GuardedModelAdmin
 from django.conf import settings
-from codemirror import CodeMirrorTextarea
-from django.utils.safestring import mark_safe
+from om.CodeEditor import CodeEditor
 
 if settings.USE_DJANGO_CELERY:
     from kombu.transport.django import models as kombu_models
@@ -123,6 +122,15 @@ class JobAdmin(GuardedModelAdmin):
     #     }),
     # )
 
+    formfield_overrides = {
+        models.TextField: {
+            'widget': CodeEditor(
+                related_id='id_script_type', mode="shell",
+                theme="ambiance", config={'fixedGutter': True, 'readOnly': False},
+            )
+        }
+    }
+
 
 @admin.register(Task)
 class TaskAdmin(ReadOnlyModelAdmin):
@@ -149,50 +157,16 @@ class TaskJobAdmin(ReadOnlyModelAdmin):
     list_display_links = ('id', 'name')
 
 
-class ContentEditor(CodeMirrorTextarea):
-    def render(self, name, value, attrs=None):
-        if self.js_var_format is not None:
-            js_var_bit = 'var %s = ' % (self.js_var_format % name)
-        else:
-            js_var_bit = ''
-        jquery = '<script src = "//cdn.bootcss.com/jquery/3.1.0/jquery.min.js" ></script>'
-        after = '''
-    function set_code(val) {
-        switch (val) {
-        case 'py':
-            content_editor.setOption("mode", "python");
-            break;
-        case 'shell':
-            content_editor.setOption("mode", "shell");
-            break;
-        case 'bat':
-            content_editor.setOption("mode", "perl");
-            break;
-        };
-    }
-    set_code($('#id_script_type').val())
-    $('#id_script_type').change(function(){
-        var script_type = $(this).children('option:selected').val();
-        set_code(script_type);
-    });
-        '''
-        output = [super(CodeMirrorTextarea, self).render(name, value, attrs),
-                  '%s\n<script type="text/javascript">\n    %sCodeMirror.fromTextArea(document.getElementById(%s), %s);\n%s</script>' %
-                  (jquery, js_var_bit, '"id_%s"' % name, self.option_json, after)]
-        return mark_safe('\n'.join(output))
-
-
 @admin.register(CommonScript)
 class CommonScriptAdmin(GuardedModelAdmin):
     list_display = ('id', 'name', 'script_type', 'desc')
     list_display_links = ('id', 'name')
 
     formfield_overrides = {
-        models.TextField: {'widget': ContentEditor(
-            mode="shell",
-            theme="ambiance",
-            config={
-                'fixedGutter': True
-            },
-        )}
+        models.TextField: {
+            'widget': CodeEditor(
+                related_id='id_script_type', mode="shell",
+                theme="ambiance", config={'fixedGutter': True, 'readOnly': False},
+            )
+        }
     }

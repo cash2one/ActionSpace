@@ -68,6 +68,9 @@ class JobForm(forms.ModelForm):
         model = Job
         fields = '__all__'
         exclude = ('last_modified_by', 'founder')
+        #  widgets = {
+        #      'script_content#  ': forms.Textarea(),  # 修改表单控件为文本域
+        #  }
 
 
 class JobGroupForm(forms.ModelForm):

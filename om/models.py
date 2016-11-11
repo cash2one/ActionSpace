@@ -9,7 +9,7 @@ from om.util import *
 # Create your models here.
 class System(models.Model):
     name = models.CharField(max_length=100, verbose_name='系统名')
-    desc = models.TextField(verbose_name='备注')
+    desc = models.CharField(max_length=400, verbose_name='备注', default='NA')
 
     def __str__(self):
         return get_name(self.name)
@@ -22,7 +22,7 @@ class System(models.Model):
 class Entity(models.Model):
     name = models.CharField(max_length=100, verbose_name='实体名')
     system = models.ForeignKey(System, on_delete=models.CASCADE, verbose_name='所属系统')
-    desc = models.TextField(verbose_name='备注')
+    desc = models.CharField(max_length=400, verbose_name='备注', default='NA')
 
     def __str__(self):
         return get_name(self.name)
@@ -40,7 +40,7 @@ class Computer(models.Model):
     env = models.CharField(max_length=20, choices=ENV_TYPE, verbose_name='环境类型', default='FAT')
     installed_agent = models.BooleanField(default=False, verbose_name='是否已安装AGENT')
     agent_name = models.CharField(max_length=100, verbose_name='AGENT名称')
-    desc = models.CharField(max_length=200, verbose_name='备注')
+    desc = models.CharField(max_length=400, verbose_name='备注', default='NA')
 
     def __str__(self):
         return get_name('{host}-{ip}'.format(host=self.host, ip=self.ip))
@@ -63,7 +63,7 @@ class Flow(models.Model):
     is_quick_flow = models.BooleanField(default=False, verbose_name='是否为快速执行作业流')
     # job_group顺序内容，id用逗号分隔
     job_group_list = models.CharField(max_length=500, default='', validators=[validate_comma_separated_integer_list], verbose_name='作业组列表')
-    desc = models.TextField(verbose_name='备注')
+    desc = models.CharField(max_length=400, verbose_name='备注', default='NA')
 
     def __str__(self):
         return get_name(self.name)
@@ -92,7 +92,7 @@ class JobGroup(models.Model):
     last_modified_time = models.DateTimeField(verbose_name="最后修改时间", auto_now=True)
     # job_group顺序内容，id用逗号分隔
     job_list = models.CharField(max_length=500, default='', blank=True, verbose_name='作业列表')
-    desc = models.TextField(verbose_name='备注')
+    desc = models.CharField(max_length=400, verbose_name='备注', default='NA')
 
     def __str__(self):
         return get_name(self.name)
@@ -115,7 +115,7 @@ class JobGroup(models.Model):
 
 class ExecUser(models.Model):
     name = models.CharField(max_length=100, verbose_name='执行用户')
-    desc = models.TextField(verbose_name='备注')
+    desc = models.CharField(max_length=400, verbose_name='备注', default='NA')
 
     def __str__(self):
         return get_name(self.name)
@@ -144,7 +144,7 @@ class Job(models.Model):
     file_target_path = models.CharField(max_length=100, verbose_name='上传目标路径', default='NA')
     server_list = models.ManyToManyField(Computer, blank=True, verbose_name='服务器列表')
     # server_list = models.CharField(max_length=500, blank=True, default='', verbose_name="服务器列表")
-    desc = models.TextField(verbose_name='备注', default='NA')
+    desc = models.CharField(max_length=400, verbose_name='备注', default='NA')
 
     def __str__(self):
         return get_name(self.name)
@@ -256,10 +256,10 @@ class TaskJob(models.Model):
 
 class CommonScript(models.Model):
     name = models.CharField(max_length=100, verbose_name='作业名称')
-    TYPES = (('py', 'python脚本'), ('shell', 'shell脚本'), ('bat', '批处理脚本'))
-    script_type = models.CharField(max_length=50, choices=TYPES, default='shell', verbose_name='脚本类型')
+    TYPES = (('PY', 'python脚本'), ('SHELL', 'shell脚本'), ('BAT', '批处理脚本'))
+    script_type = models.CharField(max_length=50, choices=TYPES, default='SHELL', verbose_name='脚本类型')
     content = models.TextField(max_length=10000, default='', verbose_name='脚本内容')
-    desc = models.CharField(max_length=400, default='', verbose_name='说明')
+    desc = models.CharField(max_length=400, verbose_name='备注', default='NA')
 
     class Meta:
         verbose_name = '常用脚本'
