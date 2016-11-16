@@ -2,7 +2,7 @@
 from django import forms
 from django.utils.encoding import force_text
 from django.utils.html import format_html
-from om.models import Job, JobGroup, Computer, Flow, TaskJob
+from om.models import Job, JobGroup, Computer, Flow, TaskJob, ExecUser
 from ActionSpace.settings import OM_ENV
 
 

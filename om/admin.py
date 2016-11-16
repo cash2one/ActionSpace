@@ -44,9 +44,10 @@ class EntityInline(admin.StackedInline):
 
 @admin.register(System)
 class SystemAdmin(GuardedModelAdmin):
-    list_display = ('name', 'desc')
+    list_display = ('id', 'name', 'desc')
     inlines = [EntityInline]
-    search_fields = ('name',)
+    list_display_links = ('id', 'name')
+    search_fields = ('id', 'name')
 
 
 class ComputerInline(admin.TabularInline):
@@ -68,17 +69,26 @@ class JobInline(admin.TabularInline):
 
 @admin.register(Entity)
 class EntityAdmin(GuardedModelAdmin):
-    list_display = ('name', 'system', 'desc')
+    list_display = ('id', 'name', 'system', 'desc')
     inlines = [ComputerInline]
-    search_fields = ('name', 'system__name')
+    list_display_links = ('id', 'name')
+    search_fields = ('id', 'name', 'system__name')
+
+
+@admin.register(ServerFile)
+class ServerFileAdmin(GuardedModelAdmin):
+    list_display = ('id', 'name', 'founder', 'upload_time')
+    list_display_links = ('id', 'name',)
+    search_fields = ('id', 'name', 'founder', 'upload_time', 'desc')
 
 
 @admin.register(Computer)
 class ComputerAdmin(GuardedModelAdmin):
-    list_display = ('entity_name', 'env', 'host', 'ip', 'desc', 'installed_agent', 'agent_name')
+    list_display = ('id', 'env', 'sys', 'agent_name', 'entity_name')
     filter_horizontal = ('entity',)
     inlines = [JobInline]
-    search_fields = ('entity__name', 'env', 'host', 'ip', 'installed_agent')
+    list_display_links = ('id', 'agent_name')
+    search_fields = ('id', 'entity__name', 'env', 'host', 'ip', 'sys', 'installed_agent')
 
 
 @admin.register(Flow)
@@ -107,20 +117,27 @@ class JobAdmin(GuardedModelAdmin):
     readonly_fields = ('created_time', 'last_modified_time')
     filter_vertical = ('server_list',)
     list_display = (
-        'id', 'name', 'founder', 'exec_user', 'pause_when_finish',
-        'pause_finish_tip', 'file_from_local', 'file_target_path', 'desc'
+        'id', 'name', 'founder', 'exec_user', 'pause_when_finish', 'last_modified_by'
     )
 
-    # fieldsets = (
-    #     (None, {
-    #         'fields': ('name', 'job_type', 'exec_user', 'script_type')
-    #     }),
-    #     ('高级选项', {
-    #         'classes': ('collapse',),
-    #         'fields': ('pause_when_finish', 'pause_finish_tip', 'script_content',
-    #                    'script_param', 'file_from_local', 'file_target_path', 'server_list', 'desc'),
-    #     }),
-    # )
+    fieldsets = (
+        (None, {
+            'fields': (
+                'id', 'name', 'founder', 'last_modified_by', 'created_time',
+                'last_modified_time', 'job_type', 'pause_when_finish',
+                'pause_finish_tip', 'server_list', 'desc'
+            )
+        }),
+        ('脚本选项', {
+            'classes': ('collapse',),
+            'fields': ('script_type', 'exec_user', 'script_content',
+                       'script_param', 'file_from_local', 'file_target_path', 'server_list', 'desc'),
+        }),
+        ('文件选项', {
+            'classes': ('collapse',),
+            'fields': ('file_name', 'target_name'),
+        })
+    )
 
     formfield_overrides = {
         models.TextField: {
@@ -132,11 +149,42 @@ class JobAdmin(GuardedModelAdmin):
     }
 
 
+class TaskFilter(admin.SimpleListFilter):
+    title = '任务过滤'
+    parameter_name = 'task_state'
+
+    def lookups(self, request, model_admin):
+        return (
+            (0, '已审核'),
+            (1, '未审核'),
+            (2, '审核被拒'),
+            (3, '已执行'),
+            (4, '未执行'),
+            (5, '执行失败'),
+        )
+
+    def queryset(self, request, queryset):
+        if self.value():
+            if int(self.value()) == 0:
+                return queryset.filter(approval_status='Y')
+            elif int(self.value()) == 1:
+                return queryset.filter(approval_status='N')
+            elif int(self.value()) == 2:
+                return queryset.filter(approval_status='R')
+            elif int(self.value()) == 3:
+                return queryset.filter(status='finish')
+            elif int(self.value()) == 4:
+                return queryset.filter(status='no_run')
+            elif int(self.value()) == 5:
+                return queryset.filter(status='run_fail')
+
+
 @admin.register(Task)
 class TaskAdmin(ReadOnlyModelAdmin):
-    exclude = ('detail',)
-    list_display = ('id', 'exec_user', 'start_time', 'end_time', 'status')
-    list_display_links = ('id', 'exec_user')
+    list_display = ('id', 'name', 'approval_status', 'status')
+    list_display_links = ('id', 'name')
+    search_fields = ('id', 'name', 'exec_user')
+    list_filter = (TaskFilter,)
 
 
 @admin.register(TaskFlow)

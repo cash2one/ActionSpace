@@ -11,6 +11,8 @@ from pprint import pformat
 import json
 import pika
 import time
+import os
+import traceback
 
 task_logger = get_task_logger(__name__)
 
@@ -105,29 +107,29 @@ def get_name(content):
         return content
 
 
-def ip_to_salt_agent_name(ip):
-    from om.models import Computer
-    cpt = Computer.objects.get(ip=ip)
-    if cpt:
-        return '{host}-{ip}'.format(ip=ip, host=cpt.host)
-    else:
-        return ''
-
-
 def fmt_salt_out(val, use_json=False):
-    if use_json:
-        return json.dumps(val.get('return', val), ensure_ascii=False, indent=4)
+    if isinstance(val, dict):
+        content = val.get('return', val)
     else:
-        return pformat(val.get('return', val))
+        content = val
+    if use_json:
+        result = json.dumps(content, ensure_ascii=False, indent=4)
+    else:
+        result = pformat(content, width=400)
+    replace_list = [(r'\r\n', ''), (r'\t', ''), (r'\n', (' '*3)), (r'\x1b[7l', '')]
+    for ora, new in replace_list:
+        result = result.replace(ora, new)
+    return result
 
 
 # noinspection PyUnresolvedReferences
 @shared_task
 def celery_exec_task(tid, sender):
-    from om.models import Task, Computer
+    from om.models import Task, Computer, ServerFile
     task_logger.info('user=[%s], task_id=[%d]' % (sender, tid))
     settings.logger.info('celery_exec_task: user=[%s], task_id=[%d]' % (sender, tid))
     task = Task.objects.get(pk=tid)
+    task.exec_user = sender
     t_flow = task.taskflow_set.first()
     task.run()
 
@@ -148,18 +150,42 @@ def celery_exec_task(tid, sender):
 
             if len(ips) > 0:
                 env_type = Computer.objects.get(ip=ips[0]).env
-                hosts = [ip_to_salt_agent_name(x) for x in ips]
+                agents = [Computer.objects.get(ip=x).agent_name for x in ips]
+                is_windows = Computer.objects.get(ip=ips[0]).sys == 'windows'
                 cmd = ' '.join([t_job.script_content, t_job.script_param])
                 try:
-                    if t_job.script_type == 'PY':
-                        salt_result, salt_output = Salt(env_type).python(hosts, cmd)
+                    if t_job.job_type == 'SCRIPT':
+                        if t_job.script_type == 'PY':
+                            salt_result, salt_output = Salt(env_type).python(agents, cmd)
+                        else:
+                            exec_user = None if is_windows else t_job.exec_user
+                            salt_result, salt_output = Salt(env_type).shell(agents, cmd, exec_user)
+                        t_job.status = 'finish' if salt_result else 'run_fail'
+                        t_job.exec_output = fmt_salt_out(salt_output)  # [1:-1].replace("\\n", "")
                     else:
-                        salt_result, salt_output = Salt(env_type).shell(hosts, cmd, t_job.exec_user)
-                    t_job.status = 'finish' if salt_result else 'run_fail'
-                    t_job.exec_output = fmt_salt_out(salt_output)  # [1:-1].replace("\\n", "")
+                        file_list = [ServerFile.objects.get(pk=x).name for x in str2arr(t_job.file_name)]
+                        if len(file_list) == 0:
+                            t_job.status = 'run_fail'
+                            t_job.exec_output = '没有指定要传输的文件'
+                        else:
+                            result_list = []
+                            output_list = []
+                            for file_to_trans in file_list:
+                                if t_job.target_name.endswith('\\') or t_job.target_name.endswith('/'):
+                                    target_path = os.path.join(t_job.target_name, file_to_trans)
+                                else:
+                                    target_path = t_job.target_name
+                                salt_result, salt_output = Salt(env_type).file_trans(agents, file_to_trans, target_path)
+                                result_list.append(salt_result)
+                                output_list.append(salt_output)
+                                if not salt_result:
+                                    settings.logger.error()
+                            t_job.status = 'finish' if all(result_list) else 'run_fail'
+                            t_job.exec_output = fmt_salt_out(output_list)
                 except Exception as e:
                     t_job.status = 'run_fail'
                     settings.logger.error(str(e))
+                    settings.logger.error(traceback.format_exc())
                     t_job.exec_output = '执行出错，请检查作业配置是否有误！'
             else:
                 t_job.status = 'finish'

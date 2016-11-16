@@ -51,6 +51,8 @@
                                                         </label>
                                                     </div>
                                                 </div>
+                                            {% elif field.name in security_field_list %}
+                                                {{ field | set_attr:'class=form-control' | only_superuser_has_root:user }}
                                             {% elif field.name in disable_field_list %}
                                                 {{ field | set_attr:'readonly=readonly' }}
                                             {% elif field.name in normal_check_list %}

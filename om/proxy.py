@@ -44,9 +44,11 @@ class Salt(object):
     """
 
     SALT_INFO = {
-        'UAT': {'url': 'xxx', 'user': 'xxx', 'pwd': 'xxx'},
-        'PRD': {'url': 'xxx', 'user': 'xxx', 'pwd': 'xxx'}
+        'UAT': {'url': 'https://stock-saltmaster-uat.paic.com.cn:8000', 'user': 'saltapiom', 'pwd': 'Pi=K!bTKe8H~'},
+        'PRD': {'url': 'https://stock-saltmaster.paic.com.cn:8000', 'user': 'saltapiom', 'pwd': 'Pi=5=WHK-@HU'}
     }
+
+    FILE_SERVER = 'http://stockmirrors.paic.com.cn/iso/wls81/'
 
     # noinspection PyUnresolvedReferences
     def __init__(self, env):
@@ -75,8 +77,18 @@ class Salt(object):
         result = back.json() if back.status_code == 200 else back.text
         return back.status_code == 200, result
 
-    def shell(self, hosts, cmd, user):
-        result, back = self._post(hosts, {'fun': 'cmd.shell', 'arg': [cmd, 'runas={user}'.format(user=user)]})
+    def file_trans(self, hosts, file_name, target_name):
+        result, back = self._post(hosts, {'fun': 'cp.get_url', 'arg': [
+            self.FILE_SERVER + file_name, target_name
+        ]})
+        logger.info('{r}:{b}'.format(r=result, b=pformat(back)))
+        return result, back
+
+    def shell(self, hosts, cmd, user=None):
+        if user is not None:
+            result, back = self._post(hosts, {'fun': 'cmd.run', 'arg': [cmd, 'runas={user}'.format(user=user)]})
+        else:
+            result, back = self._post(hosts, {'fun': 'cmd.run', 'arg': cmd})
         logger.info('{r}:{b}'.format(r=result, b=pformat(back)))
         return result, back
 

@@ -1,6 +1,6 @@
 # coding=utf-8
 from django.conf.urls import url
-from . import views
+from om import views
 
 app_name = 'om'
 urlpatterns = [
@@ -38,5 +38,6 @@ urlpatterns = [
     url(r'^exec_task/(?P<task_id>[0-9]+)/$', views.exec_task, name='exec_task'),
     url(r'^approval_task/(?P<task_id>[0-9]+)/$', views.approval_task, name='approval_task'),
     url(r'^task_item_detail/(?P<task_job_id>[0-9]+)/$', views.task_item_detail, name='task_item_detail'),
+    url(r'^get_common_script_content/(?P<s_id>[0-9]+)/$', views.get_common_script_content, name='get_common_script_content'),
 ]
 

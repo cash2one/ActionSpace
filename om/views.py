@@ -1,9 +1,6 @@
 # coding=utf-8
-import json
-
 from django.http import HttpResponseRedirect
 # from guardian.shortcuts import get_perms
-
 from om.util import *
 from django.contrib.auth.decorators import login_required
 # from guardian.decorators import permission_required
@@ -11,7 +8,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 from om.form import JobForm, JobGroupForm, FlowForm, TaskItemForm
-from om.models import Flow, JobGroup, Job, Task, TaskFlow, TaskJobGroup, TaskJob, Computer, System
+from om.models import *
 from datetime import datetime as dt
 from ActionSpace import settings
 
@@ -50,8 +47,44 @@ def index_content(request):
 
 @login_required
 def quick_exec_script(request):
+    context = {
+        'saved': False,
+        'result': True,
+        'error_msg': 'NA',
+        'users': None,
+        'scripts': None
+    }
+    if request.method == 'POST':
+        context['saved'] = True
+        try:
+            code_type = {'python': 'PY', 'shell': 'SHELL', 'bat': 'BAT'}
+            code_mode = request.POST['code_mode']
+            exec_user = request.POST['exec_user']
+            script_content = request.POST['script_content']
+            name = request.POST['name']
+            server_list = [x['server_ip'] for x in json.loads(request.POST['server_list'])]
+            job = Job.objects.create(
+                name=name, job_type='SCRIPT', script_type=code_type[code_mode],
+                script_content=script_content, script_param='',
+                exec_user=ExecUser.objects.get(name=exec_user)
+            )
+            [job.server_list.add(Computer.objects.get(ip=x)) for x in server_list]
+            job.save()
+            group = JobGroup.objects.create(
+                name='快速执行脚本:' + name, founder=request.user.username,
+                last_modified_by=request.user.username, job_list=str(job.id)
+            )
+            flow = Flow.objects.create(name='快速执行脚本:' + name, is_quick_flow=True, job_group_list=str(group.id))
+            make_task(request.user.username, flow.id, job.id)
+        except Exception as e:
+            context['result'] = False
+            context['error_msg'] = str(e)
+        return render(request, 'om/quick_exec_script.html', context)
+    else:
+        context['users'] = ExecUser.objects.all().values('name') if request.user.is_superuser else ExecUser.objects.exclude(name='root').values('name')
+        context['scripts'] = CommonScript.objects.all()
     settings.logger.info(request.user.username)
-    return render(request, 'om/quick_exec_script.html')
+    return render(request, 'om/quick_exec_script.html', context)
 
 
 @login_required
@@ -69,19 +102,15 @@ def exec_flow(request):
     return render(request, 'om/exec_flow.html', context)
 
 
-@login_required
-def create_task(request, flow_id, job_id):
-    settings.logger.info('%s %s %s ' % (request.user.username, flow_id, job_id))
+def make_task(username, flow_id, job_id):
     if flow_id == -1 and job_id != -1:  # flow不存在， job存在说明是快速执行任务来的
         job = get_object_or_404(Job, pk=job_id)
         group = JobGroup.objects.create(name='临时组', job_list=str(job.id))
-        group.save()
         flow = Flow.objects.create(is_quick_flow=True, job_group_list=str(group.id))
-        flow.save()
     else:
         flow = get_object_or_404(Flow, pk=flow_id)
 
-    task = Task.objects.create(name=flow.name, exec_user=request.user.username, approval_time=timezone.now())
+    task = Task.objects.create(name=flow.name, founder=username, approval_time=timezone.now())
     t_flow = TaskFlow.objects.create(name=flow.name, flow_id=flow.pk, task=task)
     for group_id in str2arr(flow.job_group_list):
         group = JobGroup.objects.get(pk=group_id)
@@ -89,22 +118,30 @@ def create_task(request, flow_id, job_id):
         for job_id in str2arr(group.job_list):
             job = Job.objects.get(pk=job_id)
             server_ip_list = ','.join([x.ip for x in job.server_list.all()])
+            file_name_list = ','.join([str(x.id) for x in job.file_name.all()])
             TaskJob.objects.create(
                 name=job.name, job_id=job.pk, group=t_group, job_type=job.job_type,
                 script_type=job.script_type, script_content=job.script_content,
                 begin_time=timezone.now(), end_time=timezone.now(), status='no_run',
                 pause_when_finish=job.pause_when_finish, script_param=job.script_param,
+                file_name=file_name_list, target_name=job.target_name,
                 exec_user=job.exec_user, server_list=server_ip_list,
                 pause_finish_tip=job.pause_finish_tip, exec_output=''
             )
-
     task.save()
+    return task
+
+
+@login_required
+def create_task(request, flow_id, job_id):
+    settings.logger.info('%s %s %s ' % (request.user.username, flow_id, job_id))
+    make_task(request.user.username, flow_id, job_id)
     return JsonResponse({'result': 'N', 'desc': '任务已创建！'})
 
 
-def clone_task(task):
+def clone_task(task, username):
     t_flow = task.taskflow_set.first()
-    new_t_task = Task.objects.create(name=task.name, exec_user=task.exec_user, approval_time=timezone.now())
+    new_t_task = Task.objects.create(name=task.name, founder=username, approval_time=timezone.now())
     new_t_flow = TaskFlow.objects.create(name=t_flow.name, flow_id=t_flow.flow_id, task=new_t_task)
     for task_group in t_flow.taskjobgroup_set.all():
         t_group = TaskJobGroup.objects.create(name=task_group.name, group_id=task_group.group_id, flow=new_t_flow)
@@ -113,6 +150,7 @@ def clone_task(task):
                 name=task_job.name, job_id=task_job.job_id, group=t_group, job_type=task_job.job_type,
                 script_type=task_job.script_type, script_content=task_job.script_content,
                 begin_time=timezone.now(), end_time=timezone.now(), status='no_run',
+                file_name=task_job.file_name, target_name=task_job.target_name,
                 pause_when_finish=task_job.pause_when_finish, script_param=task_job.script_param,
                 server_list=task_job.server_list, pause_finish_tip=task_job.pause_finish_tip,
                 exec_user=task_job.exec_user, exec_output=''
@@ -137,7 +175,6 @@ def exec_task(request, task_id):
         if task.taskflow_set.count() > 0:
             res = celery_exec_task.delay(task.id, request.user.username)
             task.async_result = res.id
-            task.exec_user = request.user.username
             task.save()
             return JsonResponse({'result': 'Y', 'desc': '任务[{tid}]已发送到后台执行。'.format(tid=task.id)})
         else:
@@ -151,8 +188,9 @@ def exec_task(request, task_id):
 def redo_create_task(request, task_id):
     settings.logger.info('%s %s' % (request.user.username, task_id))
     for task in Task.objects.filter(pk=task_id):
-        new_task = clone_task(task)
-        new_task.exec_user = request.user.username
+        new_task = clone_task(task, request.user.username)
+        if request.user.is_superuser:
+            new_task.approval(request.user.username, 'Y', '审批通过')
         new_task.save()
         return JsonResponse({'result': 'Y', 'desc': 'ID为[{tid}]的任务已创建。'.format(tid=new_task.id)})
     return JsonResponse({'result': 'N', 'desc': 'ID为[{tid}]任务不存在！'.format(tid=task_id)})
@@ -327,6 +365,7 @@ def new_job(request, job_group_id):
         'form': job_form,
         'check_field_list': ['pause_when_finish', 'pause_when_error', 'file_from_local'],
         'normal_check_list': ['server_list'],
+        'security_field_list': ['exec_user'],
         'save': save,
     }
     return render(request, 'om/edit_job.html', context)
@@ -359,6 +398,7 @@ def edit_job(request, job_id):
         'form': job_form,
         'check_field_list': ['pause_when_finish', 'pause_when_error', 'file_from_local'],
         'disable_field_list': ['last_modified_by', 'founder'],
+        'security_field_list': ['exec_user'],
         'normal_check_list': ['server_list'],
         'save': save,
     }
@@ -530,7 +570,7 @@ def get_action_history_list(request):
     for t in Task.objects.order_by('-start_time'):
         result.append({
             'task_id': t.id, 'task_name': t.name, 'approval_status': t.get_approval_status_display(),
-            'approver': t.approver, 'approval_desc': t.approval_desc,
+            'approver': t.approver, 'approval_desc': t.approval_desc, 'founder': t.founder,
             'run_user': t.exec_user, 'task_status': t.get_status_display(),
             'start_time': dt.strftime(timezone.localtime(t.start_time),
                                       fmt) if t.status != 'no_run' else '未开始',
@@ -566,3 +606,9 @@ def task_item_detail(request, task_job_id):
 def no_permission(request):
     settings.logger.info(request.user.username)
     return render(request, 'om/403.html')
+
+
+@login_required
+def get_common_script_content(request, s_id):
+    sc = get_object_or_404(CommonScript, pk=s_id)
+    return JsonResponse({'content': sc.content})

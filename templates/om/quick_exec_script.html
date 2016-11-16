@@ -4,6 +4,26 @@
 <body class="gray-bg">
 {% endblock %}
 {% block body_content %}
+    {% if saved and result %}
+        <script src="{% static 'om/js/jquery.min.js' %}"></script>
+        <script src="{% static 'om/js/bootstrap.min.js' %}"></script>
+        <script src="{% static 'om/layer/layer.js' %}"></script>
+        <script type="text/javascript">
+            var index = parent.layer.getFrameIndex(window.name);
+            layer.alert('保存成功！',{icon: 6}, function(){
+                window.parent.location.reload();
+                parent.layer.close(index);
+            });
+        </script>
+    {% else %}
+        {% if saved and not result %}
+        <script src="{% static 'om/js/jquery.min.js' %}"></script>
+        <script src="{% static 'om/js/bootstrap.min.js' %}"></script>
+        <script src="{% static 'om/layer/layer.js' %}"></script>
+        <script type="text/javascript">
+            layer.alert('保存失败！[' + '{{ error_msg }}' +']',{icon: 5});
+        </script>
+        {% endif %}
     <div class="wrapper wrapper-content  animated fadeInRight">
         <div class="row">
             <div class="col-sm-12">
@@ -12,11 +32,12 @@
                         <h5>快速执行脚本</h5>
                     </div>
                     <div class="ibox-content">
-                        <form class="form-horizontal">
+                        <form class="form-horizontal" method='post' onsubmit="return before_submit()">
+                            {% csrf_token %}
                             <div class="form-group">
                                 <label class="col-sm-2 control-label">脚本名称</label>
                                 <div class="col-sm-8">
-                                    <input type="email" placeholder="脚本名称" class="form-control">
+                                    <input id="id_name" name="name" type="text" maxlength="100" placeholder="脚本名称" class="form-control" required="">
                                 </div>
                             </div>
                             <div class="form-group">
@@ -25,8 +46,8 @@
                                     <div >
                                         <button type="button" class="btn btn-success" id="choose_server"><i class="fa fa-desktop"></i>&nbsp;选择服务器</button>
                                     </div>
-                                    <div >
-                                        <table id="table" data-toggle="table" data-pagination="true" data-id-field="id" data-page-size="3"
+                                    <div>
+                                        <table id="table" name="table" data-toggle="table" data-pagination="true" data-id-field="id" data-page-size="3"
                                             data-page-list="[3, 10, ALL]" data-height="250">
                                             <thead>
                                                 <tr>
@@ -37,6 +58,7 @@
                                                 </tr>
                                             </thead>
                                         </table>
+                                        <input id="id_server_list" name="server_list" type="hidden" class="form-control">
                                     </div>
                                 </div>
                             </div>
@@ -44,25 +66,10 @@
                                 <label class="col-sm-2 control-label">执行账户</label>
                                 <div class="col-sm-8">
                                     <div class="input-group">
-                                        <select data-placeholder="请选择" class="chosen-select"  style="width:650px;">
-                                            <option value="">执行账户</option>
-                                            <option value="1" hassubinfo="true">root</option>
-                                            <option value="2" hassubinfo="true">wls81</option>
-                                            <option value="3" hassubinfo="true">deployop</option>
-                                            <option value="4" hassubinfo="true">logarchive</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="col-sm-2 control-label">选择脚本</label>
-                                <div class="col-sm-8">
-                                    <div class="input-group">
-                                        <select data-placeholder="请选择作业组" class="chosen-select"  style="width:650px;">
-                                            <option value="">脚本</option>
-                                            <option value="1" hassubinfo="true">test_shell.sh</option>
-                                            <option value="2" hassubinfo="true">test_python.py</option>
-                                            <option value="3" hassubinfo="true">test_bat.bat</option>
+                                        <select id="id_exec_user" name="exec_user" data-placeholder="请选择" class="chosen-select"  style="width:650px;">
+                                            {% for user in users %}
+                                            <option value="{{ user.name }}">{{ user.name }}</option>
+                                            {% endfor %}
                                         </select>
                                     </div>
                                 </div>
@@ -76,8 +83,8 @@
                                         <label for="manual"> 手工录入 </label>
                                     </div>
                                     <div class="radio radio-info radio-inline">
-                                        <input type="radio" id="clone" value="clone" name="code_source">
-                                        <label for="clone"> 克隆现有脚本 </label>
+                                        <input type="radio" id="select_exist_code" value="select_exist_code" name="code_source">
+                                        <label for="select_exist_code"> 现有脚本 </label>
                                     </div>
                                     <div class="radio radio-info radio-inline">
                                         <input type="radio" id="local" value="local" name="code_source">
@@ -85,19 +92,17 @@
                                     </div>
                                 </div>
                                 <div id="script_upload" class="col-sm-5" style="display:none">
-                                        <input id="script_upload_path" type="file" class="form-control">
+                                    <input id="script_upload_path" type="file" class="form-control">
                                 </div>
                             </div>
                             <div id="code_source_select" class="form-group">
                                 <label class="col-sm-2 control-label">选择脚本</label>
                                 <div class="col-sm-8">
                                     <div class="input-group">
-                                        <select data-placeholder="请选择脚本" class="chosen-code-source"  style="width:650px;">
-                                            <option value="">请选择脚本</option>
-                                            <option value="1" hassubinfo="true">检查REDIS状态[python]</option>
-                                            <option value="2" hassubinfo="true">重启DSP-CCS-IPUSH[python]</option>
-                                            <option value="3" hassubinfo="true">重启DSP-CCS-INFO[shell]</option>
-                                            <option value="4" hassubinfo="true">重启资管[bat]</option>
+                                        <select id="id_chosen-code-source" data-placeholder="请选择脚本" class="chosen-code-source"  style="width:650px;">
+                                            {% for script in scripts %}
+                                            <option value="{{ script.id }}">{{ script.name }}</option>
+                                            {% endfor %}
                                         </select>
                                     </div>
                                 </div>
@@ -122,7 +127,8 @@
                             <div class="form-group">
                                 <label class="col-sm-2 control-label">脚本内容</label>
                                 <div class="col-sm-8">
-                                    <textarea id="code_python">
+                                    <!--suppress HtmlFormInputWithoutLabel -->
+                                    <textarea id="script_content" name="script_content">
 #coding:utf-8
 import sys, os
 
@@ -135,104 +141,122 @@ if __name__ == '__main__':
                                     </textarea>
                                 </div>
                             </div>
+                            <div class="form-group">
+                                <div class="col-sm-10 col-sm-offset-5">
+                                    <button class="btn btn-primary" type="submit" value="save">执行脚本</button>
+                                    <button class="btn btn-white" id="cancel_form" type="button" value="cancel">取消</button>
+                                </div>
+                            </div>
                         </form>
-                        <div class="text-center">
-                            <a data-toggle="modal" class="btn btn-primary">执行脚本</a>
-                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-{% endblock %}
-{% block other_js %}
-    <script src="{% static 'om/js/plugins/peity/jquery.peity.min.js' %}"></script>
-    <script src="{% static 'om/js/plugins/chosen/chosen.jquery.js' %}"></script>
-    <script src="{% static 'codemirror/lib/codemirror.js' %}"></script>
-    <script src="{% static 'codemirror/mode/javascript/javascript.js' %}"></script>
-    <script src="{% static 'codemirror/mode/python/python.js' %}"></script>
-    <script src="{% static 'codemirror/mode/perl/perl.js' %}"></script>
-    <script src="{% static 'om/layer/layer.js' %}"></script>
-    <script src="{% static 'om/js/plugins/prettyfile/bootstrap-prettyfile.js' %}"></script>
-    <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table.min.js' %}"></script>
-    <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table-mobile.min.js' %}"></script>
-    <script src="{% static 'om/js/plugins/bootstrap-table/locale/bootstrap-table-zh-CN.min.js' %}"></script>
-    <!--suppress JSUnusedLocalSymbols, JSUnresolvedVariable -->
-    <script>
-        $(document).ready(function() {
-            $(".chosen-select").chosen();
-            $(".chosen-code-source").chosen();
-            $("#code_source_select").hide();
-            $( 'input[type="file"]' ).prettyFile();
-        });
-
-        function actionFormatter(value, row, index) {
-            return [
-                '<a class="delete_server" href="javascript:void(0)" title="删除">',
-                '<button type="button" class="btn btn-xs btn-info">删除</button>',
-                '</a>'
-            ].join('');
-        }
-
-        setTimeout(function () {
-            $('#table').bootstrapTable('resetView');
-        }, 200);
-
-        window.actionEvents = {
-            'click .delete_server': function (e, value, row, index) {
-                $('#table').bootstrapTable('remove', {field: 'server_ip', values: [row.server_ip]});
-            }
-        };
-
-        var editor = CodeMirror.fromTextArea($("#code_python")[0], {
-            mode: 'python',
-            lineNumbers: true,
-            indentUnit: 4,
-            styleActiveLine: true,
-            matchBrackets: true,
-            theme: 'ambiance'
-        });
-        editor.setSize('%80', 300);
-
-        $("input:radio[name='code_mode']").change(function (){
-            editor.setOption("mode", $(this).prop("id"));
-        });
-
-        $('#choose_server').on('click', function(){
-            var choose_server_layer = layer.open({
-              type: 2,
-              area: ['700px', '530px'],
-              fix: false, //不固定
-              maxmin: true,
-              content: "{%url 'om:choose_server'%}"
+    {% block other_js %}
+        <script src="{% static 'om/js/plugins/peity/jquery.peity.min.js' %}"></script>
+        <script src="{% static 'om/js/plugins/chosen/chosen.jquery.js' %}"></script>
+        <script src="{% static 'codemirror/lib/codemirror.js' %}"></script>
+        <script src="{% static 'codemirror/mode/javascript/javascript.js' %}"></script>
+        <script src="{% static 'codemirror/mode/python/python.js' %}"></script>
+        <script src="{% static 'codemirror/mode/perl/perl.js' %}"></script>
+        <script src="{% static 'om/layer/layer.js' %}"></script>
+        <script src="{% static 'om/js/plugins/prettyfile/bootstrap-prettyfile.js' %}"></script>
+        <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table.min.js' %}"></script>
+        <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table-mobile.min.js' %}"></script>
+        <script src="{% static 'om/js/plugins/bootstrap-table/locale/bootstrap-table-zh-CN.min.js' %}"></script>
+        <!--suppress JSUnusedLocalSymbols, JSUnresolvedVariable -->
+        <script>
+            $(document).ready(function() {
+                $(".chosen-select").chosen();
+                $(".chosen-code-source").chosen();
+                $("#code_source_select").hide();
+                $('input[type="file"]' ).prettyFile();
             });
-            layer.full(choose_server_layer);
-        });
 
-        $("#script_upload_path").change(function (e){
-            if (e.target.files) {
-                var reader = new FileReader();
-                reader.onload = function()  {
-                    editor.setValue(this.result)
+            function actionFormatter(value, row, index) {
+                return [
+                    '<a class="delete_server" href="javascript:void(0)" title="删除">',
+                    '<button type="button" class="btn btn-xs btn-info">删除</button>',
+                    '</a>'
+                ].join('');
+            }
+
+            setTimeout(function () {$('#table').bootstrapTable('resetView');}, 200);
+
+            window.actionEvents = {
+                'click .delete_server': function (e, value, row, index) {
+                    $('#table').bootstrapTable('remove', {field: 'server_ip', values: [row.server_ip]});
                 }
-                reader.readAsText(e.target.files[0]);
-            }
-        });
+            };
 
-        $("input:radio[name='code_source']").change(function (){
-            if ($(this).prop("id") == "clone") {
-                $("#code_source_select").show();
-                $("#script_upload").hide();
+            var editor = CodeMirror.fromTextArea($("#script_content")[0], {
+                mode: 'python',
+                lineNumbers: true,
+                indentUnit: 4,
+                styleActiveLine: true,
+                matchBrackets: true,
+                theme: 'ambiance'
+            });
+            editor.setSize('%80', 300);
+
+            $("input:radio[name='code_mode']").change(function (){
+                editor.setOption("mode", $(this).prop("id"));
+            });
+
+            function before_submit() {
+                $('#id_server_list').val(JSON.stringify($('#table').bootstrapTable("getData")));
+                return true;
             }
-            else if ($(this).prop("id")  == "local")  {
-                $("#script_upload").show();
-                $("#code_source_select").hide();
+
+            function set_code_script(s_id) {
+                $.get('/om/get_common_script_content/'+s_id, {'csrfmiddlewaretoken': '{{ csrf_token }}'},function(result) {
+                    editor.setValue(result.content);
+                });
             }
-            else
-            {
-                $("#code_source_select").hide();
-                $("#script_upload").hide();
-            }
-        });
-    </script>
+
+            $('#id_chosen-code-source').change(function (){
+                set_code_script($(this).children('option:selected').val());
+            });
+
+            $('#choose_server').on('click', function(){
+                var choose_server_layer = layer.open({
+                  type: 2,
+                  area: ['700px', '530px'],
+                  fix: false, //不固定
+                  maxmin: true,
+                  content: "{%url 'om:choose_server'%}"
+                });
+                layer.full(choose_server_layer);
+            });
+
+            $("#script_upload_path").change(function (e){
+                if (e.target.files) {
+                    var reader = new FileReader();
+                    reader.onload = function()  {
+                        editor.setValue(this.result)
+                    };
+                    reader.readAsText(e.target.files[0]);
+                }
+            });
+
+            $("input:radio[name='code_source']").change(function (){
+                if ($(this).prop("id") == "select_exist_code") {
+                    $("#code_source_select").show();
+                    $("#script_upload").hide();
+                    set_code_script($("#id_chosen-code-source").children('option:selected').val());
+                }
+                else if ($(this).prop("id")  == "local")  {
+                    $("#script_upload").show();
+                    $("#code_source_select").hide();
+                }
+                else
+                {
+                    $("#code_source_select").hide();
+                    $("#script_upload").hide();
+                }
+            });
+        </script>
+    {% endblock %}
+    {% endif %}
 {% endblock %}
