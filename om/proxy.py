@@ -44,8 +44,8 @@ class Salt(object):
     """
 
     SALT_INFO = {
-        'UAT': {'url': 'https://stock-saltmaster-uat.paic.com.cn:8000', 'user': 'saltapiom', 'pwd': 'Pi=K!bTKe8H~'},
-        'PRD': {'url': 'https://stock-saltmaster.paic.com.cn:8000', 'user': 'saltapiom', 'pwd': 'Pi=5=WHK-@HU'}
+        'UAT': {'url': 'uat_url', 'user': 'uat_user', 'pwd': 'uat_pwd'},
+        'PRD': {'url': 'prd_url', 'user': 'prd_user', 'pwd': 'prd_pwd'}
     }
 
     FILE_SERVER = 'http://stockmirrors.paic.com.cn/iso/wls81/'
