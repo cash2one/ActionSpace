@@ -52,20 +52,22 @@
                                         <button class="btn btn-white" id="cancel_form" type="button" value="cancel">取消</button>
                                     </div>
                                 </div>
-                        </form>
+                            </form>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        {% block other_js %}
-            <script src="{% static 'om/js/plugins/peity/jquery.peity.min.js' %}"></script>
-            <script src="{% static 'codemirror/lib/codemirror.js' %}"></script>
-            <script src="{% static 'codemirror/mode/shell/shell.js' %}"></script>
-            <script src="{% static 'codemirror/mode/python/python.js' %}"></script>
-            <script src="{% static 'codemirror/mode/perl/perl.js' %}"></script>
-            <script src="{% static 'om/js/plugins/prettyfile/bootstrap-prettyfile.js' %}"></script>
-        {% endblock %}
     {% endif %}
 </body>
 {% endblock %}
+{% if not save.saved %}
+    {% block other_js %}
+        <script src="{% static 'om/js/plugins/peity/jquery.peity.min.js' %}"></script>
+        <script src="{% static 'codemirror/lib/codemirror.js' %}"></script>
+        <script src="{% static 'codemirror/mode/shell/shell.js' %}"></script>
+        <script src="{% static 'codemirror/mode/python/python.js' %}"></script>
+        <script src="{% static 'codemirror/mode/perl/perl.js' %}"></script>
+        <script src="{% static 'om/js/plugins/prettyfile/bootstrap-prettyfile.js' %}"></script>
+    {% endblock %}
+{% endif %}

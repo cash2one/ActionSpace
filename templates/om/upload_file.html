@@ -1,0 +1,115 @@
+{% extends 'om/base.html' %}
+{% load staticfiles %}
+{% block body_begin %}
+<body class="gray-bg" xmlns="http://www.w3.org/1999/html">
+{% endblock %}
+{% block body_content %}
+    <div class="wrapper wrapper-content  animated fadeInRight">
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="ibox ">
+                    <div class="ibox-title">
+                        <h5>配置文件管理</h5>
+                    </div>
+                    <div class="ibox-content">
+                        <table id="table" data-toggle="table"
+                               data-striped="true" data-click-to-select="true"
+                               data-pagination="true" data-search="true"
+                               data-show-refresh="true" data-show-toggle="true"
+                               data-filter-control="true" data-filter-show-clear="true"
+                               data-resizable="true" data-url="{% url 'om:get_server_file_list' %}"
+                        >
+                            <thead>
+                                <tr>
+                                    <th data-field="name" data-filter-control="input">文件名</th>
+                                    <th data-field="founder" data-filter-control="select">上传人</th>
+                                    <th data-field="upload_time" data-filter-control="input">上传时间</th>
+                                    <th data-field="desc" data-filter-control="input">描述</th>
+                                </tr>
+                            </thead>
+                        </table>
+                        <form class="form-horizontal" enctype="multipart/form-data" method="post" onsubmit="return before_submit()">
+                            {% csrf_token %}
+                            <div class="form-group">
+                                <div class="col-sm-12">
+                                    <input id="id_upload_file" type="file" name="upload_file" />
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="col-sm-12">
+                                    {% if result != 'O' %}
+                                        <div>
+                                            <div class="alert alert-{% if result == 'N' %}warning{% else %}success{% endif %}">
+                                                {{ msg }}
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="col-sm-12">
+                                    <button value="upload" class="btn btn-primary" type="submit">上传</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block other_js %}
+    <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table-mobile.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/bootstrap-table/locale/bootstrap-table-zh-CN.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/bootstrap-table/filter-control/bootstrap-table-filter-control.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/bootstrap-table/resizable/bootstrap-table-resizable.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/bootstrap-table/resizable/colResizable-1.5.source.js' %}"></script>
+    <script src="{% static 'om/layer/layer.js' %}"></script>
+    <script src="{% static 'om/js/plugins/peity/jquery.peity.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/prettyfile/bootstrap-prettyfile.js' %}"></script>
+    <script>
+        // 判断是否为IE浏览器： /msie/i.test(navigator.userAgent) 为一个简单正则
+        var isIE = /msie/i.test(navigator.userAgent) && !window.opera;
+        function before_submit(){
+            var target = $('#id_upload_file')[0];
+            if (target.files.length < 1) {
+                layer.msg("请先选择要上传的文件！");
+                return false;
+            }
+            var fileSize = 0;
+            if (isIE && !target.files) {    // IE浏览器
+                var filePath = target.value; // 获得上传文件的绝对路径
+                /**
+                 * ActiveXObject 对象为IE和Opera所兼容的JS对象
+                 * 用法：
+                 *         var newObj = new ActiveXObject( servername.typename[, location])
+                 *         其中newObj是必选项。返回 ActiveXObject对象 的变量名。
+                 *        servername是必选项。提供该对象的应用程序的名称。
+                 *        typename是必选项。要创建的对象的类型或类。
+                 *        location是可选项。创建该对象的网络服务器的名称。
+                 *\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+                 *     Scripting.FileSystemObject 为 IIS 内置组件，用于操作磁盘、文件夹或文本文件，
+                 *    其中返回的 newObj 方法和属性非常的多
+                 *    如：var file = newObj.CreateTextFile("C:\test.txt", true) 第二个参表示目标文件存在时是否覆盖
+                 *    file.Write("写入内容");    file.Close();
+                 */
+                var fileSystem = new ActiveXObject("Scripting.FileSystemObject");
+                // GetFile(path) 方法从磁盘获取一个文件并返回。
+                var file = fileSystem.GetFile(filePath);
+                fileSize = file.Size;    // 文件大小，单位：b
+            }
+            else {    // 非IE浏览器
+                fileSize = target.files[0].size;
+            }
+            if (fileSize > {{ file_max_m }}*1024*1024) {
+                layer.msg("上传的文件不能大于{{ file_max_m }}M");
+                return false;
+            }
+            return true;
+        }
+        $(document).ready(function(){
+            $('input[type="file"]').prettyFile();
+        });
+    </script>
+{% endblock %}

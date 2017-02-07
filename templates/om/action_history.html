@@ -111,7 +111,7 @@
                 layer.full(detail_layer);
             },
             'click .exec_task': function (e, value, row, index) {
-                $.get('/om/exec_task/'+row.task_id, {'csrfmiddlewaretoken': '{{ csrf_token }}'},function(result) {
+                $.get('/om/exec_task/'+row.task_id, function(result) {
                     if (result.result == 'Y') {
                         var detail_layer = layer.open({
                             type: 2,
@@ -127,7 +127,7 @@
                 });
             },
             'click .redo': function (e, value, row, index) {
-                $.get('/om/redo_create_task/'+row.task_id, {'csrfmiddlewaretoken': '{{ csrf_token }}'},function(result) {
+                $.get('/om/redo_create_task/'+row.task_id, function(result) {
                     $('#table').bootstrapTable('refresh');
                     layer.msg(result.desc,{time: 2000});
                 });

@@ -20,8 +20,15 @@
     <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table-mobile.min.js' %}"></script>
     <script src="{% static 'om/js/plugins/bootstrap-table/locale/bootstrap-table-zh-CN.min.js' %}"></script>
     <script src="{% static 'om/layer/layer.js' %}"></script>
+    <script src="{% static 'om/js/reconnecting-websocket.min.js' %}"></script>
     <script>
         $(document).ready(function(){
+            var ws_scheme = window.location.protocol == "https:" ? "wss" : "ws";
+            var url = ws_scheme + '://' + window.location.host + window.location.pathname;
+            url += '?session_key={{ request.session.session_key }}';
+            //noinspection JSUnresolvedFunction
+            var inst = new ReconnectingWebSocket(url);
+
             $("#lightVersion").click(function(event){
                 event.preventDefault();
                 $("#ibox-content").removeClass("ibox-content");
@@ -38,16 +45,19 @@
                 event.preventDefault();
                 $("#vertical-timeline").toggleClass("center-orientation")
             });
-            $.get('/om/detail_content/'+'{{ task }}/'+1, {'csrfmiddlewaretoken': '{{ csrf_token }}'},function(result) {
-                    $("#ibox-content").html(result);
-                });
-            function update() {
-                $.get('/om/detail_content/'+'{{ task }}/'+0, {'csrfmiddlewaretoken': '{{ csrf_token }}'},function(result) {
-                    $("#ibox-content").html(result);
-                    update()
-                });
-            }
-            update();
+            inst.onmessage = function(msg) {
+                if (msg.data == 'Y') {
+                    $.get('/om/detail_content/'+'{{ task }}', function(result) {
+                        $("#ibox-content").html(result);
+                    });
+                }
+                else {
+                    $("#ibox-content").html('未授权，请联系管理员！');
+                }
+            };
+            inst.onopen = function() {
+                inst.send('');
+            };
         });
     </script>
 {% endblock %}

@@ -1,3 +1,28 @@
+<style type="text/css">
+    .window {
+        color: white;
+        font: "微软雅黑";
+        border:4px #ccc outset;
+        background-color:white;
+        overflow:hidden
+    }
+    .title {
+        background-color:#08246B;
+        margin-bottom:2px;
+    }
+    .text {
+        outline:none;
+        color: white;
+        margin: 0;
+        padding: 0;
+        font: "Courier New";
+        background-color:#000;
+        border: 0;
+        display: block;
+        max-height: 420px;
+        overflow-y:scroll;
+    }
+</style>
 <div id="vertical-timeline" class="vertical-container light-timeline">
     {% for group in task.taskflow_set.first.taskjobgroup_set.all %}
         <div class="vertical-timeline-block">
@@ -9,18 +34,24 @@
                 {% if job.status == 'finish' %}
                     <div class="vertical-timeline-icon navy-bg"><i class="fa fa-check"></i></div>
                 {% elif job.status == 'running' %}
-                    <div class="vertical-timeline-icon blue-bg"><i class="fa fa-spinner"></i></div>
+                    <div class="vertical-timeline-icon blue-bg"><i class="fa fa-spinner fa-spin"></i></div>
                 {% else %}
                     <div class="vertical-timeline-icon lazur-bg"><i class="fa fa-coffee"></i></div>
                 {% endif %}
                 <div class="vertical-timeline-content">
-                    <p>{{ job.name }}
-                        <button style="display: none" id="go_on-{{ group.group_id }}_{{ job.job_id }}">
-                            <i class="fa fa-toggle-right">继续</i>
-                        </button>
-                    </p>
+                    <div class="window">
+                        <div class="title"><span>&nbsp;&nbsp;{{ job.name }}</span></div>
                     {% if job.status == 'finish' or job.status == 'run_fail' %}
-                        <pre>{{ job.exec_output }}</pre>
+                        <div class="text">
+                            <pre class="text" id="output-{{ group.group_id }}_{{ job.job_id }}">{{ job.exec_output }}</pre>
+                        </div>
+                    {% endif %}
+                    </div>
+                    <button style="display: none" id="go_on-{{ group.group_id }}_{{ job.job_id }}">
+                        <i class="fa fa-toggle-right">继续</i>
+                    </button>
+                    {% if job.status != 'no_run' and job.status != 'running' %}
+                        <button class="btn btn-xs btn-info" onClick='copyToClipboard("output-{{ group.group_id }}_{{ job.job_id }}");'>复制结果到剪切板</button>
                     {% endif %}
                     <button class="btn btn-xs btn-success" id="show_detail-{{ group.group_id }}_{{ job.job_id }}">内容</button>
                     <div>
@@ -35,6 +66,7 @@
                             {% endif %}
                             <label>开始时间:</label><span class="label label-primary">{{ job.begin_time|date:'Y-m-d H:i:s' }}</span>
                             <label>完成时间:</label><span class="label label-primary">{{ job.end_time|date:'Y-m-d H:i:s' }}</span>
+                            <label>耗时:</label><span class="label label-primary">{{ job.cost_time }}秒</span>
                         </span>
                     </div>
                 </div>
@@ -53,24 +85,18 @@
                     layer.full(detail_layer);
                 });
                 {% if job.pause_need_confirm %}
-                    // var ws_scheme = window.location.protocol == "https:" ? "wss" : "ws";
-                    // var inst = new ReconnectingWebSocket(ws_scheme + '://' + window.location.host + window.location.pathname);
-                    // inst.onmessage = function(message) {
-                    //     console.log(message);
-                    // };
                     $('#go_on-{{ group.group_id }}_{{ job.job_id }}').click(function () {
-                        $.get("{%url 'om:confirm_task' task.id task.taskflow_set.first.flow_id group.group_id job.job_id %}", {'csrfmiddlewaretoken': '{{ csrf_token }}'}, function () {
+                        $.get("{%url 'om:confirm_task' task.id task.taskflow_set.first.flow_id group.group_id job.job_id %}", function () {
                             layer.msg('将继续往下执行！',{time: 2000, icon: 1});
                             $('#go_on-{{ group.group_id }}_{{ job.job_id }}').hide();
-                            // inst.send(JSON.stringify('{{ task.id }} {{ task.taskflow_set.first.flow_id }} {{ group.group_id }} {{ job.job_id}}'));
                         });
                     });
                     function job_confirm(){
-                        layer.confirm('{{ job.wait_tip }}', {
+                        layer.confirm('{{ job.pause_finish_tip }}', {
                             title: '作业[{{ job.name }}]已完成',
                             btn: ['继续','先等等']
                         }, function(){
-                            $.get("{%url 'om:confirm_task' task.id task.taskflow_set.first.flow_id group.group_id job.job_id %}", {'csrfmiddlewaretoken': '{{ csrf_token }}'}, function () {
+                            $.get("{%url 'om:confirm_task' task.id task.taskflow_set.first.flow_id group.group_id job.job_id %}", function () {
                                 layer.msg('将继续往下执行！',{time: 2000, icon: 1});
                                 $('#go_on-{{ group.group_id }}_{{ job.job_id }}').hide();
                             });

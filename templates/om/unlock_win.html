@@ -1,0 +1,100 @@
+{% extends 'om/base.html' %}
+{% load staticfiles %}
+{% block body_begin %}
+<body class="gray-bg">
+{% endblock %}
+{% block body_content %}
+    <div class="wrapper wrapper-content  animated fadeInRight">
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="ibox ">
+                    <div class="ibox-title">
+                        <h5>执行作业流</h5>
+                    </div>
+                    <div class="ibox-content">
+                        <form class="form-horizontal" method='post' onsubmit="return before_submit()">
+                            {% csrf_token %}
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label">用户名</label>
+                                <div class="col-sm-8">
+                                    <input id="id_user" name="user" type="text" maxlength="100" placeholder="用户名" value="system-admin" class="form-control" required="">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label">选择主机</label>
+                                <div class="col-sm-8">
+                                    <table id="table" data-toggle="table" data-sort-name="system"
+                                           data-sort-order="desc" data-url="{% url 'om:get_ip_host_list' %}"
+                                           data-striped="true" data-click-to-select="true"
+                                           data-pagination="true" data-search="true"
+                                           data-page-list="[5, 10, 20, 50, 100, 200, ALL]"
+                                           data-show-refresh="true" data-show-toggle="true"
+                                           data-filter-control="true" data-filter-show-clear="true"
+                                           data-resizable="true"
+                                    >
+                                        <thead>
+                                            <tr>
+                                                <th data-field="state" data-checkbox="true"></th>
+                                                <th data-field="ip" data-sortable="true" data-filter-control="input">IP</th>
+                                                <th data-field="host" data-sortable="true" data-filter-control="input">主机名</th>
+                                                <th data-field="sys" data-sortable="true" data-filter-control="select">系统类型</th>
+                                                <th data-field="env" data-sortable="true" data-filter-control="select">环境类型</th>
+                                                <th data-field="installed_agent" data-sortable="true" data-filter-control="select">是否可解锁</th>
+                                            </tr>
+                                        </thead>
+                                    </table>
+                                    <input id="id_server_list" name="server_list" type="hidden" class="form-control">
+                                    <pre id="result"></pre>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="col-sm-10 col-sm-offset-5">
+                                    <button id="save_layer" class="btn btn-primary" type="button">解锁</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block other_js %}
+    <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table-mobile.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/bootstrap-table/locale/bootstrap-table-zh-CN.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/bootstrap-table/filter-control/bootstrap-table-filter-control.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/bootstrap-table/resizable/bootstrap-table-resizable.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/bootstrap-table/resizable/colResizable-1.5.source.js' %}"></script>
+	<script src="{% static 'om/js/reconnecting-websocket.min.js' %}"></script>
+    <script type="text/javascript">
+        $(document).ready(function (){
+            var ws_scheme = window.location.protocol == "https:" ? "wss" : "ws";
+            var url = ws_scheme + '://' + window.location.host + window.location.pathname;
+            url += '?session_key={{ request.session.session_key }}';
+            //noinspection JSUnresolvedFunction
+            var inst = new ReconnectingWebSocket(url);
+            inst.onmessage = function(msg) {
+                $('#result').text(msg.data);
+            };
+
+            $('#save_layer').on('click', function () {
+                var send_data = {
+                    'user': $('#id_user').val(),
+                    'server_info': $('#table').bootstrapTable("getSelections")
+                };
+                inst.send(JSON.stringify(send_data));
+            });
+        });
+
+        function before_submit() {
+            $('#id_server_list').val(JSON.stringify($('#table').bootstrapTable("getSelections")));
+            return true;
+        }
+
+        $('#cancel_layer').on('click', function(){
+            var index = parent.layer.getFrameIndex(window.name); //获取窗口索引
+            parent.layer.close(index);
+        });
+    </script>
+{% endblock %}

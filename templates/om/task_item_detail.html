@@ -35,24 +35,24 @@
             </div>
         </div>
     </div>
-    {% block other_js %}
-        <script src="{% static 'om/js/plugins/peity/jquery.peity.min.js' %}"></script>
-        <script src="{% static 'codemirror/lib/codemirror.js' %}"></script>
-        <script src="{% static 'codemirror/mode/shell/shell.js' %}"></script>
-        <script src="{% static 'codemirror/mode/python/python.js' %}"></script>
-        <script src="{% static 'codemirror/mode/perl/perl.js' %}"></script>
-        <script src="{% static 'om/js/plugins/prettyfile/bootstrap-prettyfile.js' %}"></script>
-        <script type="text/javascript">
-        $(document).ready(
-                function() {
-                    $('#close_page').on('click', function(){
-                        var index = parent.layer.getFrameIndex(window.name);
-                        parent.layer.close(index);
-                    });
-                    $("select").prop("disabled", true);
-                }
-        );
-        </script>
-    {% endblock %}
 </body>
+{% endblock %}
+{% block other_js %}
+    <script src="{% static 'om/js/plugins/peity/jquery.peity.min.js' %}"></script>
+    <script src="{% static 'codemirror/lib/codemirror.js' %}"></script>
+    <script src="{% static 'codemirror/mode/shell/shell.js' %}"></script>
+    <script src="{% static 'codemirror/mode/python/python.js' %}"></script>
+    <script src="{% static 'codemirror/mode/perl/perl.js' %}"></script>
+    <script src="{% static 'om/js/plugins/prettyfile/bootstrap-prettyfile.js' %}"></script>
+    <script type="text/javascript">
+    $(document).ready(
+            function() {
+                $('#close_page').on('click', function(){
+                    var index = parent.layer.getFrameIndex(window.name);
+                    parent.layer.close(index);
+                });
+                $("select").prop("disabled", true);
+            }
+    );
+    </script>
 {% endblock %}

@@ -1,18 +1,19 @@
 # coding=utf-8
 from django import forms
+from django.forms import model_to_dict, BaseModelForm
+from django.forms.utils import ErrorList
 from django.utils.encoding import force_text
 from django.utils.html import format_html
-from om.models import Job, JobGroup, Computer, Flow, TaskJob, ExecUser
+from om.models import Job, JobGroup, Computer, Flow, TaskJob, ComputerGroup
+from django_select2.forms import ModelSelect2MultipleWidget
 from ActionSpace.settings import OM_ENV
-
-
-# from itertools import chain
 
 
 class OrderedMultiSelect(forms.SelectMultiple):
     """
     多选组件，能保持已选中的顺序，并且把已选中的置于最前端，剩下的放在最后
     """
+
     def render_options(self, selected_choices):
         output = []
         new_choices_info = []
@@ -44,15 +45,60 @@ class OrderedMultiSelect(forms.SelectMultiple):
 
 
 class JobForm(forms.ModelForm):
-    # def __init__(self, *args, **kwargs):
-    #     super(JobForm, self).__init__(*args, **kwargs)
-    #     env_list = ['PRD', 'UAT', 'FAT']
-    #     server_list_choices = [(e, [(c.ip, '%s-%s' % (c.host, c.ip)) for c in Computer.objects.filter(env=e)]) for e in env_list]
-    #     self.fields['server_list'].choices = server_list_choices
+    def __init__(self, data=None, files=None, auto_id='id_%s', prefix=None,
+                 initial=None, error_class=ErrorList, label_suffix=None,
+                 empty_permitted=False, instance=None, use_required_attribute=None):
+        opts = self._meta
+        if opts.model is None:
+            raise ValueError('ModelForm has no model class specified.')
+        if instance is None:
+            self.instance = opts.model()
+            object_data = {}
+        else:
+            self.instance = instance
+            object_data = model_to_dict(instance, opts.fields, opts.exclude)
+        if initial is not None:
+            object_data.update(initial)
+        self._validate_unique = False
+
+        # diy begin
+        if instance is not None:
+            server_list = set(list(instance.server_list.values_list('id', flat=True)))
+            cg_list = []
+            for cg in ComputerGroup.objects.all():
+                cg_cp_list = set(list(cg.computer_list.values_list('id', flat=True)))
+                if server_list.issuperset(cg_cp_list):
+                    cg_list.append(cg.id)
+            object_data['server_group_list'] = ComputerGroup.objects.filter(id__in=cg_list)
+        # diy end
+
+        self._validate_unique = False
+        super(BaseModelForm, self).__init__(
+            data, files, auto_id, prefix, object_data, error_class,
+            label_suffix, empty_permitted, use_required_attribute=use_required_attribute,
+        )
+
+        for field_name in self.fields:
+            formfield = self.fields[field_name]
+            if hasattr(formfield, 'queryset') and hasattr(formfield, 'get_limit_choices_to'):
+                limit_choices_to = formfield.get_limit_choices_to()
+                if limit_choices_to is not None:
+                    formfield.queryset = formfield.queryset.complex_filter(limit_choices_to)
+
+    server_group_list = forms.ModelMultipleChoiceField(
+        queryset=ComputerGroup.objects.all(),
+        required=False, label='服务器组（列表）'
+    )
 
     server_list = forms.ModelMultipleChoiceField(
-        queryset=Computer.objects.filter(env=OM_ENV).order_by('ip'),
-        # widget=forms.CheckboxSelectMultiple,
+        widget=ModelSelect2MultipleWidget(
+            search_fields=[
+                'agent_name__icontains',
+                'ip__icontains',
+                'host__icontains'
+            ]
+        ),
+        queryset=Computer.objects.filter(env=OM_ENV) if OM_ENV == 'UAT' else Computer.objects.all(),
         required=False, label='服务器（列表）'
     )
 
@@ -68,9 +114,6 @@ class JobForm(forms.ModelForm):
         model = Job
         fields = '__all__'
         exclude = ('last_modified_by', 'founder')
-        #  widgets = {
-        #      'script_content#  ': forms.Textarea(),  # 修改表单控件为文本域
-        #  }
 
 
 class JobGroupForm(forms.ModelForm):
@@ -110,3 +153,45 @@ class TaskItemForm(forms.ModelForm):
             'job_id', 'group', 'status', 'pause_need_confirm',
             'pause_when_finish', 'pause_finish_tip', 'exec_output'
         )
+
+
+class ChgPwdForm(forms.Form):
+    old_pwd = forms.CharField(
+        required=True,
+        label=u"原密码",
+        error_messages={'required': u'请输入原密码'},
+        widget=forms.PasswordInput(
+            attrs={
+                'placeholder': u"原密码",
+            }
+        ),
+    )
+    new_pwd = forms.CharField(
+        required=True,
+        label=u"新密码",
+        error_messages={'required': u'请输入新密码'},
+        widget=forms.PasswordInput(
+            attrs={
+                'placeholder': u"新密码",
+            }
+        ),
+    )
+    new_pwd_confirm = forms.CharField(
+        required=True,
+        label=u"确认密码",
+        error_messages={'required': u'请再次输入新密码'},
+        widget=forms.PasswordInput(
+            attrs={
+                'placeholder': u"确认密码",
+            }
+        ),
+    )
+
+    def clean(self):
+        if not self.is_valid():
+            raise forms.ValidationError(u"所有项都为必填项")
+        elif self.cleaned_data['new_pwd'] != self.cleaned_data['new_pwd_confirm']:
+            raise forms.ValidationError(u"两次输入的新密码不一样")
+        else:
+            cleaned_data = super(ChgPwdForm, self).clean()
+        return cleaned_data

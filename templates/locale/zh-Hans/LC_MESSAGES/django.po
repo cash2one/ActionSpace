@@ -1,0 +1,812 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2016-12-05 17:36+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#: .\templates\admin\404.html:4 .\templates\admin\404.html:8
+msgid "Page not found"
+msgstr ""
+
+#: .\templates\admin\404.html:10
+msgid "We're sorry, but the requested page could not be found."
+msgstr ""
+
+#: .\templates\admin\500.html:6 .\templates\admin\app_index.html:9
+#: .\templates\admin\auth\user\change_password.html:13
+#: .\templates\admin\base.html:56 .\templates\admin\change_form.html:18
+#: .\templates\admin\change_list.html:31
+#: .\templates\admin\delete_confirmation.html:13
+#: .\templates\admin\delete_selected_confirmation.html:13
+#: .\templates\admin\invalid_setup.html:6
+#: .\templates\admin\object_history.html:6
+#: .\templates\admin_doc\bookmarklets.html:6
+#: .\templates\admin_doc\index.html:6
+#: .\templates\admin_doc\missing_docutils.html:6
+#: .\templates\admin_doc\model_detail.html:14
+#: .\templates\admin_doc\model_index.html:8
+#: .\templates\admin_doc\template_detail.html:6
+#: .\templates\admin_doc\template_filter_index.html:7
+#: .\templates\admin_doc\template_tag_index.html:7
+#: .\templates\admin_doc\view_detail.html:6
+#: .\templates\admin_doc\view_index.html:7
+#: .\templates\registration\logged_out.html:4
+#: .\templates\registration\password_change_done.html:6
+#: .\templates\registration\password_change_form.html:7
+#: .\templates\registration\password_reset_complete.html:6
+#: .\templates\registration\password_reset_confirm.html:6
+#: .\templates\registration\password_reset_done.html:6
+#: .\templates\registration\password_reset_form.html:6
+msgid "Home"
+msgstr ""
+
+#: .\templates\admin\500.html:7
+msgid "Server error"
+msgstr ""
+
+#: .\templates\admin\500.html:11
+msgid "Server error (500)"
+msgstr ""
+
+#: .\templates\admin\500.html:14
+msgid "Server Error <em>(500)</em>"
+msgstr ""
+
+#: .\templates\admin\500.html:15
+msgid ""
+"There's been an error. It's been reported to the site administrators via "
+"email and should be fixed shortly. Thanks for your patience."
+msgstr ""
+
+#: .\templates\admin\actions.html:4
+msgid "Run the selected action"
+msgstr ""
+
+#: .\templates\admin\actions.html:4
+msgid "Go"
+msgstr ""
+
+#: .\templates\admin\actions.html:10
+msgid "Click here to select the objects across all pages"
+msgstr ""
+
+#: .\templates\admin\actions.html:10
+#, python-format
+msgid "Select all %(total_count)s %(module_name)s"
+msgstr ""
+
+#: .\templates\admin\actions.html:12
+msgid "Clear selection"
+msgstr ""
+
+#: .\templates\admin\auth\user\add_form.html:6
+msgid ""
+"First, enter a username and password. Then, you'll be able to edit more user "
+"options."
+msgstr ""
+
+#: .\templates\admin\auth\user\add_form.html:8
+msgid "Enter a username and password."
+msgstr ""
+
+#: .\templates\admin\auth\user\change_password.html:17
+#: .\templates\admin\auth\user\change_password.html:54
+#: .\templates\admin\base.html:44
+#: .\templates\registration\password_change_done.html:3
+#: .\templates\registration\password_change_form.html:4
+msgid "Change password"
+msgstr ""
+
+#: .\templates\admin\auth\user\change_password.html:27
+#: .\templates\admin\change_form.html:47 .\templates\admin\change_list.html:58
+#: .\templates\admin\login.html:21
+#: .\templates\registration\password_change_form.html:21
+msgid "Please correct the error below."
+msgstr ""
+
+#: .\templates\admin\auth\user\change_password.html:27
+#: .\templates\admin\change_form.html:47 .\templates\admin\change_list.html:58
+#: .\templates\admin\login.html:21
+#: .\templates\registration\password_change_form.html:21
+msgid "Please correct the errors below."
+msgstr ""
+
+#: .\templates\admin\auth\user\change_password.html:31
+#, python-format
+msgid "Enter a new password for the user <strong>%(username)s</strong>."
+msgstr ""
+
+#: .\templates\admin\base.html:30
+msgid "Welcome,"
+msgstr ""
+
+#: .\templates\admin\base.html:35
+msgid "View site"
+msgstr ""
+
+#: .\templates\admin\base.html:40 .\templates\admin_doc\bookmarklets.html:7
+#: .\templates\admin_doc\index.html:7 .\templates\admin_doc\index.html:10
+#: .\templates\admin_doc\index.html:14
+#: .\templates\admin_doc\missing_docutils.html:7
+#: .\templates\admin_doc\missing_docutils.html:14
+#: .\templates\admin_doc\model_detail.html:15
+#: .\templates\admin_doc\model_index.html:9
+#: .\templates\admin_doc\template_detail.html:7
+#: .\templates\admin_doc\template_filter_index.html:8
+#: .\templates\admin_doc\template_tag_index.html:8
+#: .\templates\admin_doc\view_detail.html:7
+#: .\templates\admin_doc\view_index.html:8
+#: .\templates\registration\password_change_done.html:3
+#: .\templates\registration\password_change_form.html:4
+msgid "Documentation"
+msgstr ""
+
+#: .\templates\admin\base.html:46
+#: .\templates\registration\password_change_done.html:3
+#: .\templates\registration\password_change_form.html:4
+msgid "Log out"
+msgstr ""
+
+#: .\templates\admin\base_site.html:3
+msgid "Django site admin"
+msgstr ""
+
+#: .\templates\admin\base_site.html:6
+msgid "Django administration"
+msgstr ""
+
+#: .\templates\admin\change_form.html:21 .\templates\admin\change_list.html:49
+#, python-format
+msgid "Add %(name)s"
+msgstr ""
+
+#: .\templates\admin\change_form.html:33
+#: .\templates\admin\object_history.html:10
+msgid "History"
+msgstr ""
+
+#: .\templates\admin\change_form.html:35
+#: .\templates\admin\edit_inline\stacked.html:14
+#: .\templates\admin\edit_inline\tabular.html:36
+msgid "View on site"
+msgstr ""
+
+#: .\templates\admin\change_list.html:69
+msgid "Filter"
+msgstr ""
+
+#: .\templates\admin\change_list_results.html:17
+msgid "Remove from sorting"
+msgstr ""
+
+#: .\templates\admin\change_list_results.html:18
+#, python-format
+msgid "Sorting priority: %(priority_number)s"
+msgstr ""
+
+#: .\templates\admin\change_list_results.html:19
+msgid "Toggle sorting"
+msgstr ""
+
+#: .\templates\admin\delete_confirmation.html:17
+#: .\templates\admin\related_widget_wrapper.html:23
+#: .\templates\admin\submit_line.html:6
+msgid "Delete"
+msgstr ""
+
+#: .\templates\admin\delete_confirmation.html:23
+#, python-format
+msgid ""
+"Deleting the %(object_name)s '%(escaped_object)s' would result in deleting "
+"related objects, but your account doesn't have permission to delete the "
+"following types of objects:"
+msgstr ""
+
+#: .\templates\admin\delete_confirmation.html:30
+#, python-format
+msgid ""
+"Deleting the %(object_name)s '%(escaped_object)s' would require deleting the "
+"following protected related objects:"
+msgstr ""
+
+#: .\templates\admin\delete_confirmation.html:37
+#, python-format
+msgid ""
+"Are you sure you want to delete the %(object_name)s \"%(escaped_object)s\"? "
+"All of the following related items will be deleted:"
+msgstr ""
+
+#: .\templates\admin\delete_confirmation.html:39
+#: .\templates\admin\delete_selected_confirmation.html:38
+msgid "Objects"
+msgstr ""
+
+#: .\templates\admin\delete_confirmation.html:46
+#: .\templates\admin\delete_selected_confirmation.html:49
+msgid "Yes, I'm sure"
+msgstr ""
+
+#: .\templates\admin\delete_confirmation.html:47
+#: .\templates\admin\delete_selected_confirmation.html:50
+msgid "No, take me back"
+msgstr ""
+
+#: .\templates\admin\delete_selected_confirmation.html:16
+msgid "Delete multiple objects"
+msgstr ""
+
+#: .\templates\admin\delete_selected_confirmation.html:22
+#, python-format
+msgid ""
+"Deleting the selected %(objects_name)s would result in deleting related "
+"objects, but your account doesn't have permission to delete the following "
+"types of objects:"
+msgstr ""
+
+#: .\templates\admin\delete_selected_confirmation.html:29
+#, python-format
+msgid ""
+"Deleting the selected %(objects_name)s would require deleting the following "
+"protected related objects:"
+msgstr ""
+
+#: .\templates\admin\delete_selected_confirmation.html:36
+#, python-format
+msgid ""
+"Are you sure you want to delete the selected %(objects_name)s? All of the "
+"following objects and their related items will be deleted:"
+msgstr ""
+
+#: .\templates\admin\edit_inline\stacked.html:12
+#: .\templates\admin\edit_inline\tabular.html:34
+#: .\templates\admin\index.html:37
+#: .\templates\admin\related_widget_wrapper.html:9
+msgid "Change"
+msgstr ""
+
+#: .\templates\admin\edit_inline\tabular.html:20
+msgid "Delete?"
+msgstr ""
+
+#: .\templates\admin\filter.html:2
+#, python-format
+msgid " By %(filter_title)s "
+msgstr ""
+
+#: .\templates\admin\includes\object_delete_summary.html:2
+msgid "Summary"
+msgstr ""
+
+#: .\templates\admin\index.html:20
+#, python-format
+msgid "Models in the %(name)s application"
+msgstr ""
+
+#: .\templates\admin\index.html:31
+#: .\templates\admin\related_widget_wrapper.html:16
+msgid "Add"
+msgstr ""
+
+#: .\templates\admin\index.html:47
+msgid "You don't have permission to edit anything."
+msgstr ""
+
+#: .\templates\admin\index.html:55
+msgid "Recent actions"
+msgstr ""
+
+#: .\templates\admin\index.html:56
+msgid "My actions"
+msgstr ""
+
+#: .\templates\admin\index.html:60
+msgid "None available"
+msgstr ""
+
+#: .\templates\admin\index.html:74
+msgid "Unknown content"
+msgstr ""
+
+#: .\templates\admin\invalid_setup.html:12
+msgid ""
+"Something's wrong with your database installation. Make sure the appropriate "
+"database tables have been created, and make sure the database is readable by "
+"the appropriate user."
+msgstr ""
+
+#: .\templates\admin\login.html:37
+#, python-format
+msgid ""
+"You are authenticated as %(username)s, but are not authorized to access this "
+"page. Would you like to login to a different account?"
+msgstr ""
+
+#: .\templates\admin\login.html:57
+msgid "Forgotten your password or username?"
+msgstr ""
+
+#: .\templates\admin\login.html:61
+#: .\templates\registration\password_reset_complete.html:18
+msgid "Log in"
+msgstr ""
+
+#: .\templates\admin\object_history.html:22
+msgid "Date/time"
+msgstr ""
+
+#: .\templates\admin\object_history.html:23
+msgid "User"
+msgstr ""
+
+#: .\templates\admin\object_history.html:24
+msgid "Action"
+msgstr ""
+
+#: .\templates\admin\object_history.html:38
+msgid ""
+"This object doesn't have a change history. It probably wasn't added via this "
+"admin site."
+msgstr ""
+
+#: .\templates\admin\pagination.html:10 .\templates\admin\search_form.html:9
+msgid "Show all"
+msgstr ""
+
+#: .\templates\admin\pagination.html:11 .\templates\admin\submit_line.html:3
+msgid "Save"
+msgstr ""
+
+#: .\templates\admin\popup_response.html:3
+msgid "Popup closing..."
+msgstr ""
+
+#: .\templates\admin\related_widget_wrapper.html:8
+#, python-format
+msgid "Change selected %(model)s"
+msgstr ""
+
+#: .\templates\admin\related_widget_wrapper.html:15
+#, python-format
+msgid "Add another %(model)s"
+msgstr ""
+
+#: .\templates\admin\related_widget_wrapper.html:22
+#, python-format
+msgid "Delete selected %(model)s"
+msgstr ""
+
+#: .\templates\admin\search_form.html:7
+#: .\templates\rest_framework\filters\search.html:2
+msgid "Search"
+msgstr ""
+
+#: .\templates\admin\search_form.html:9
+#, python-format
+msgid "%(counter)s result"
+msgid_plural "%(counter)s results"
+msgstr[0] ""
+msgstr[1] ""
+
+#: .\templates\admin\search_form.html:9
+#, python-format
+msgid "%(full_result_count)s total"
+msgstr ""
+
+#: .\templates\admin\submit_line.html:8
+msgid "Save as new"
+msgstr ""
+
+#: .\templates\admin\submit_line.html:9
+msgid "Save and add another"
+msgstr ""
+
+#: .\templates\admin\submit_line.html:10
+msgid "Save and continue editing"
+msgstr ""
+
+#: .\templates\admin_doc\bookmarklets.html:8
+#: .\templates\admin_doc\index.html:29
+msgid "Bookmarklets"
+msgstr ""
+
+#: .\templates\admin_doc\bookmarklets.html:11
+msgid "Documentation bookmarklets"
+msgstr ""
+
+#: .\templates\admin_doc\bookmarklets.html:15
+msgid ""
+"To install bookmarklets, drag the link to your bookmarks toolbar, or right-"
+"click the link and add it to your bookmarks. Now you can select the "
+"bookmarklet from any page in the site."
+msgstr ""
+
+#: .\templates\admin_doc\bookmarklets.html:22
+msgid "Documentation for this page"
+msgstr ""
+
+#: .\templates\admin_doc\bookmarklets.html:23
+msgid ""
+"Jumps you from any page to the documentation for the view that generates "
+"that page."
+msgstr ""
+
+#: .\templates\admin_doc\index.html:17
+#: .\templates\admin_doc\template_tag_index.html:9
+msgid "Tags"
+msgstr ""
+
+#: .\templates\admin_doc\index.html:18
+msgid "List of all the template tags and their functions."
+msgstr ""
+
+#: .\templates\admin_doc\index.html:20
+#: .\templates\admin_doc\template_filter_index.html:9
+#: .\templates\rest_framework\admin.html:116
+#: .\templates\rest_framework\base.html:128
+msgid "Filters"
+msgstr ""
+
+#: .\templates\admin_doc\index.html:21
+msgid ""
+"Filters are actions which can be applied to variables in a template to alter "
+"the output."
+msgstr ""
+
+#: .\templates\admin_doc\index.html:23
+#: .\templates\admin_doc\model_detail.html:16
+#: .\templates\admin_doc\model_index.html:10
+#: .\templates\admin_doc\model_index.html:14
+msgid "Models"
+msgstr ""
+
+#: .\templates\admin_doc\index.html:24
+msgid ""
+"Models are descriptions of all the objects in the system and their "
+"associated fields. Each model has a list of fields which can be accessed as "
+"template variables"
+msgstr ""
+
+#: .\templates\admin_doc\index.html:26
+#: .\templates\admin_doc\view_detail.html:8
+#: .\templates\admin_doc\view_index.html:9
+#: .\templates\admin_doc\view_index.html:12
+msgid "Views"
+msgstr ""
+
+#: .\templates\admin_doc\index.html:27
+msgid ""
+"Each page on the public site is generated by a view. The view defines which "
+"template is used to generate the page and which objects are available to "
+"that template."
+msgstr ""
+
+#: .\templates\admin_doc\index.html:30
+msgid "Tools for your browser to quickly access admin functionality."
+msgstr ""
+
+#: .\templates\admin_doc\missing_docutils.html:10
+msgid "Please install docutils"
+msgstr ""
+
+#: .\templates\admin_doc\missing_docutils.html:17
+#, python-format
+msgid ""
+"The admin documentation system requires Python's <a href=\"%(link)s"
+"\">docutils</a> library."
+msgstr ""
+
+#: .\templates\admin_doc\missing_docutils.html:19
+#, python-format
+msgid ""
+"Please ask your administrators to install <a href=\"%(link)s\">docutils</a>."
+msgstr ""
+
+#: .\templates\admin_doc\model_detail.html:21
+#, python-format
+msgid "Model: %(name)s"
+msgstr ""
+
+#: .\templates\admin_doc\model_detail.html:30
+msgid "Fields"
+msgstr ""
+
+#: .\templates\admin_doc\model_detail.html:35
+msgid "Field"
+msgstr ""
+
+#: .\templates\admin_doc\model_detail.html:36
+msgid "Type"
+msgstr ""
+
+#: .\templates\admin_doc\model_detail.html:37
+#: .\templates\admin_doc\model_detail.html:60
+msgid "Description"
+msgstr ""
+
+#: .\templates\admin_doc\model_detail.html:53
+msgid "Methods with arguments"
+msgstr ""
+
+#: .\templates\admin_doc\model_detail.html:58
+msgid "Method"
+msgstr ""
+
+#: .\templates\admin_doc\model_detail.html:59
+msgid "Arguments"
+msgstr ""
+
+#: .\templates\admin_doc\model_detail.html:76
+msgid "Back to Model documentation"
+msgstr ""
+
+#: .\templates\admin_doc\model_index.html:18
+msgid "Model documentation"
+msgstr ""
+
+#: .\templates\admin_doc\model_index.html:43
+msgid "Model groups"
+msgstr ""
+
+#: .\templates\admin_doc\template_detail.html:8
+msgid "Templates"
+msgstr ""
+
+#: .\templates\admin_doc\template_detail.html:13
+#, python-format
+msgid "Template: %(name)s"
+msgstr ""
+
+#: .\templates\admin_doc\template_detail.html:16
+#, python-format
+msgid "Template: \"%(name)s\""
+msgstr ""
+
+#. Translators: Search is not a verb here, it qualifies path (a search path)
+#: .\templates\admin_doc\template_detail.html:19
+#, python-format
+msgid "Search path for template \"%(name)s\":"
+msgstr ""
+
+#: .\templates\admin_doc\template_detail.html:22
+msgid "(does not exist)"
+msgstr ""
+
+#: .\templates\admin_doc\template_detail.html:26
+msgid "Back to Documentation"
+msgstr ""
+
+#: .\templates\admin_doc\template_filter_index.html:12
+msgid "Template filters"
+msgstr ""
+
+#: .\templates\admin_doc\template_filter_index.html:16
+msgid "Template filter documentation"
+msgstr ""
+
+#: .\templates\admin_doc\template_filter_index.html:22
+#: .\templates\admin_doc\template_filter_index.html:43
+msgid "Built-in filters"
+msgstr ""
+
+#: .\templates\admin_doc\template_filter_index.html:23
+#, python-format
+msgid ""
+"To use these filters, put <code>%(code)s</code> in your template before "
+"using the filter."
+msgstr ""
+
+#: .\templates\admin_doc\template_tag_index.html:12
+msgid "Template tags"
+msgstr ""
+
+#: .\templates\admin_doc\template_tag_index.html:16
+msgid "Template tag documentation"
+msgstr ""
+
+#: .\templates\admin_doc\template_tag_index.html:22
+#: .\templates\admin_doc\template_tag_index.html:43
+msgid "Built-in tags"
+msgstr ""
+
+#: .\templates\admin_doc\template_tag_index.html:23
+#, python-format
+msgid ""
+"To use these tags, put <code>%(code)s</code> in your template before using "
+"the tag."
+msgstr ""
+
+#: .\templates\admin_doc\view_detail.html:12
+#, python-format
+msgid "View: %(name)s"
+msgstr ""
+
+#: .\templates\admin_doc\view_detail.html:23
+msgid "Context:"
+msgstr ""
+
+#: .\templates\admin_doc\view_detail.html:28
+msgid "Templates:"
+msgstr ""
+
+#: .\templates\admin_doc\view_detail.html:32
+msgid "Back to View documentation"
+msgstr ""
+
+#: .\templates\admin_doc\view_index.html:16
+msgid "View documentation"
+msgstr ""
+
+#: .\templates\admin_doc\view_index.html:22
+msgid "Jump to namespace"
+msgstr ""
+
+#: .\templates\admin_doc\view_index.html:27
+msgid "Empty namespace"
+msgstr ""
+
+#: .\templates\admin_doc\view_index.html:40
+#, python-format
+msgid "Views by namespace %(name)s"
+msgstr ""
+
+#: .\templates\admin_doc\view_index.html:42
+msgid "Views by empty namespace"
+msgstr ""
+
+#: .\templates\admin_doc\view_index.html:49
+#, python-format
+msgid ""
+"\n"
+"    View function: <code>%(full_name)s</code>. Name: <code>%(url_name)s</"
+"code>.\n"
+msgstr ""
+
+#: .\templates\registration\logged_out.html:8
+msgid "Thanks for spending some quality time with the Web site today."
+msgstr ""
+
+#: .\templates\registration\logged_out.html:10
+msgid "Log in again"
+msgstr ""
+
+#: .\templates\registration\password_change_done.html:7
+#: .\templates\registration\password_change_form.html:8
+msgid "Password change"
+msgstr ""
+
+#: .\templates\registration\password_change_done.html:14
+msgid "Your password was changed."
+msgstr ""
+
+#: .\templates\registration\password_change_form.html:26
+msgid ""
+"Please enter your old password, for security's sake, and then enter your new "
+"password twice so we can verify you typed it in correctly."
+msgstr ""
+
+#: .\templates\registration\password_change_form.html:54
+#: .\templates\registration\password_reset_confirm.html:24
+msgid "Change my password"
+msgstr ""
+
+#: .\templates\registration\password_reset_complete.html:7
+#: .\templates\registration\password_reset_done.html:7
+#: .\templates\registration\password_reset_form.html:7
+msgid "Password reset"
+msgstr ""
+
+#: .\templates\registration\password_reset_complete.html:16
+msgid "Your password has been set.  You may go ahead and log in now."
+msgstr ""
+
+#: .\templates\registration\password_reset_confirm.html:7
+msgid "Password reset confirmation"
+msgstr ""
+
+#: .\templates\registration\password_reset_confirm.html:17
+msgid ""
+"Please enter your new password twice so we can verify you typed it in "
+"correctly."
+msgstr ""
+
+#: .\templates\registration\password_reset_confirm.html:21
+msgid "New password:"
+msgstr ""
+
+#: .\templates\registration\password_reset_confirm.html:23
+msgid "Confirm password:"
+msgstr ""
+
+#: .\templates\registration\password_reset_confirm.html:29
+msgid ""
+"The password reset link was invalid, possibly because it has already been "
+"used.  Please request a new password reset."
+msgstr ""
+
+#: .\templates\registration\password_reset_done.html:15
+msgid ""
+"We've emailed you instructions for setting your password, if an account "
+"exists with the email you entered. You should receive them shortly."
+msgstr ""
+
+#: .\templates\registration\password_reset_done.html:17
+msgid ""
+"If you don't receive an email, please make sure you've entered the address "
+"you registered with, and check your spam folder."
+msgstr ""
+
+#: .\templates\registration\password_reset_email.html:2
+#, python-format
+msgid ""
+"You're receiving this email because you requested a password reset for your "
+"user account at %(site_name)s."
+msgstr ""
+
+#: .\templates\registration\password_reset_email.html:4
+msgid "Please go to the following page and choose a new password:"
+msgstr ""
+
+#: .\templates\registration\password_reset_email.html:8
+msgid "Your username, in case you've forgotten:"
+msgstr ""
+
+#: .\templates\registration\password_reset_email.html:10
+msgid "Thanks for using our site!"
+msgstr ""
+
+#: .\templates\registration\password_reset_email.html:12
+#, python-format
+msgid "The %(site_name)s team"
+msgstr ""
+
+#: .\templates\registration\password_reset_form.html:15
+msgid ""
+"Forgotten your password? Enter your email address below, and we'll email "
+"instructions for setting a new one."
+msgstr ""
+
+#: .\templates\registration\password_reset_form.html:19
+msgid "Email address:"
+msgstr ""
+
+#: .\templates\registration\password_reset_form.html:19
+msgid "Reset my password"
+msgstr ""
+
+#: .\templates\rest_framework\filters\django_filter.html:2
+#: .\templates\rest_framework\filters\django_filter_crispyforms.html:4
+msgid "Field filters"
+msgstr ""
+
+#: .\templates\rest_framework\filters\django_filter.html:5
+msgid "Submit"
+msgstr ""
+
+#: .\templates\rest_framework\filters\ordering.html:3
+msgid "Ordering"
+msgstr ""
+
+#: .\templates\rest_framework\horizontal\radio.html:4
+#: .\templates\rest_framework\inline\radio.html:3
+#: .\templates\rest_framework\vertical\radio.html:3
+msgid "None"
+msgstr ""
+
+#: .\templates\rest_framework\horizontal\select_multiple.html:4
+#: .\templates\rest_framework\inline\select_multiple.html:3
+#: .\templates\rest_framework\vertical\select_multiple.html:3
+msgid "No items to select."
+msgstr ""

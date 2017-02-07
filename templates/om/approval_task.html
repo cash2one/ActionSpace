@@ -58,16 +58,15 @@
                 </div>
             </div>
         </div>
-        {% block other_js %}
-            <script src="{% static 'om/js/jquery.min.js' %}"></script>
-            <script src="{% static 'om/js/plugins/peity/jquery.peity.min.js' %}"></script>
-            <script src="{% static 'om/js/plugins/prettyfile/bootstrap-prettyfile.js' %}"></script>
-        {% endblock %}
         <script type="text/javascript">
             //$('#cancel_form').click(function (e) {
             //    parent.layer.close(parent.layer.getFrameIndex(window.name));
             //})
         </script>
     {% endif %}
-</body>
+{% endblock %}
+{% block other_js %}
+    <script src="{% static 'om/js/jquery.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/peity/jquery.peity.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/prettyfile/bootstrap-prettyfile.js' %}"></script>
 {% endblock %}

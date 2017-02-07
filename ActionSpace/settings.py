@@ -17,26 +17,29 @@ import logging
 import django.utils.log
 import logging.handlers
 
-USE_DJANGO_CELERY = False
-USE_DEBUG_TOOLBAR = True
+USE_DJANGO_CELERY = True
+USE_DEBUG_TOOLBAR = False
 DEBUG_TOOLBAR_CHG_TAG = False
 USE_ALL_AUTH = False
-MQ_URL = 'amqp://action_space:action_space@localhost:5672/%2F'
-USE_ORACLE = True
+MQ_URL = 'amqpurl'
+USE_ORACLE = False
 OM_ENV = 'UAT'
 
 if USE_DJANGO_CELERY:
     import djcelery
 
     djcelery.setup_loader()
-    BROKER_URL = 'django://'
-    CELERY_RESULT_BACKEND = 'djcelery.backends.database:DatabaseBackend'
+    # BROKER_URL = 'django://'
+    # CELERY_RESULT_BACKEND = 'djcelery.backends.database:DatabaseBackend'
     CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
 else:
     # Celery setting#
-    BROKER_URL = MQ_URL
-    CELERY_RESULT_BACKEND = 'amqp'
+    # BROKER_URL = MQ_URL
+    # CELERY_RESULT_BACKEND = 'amqp'
     CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
+
+BROKER_URL = MQ_URL
+CELERY_RESULT_BACKEND = 'amqp'
 CELERY_TIMEZONE = 'Asia/Shanghai'
 # CELERY_ACCEPT_CONTENT = ['json']
 # CELERY_TASK_SERIALIZER = 'json'
@@ -50,7 +53,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/1.9/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'p497&f@ey9wu33lc*)pa(ruj!58cq%=vfatufny6)y!u!))0f4'
+SECRET_KEY = 'key'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -103,6 +106,11 @@ LOGGING = {
             'handlers': ['default', 'console', 'mail_admins'],
             'level': 'DEBUG',
             'propagate': False
+        },
+        'switch': {
+            'handlers': ['default', 'console', 'mail_admins'],
+            'level': 'DEBUG',
+            'propagate': False
         }
     }
 }
@@ -126,84 +134,20 @@ INSTALLED_APPS = [
     'django_extensions',
     'guardian',
     'rest_framework',
-    # 'channels',
-    'om.apps.OmConfig'
+    'channels',
+    'django_select2',
+    'om.apps.OmConfig',
+    'switch.apps.SwitchConfig',
+    'utils.apps.UtilsConfig',
+    'rangefilter'
 ]
 
 if USE_DEBUG_TOOLBAR:
     INSTALLED_APPS += ['template_profiler_panel', 'debug_toolbar']
 
 if USE_DJANGO_CELERY:
-    INSTALLED_APPS += ['djcelery', 'kombu.transport.django']
-
-if USE_ALL_AUTH:
-    INSTALLED_APPS += [
-        'allauth',
-        'allauth.account',
-        'allauth.socialaccount',
-        # ... include the providers you want to enable:
-        'allauth.socialaccount.providers.amazon',
-        'allauth.socialaccount.providers.angellist',
-        'allauth.socialaccount.providers.asana',
-        'allauth.socialaccount.providers.baidu',
-        'allauth.socialaccount.providers.basecamp',
-        'allauth.socialaccount.providers.bitbucket',
-        'allauth.socialaccount.providers.bitbucket_oauth2',
-        'allauth.socialaccount.providers.bitly',
-        'allauth.socialaccount.providers.coinbase',
-        'allauth.socialaccount.providers.digitalocean',
-        'allauth.socialaccount.providers.douban',
-        'allauth.socialaccount.providers.draugiem',
-        'allauth.socialaccount.providers.dropbox',
-        'allauth.socialaccount.providers.dropbox_oauth2',
-        'allauth.socialaccount.providers.edmodo',
-        'allauth.socialaccount.providers.eveonline',
-        'allauth.socialaccount.providers.evernote',
-        'allauth.socialaccount.providers.facebook',
-        'allauth.socialaccount.providers.feedly',
-        'allauth.socialaccount.providers.flickr',
-        'allauth.socialaccount.providers.foursquare',
-        'allauth.socialaccount.providers.fxa',
-        'allauth.socialaccount.providers.github',
-        'allauth.socialaccount.providers.gitlab',
-        'allauth.socialaccount.providers.google',
-        'allauth.socialaccount.providers.hubic',
-        'allauth.socialaccount.providers.instagram',
-        'allauth.socialaccount.providers.linkedin',
-        'allauth.socialaccount.providers.linkedin_oauth2',
-        'allauth.socialaccount.providers.mailru',
-        'allauth.socialaccount.providers.odnoklassniki',
-        'allauth.socialaccount.providers.openid',
-        'allauth.socialaccount.providers.orcid',
-        'allauth.socialaccount.providers.paypal',
-        'allauth.socialaccount.providers.persona',
-        'allauth.socialaccount.providers.pinterest',
-        'allauth.socialaccount.providers.reddit',
-        'allauth.socialaccount.providers.robinhood',
-        'allauth.socialaccount.providers.shopify',
-        'allauth.socialaccount.providers.slack',
-        'allauth.socialaccount.providers.soundcloud',
-        'allauth.socialaccount.providers.spotify',
-        'allauth.socialaccount.providers.stackexchange',
-        'allauth.socialaccount.providers.stripe',
-        'allauth.socialaccount.providers.tumblr',
-        'allauth.socialaccount.providers.twentythreeandme',
-        'allauth.socialaccount.providers.twitch',
-        'allauth.socialaccount.providers.twitter',
-        'allauth.socialaccount.providers.untappd',
-        'allauth.socialaccount.providers.vimeo',
-        'allauth.socialaccount.providers.vk',
-        'allauth.socialaccount.providers.weibo',
-        'allauth.socialaccount.providers.weixin'
-    ]
-
-    SOCIALACCOUNT_PROVIDERS = {
-        'weixin': {
-            'AUTHORIZE_URL': 'https://open.weixin.qq.com/connect/oauth2/authorize',  # for media platform
-        }
-    }
-
-    SITE_ID = 2
+    # INSTALLED_APPS += ['djcelery', 'kombu.transport.django']
+    INSTALLED_APPS += ['djcelery']
 
 REST_FRAMEWORK = {
     # Use Django's standard `django.contrib.auth` permissions,
@@ -224,17 +168,16 @@ REST_FRAMEWORK = {
 }
 
 AUTHENTICATION_BACKENDS = (
+    'om.UMBackend.UMBackend',
     'django.contrib.auth.backends.ModelBackend',  # default
-    'guardian.backends.ObjectPermissionBackend'
+    'guardian.backends.ObjectPermissionBackend',
 )
 
-if USE_ALL_AUTH:
-    AUTHENTICATION_BACKENDS += ('allauth.account.auth_backends.AuthenticationBackend',)
-
-MIDDLEWARE_CLASSES = [
+MIDDLEWARE = [
     #  'django.middleware.locale.LocaleMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -242,11 +185,12 @@ MIDDLEWARE_CLASSES = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.contrib.flatpages.middleware.FlatpageFallbackMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'django.contrib.admindocs.middleware.XViewMiddleware'
+    'django.contrib.admindocs.middleware.XViewMiddleware',
+    'om.middleware.SupperDebug'
 ]
 
 if USE_DEBUG_TOOLBAR:
-    MIDDLEWARE_CLASSES = ['debug_toolbar.middleware.DebugToolbarMiddleware'] + MIDDLEWARE_CLASSES
+    MIDDLEWARE = ['debug_toolbar.middleware.DebugToolbarMiddleware'] + MIDDLEWARE
 
 ROOT_URLCONF = 'ActionSpace.urls'
 
@@ -266,9 +210,6 @@ TEMPLATES = [
     },
 ]
 
-if USE_ALL_AUTH:
-    TEMPLATES[0]['OPTIONS']['context_processors'] += ['django.template.context_processors.request']
-
 WSGI_APPLICATION = 'ActionSpace.wsgi.application'
 
 # Database
@@ -278,9 +219,9 @@ if USE_ORACLE:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.oracle',
-            'NAME': 'xxx',
-            'USER': 'xxx',
-            'PASSWORD': 'xxx'
+            'NAME': 'dbname',
+            'USER': 'dbuser',
+            'PASSWORD': 'dbpwd'
         }
     }
 else:
@@ -355,7 +296,8 @@ CKEDITOR_CONFIGS = {
 }
 
 #  LOGIN_URL = '/admin/login/'
-LOGIN_URL = '/api-auth/login/'
+#  LOGIN_URL = '/api-auth/login/'
+LOGIN_URL = '/login/'
 
 CHANNEL_LAYERS = {
     'default': {
@@ -384,6 +326,7 @@ if USE_DEBUG_TOOLBAR:
         'debug_toolbar.panels.signals.SignalsPanel',
         'debug_toolbar.panels.logging.LoggingPanel',
         'debug_toolbar.panels.redirects.RedirectsPanel',
+        'channels_panel.panel.ChannelsDebugPanel'
     ]
 
     DEBUG_TOOLBAR_CONFIG = {
@@ -401,3 +344,19 @@ if USE_DEBUG_TOOLBAR:
         }
 
     INTERNAL_IPS = ('127.0.0.1',)
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'prd_mail_gw' if OM_ENV == 'PRD' else 'uat_mail_gw'
+EMAIL_PORT = 25
+EMAIL_HOST_USER = None
+EMAIL_HOST_PASSWORD = None
+EMAIL_USE_TLS = False
+EMAIL_USE_SSL = False
+DEFAULT_FROM_EMAIL = 'zqom@pingan.com.cn'
+CORS_ORIGIN_WHITELIST = ('http://hq.sinajs.cn/', 'http://hq.sinajs.cn/list=s_sh000001', 'localhost:8000')
+STATICFILES_FINDERS = [
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+]
+SESSION_SAVE_EVERY_REQUEST = True
+SESSION_COOKIE_AGE = 60 * 10

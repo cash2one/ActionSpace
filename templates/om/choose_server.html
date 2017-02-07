@@ -9,52 +9,38 @@
             <div class="col-sm-12">
                 <div class="ibox ">
                     <div class="ibox-title">
-                        <h5>执行作业流</h5>
+                        <h5>为作业组批量设置服务器IP</h5>
                     </div>
                     <div class="ibox-content">
-                        <div id="toolbar" class="btn-group">
-                            <button type="button" class="btn btn-default">
-                                <i class="glyphicon glyphicon-plus"></i>
-                            </button>
-                            <button type="button" class="btn btn-default">
-                                <i class="glyphicon glyphicon-heart"></i>
-                            </button>
-                            <button type="button" class="btn btn-default">
-                                <i class="glyphicon glyphicon-trash"></i>
-                            </button>
-                        </div>
-                        <table id="table"
-                            data-toggle="table"
-                            data-sort-name="system"
-                            data-sort-order="desc"
-                            data-url="{% url 'om:get_server_list' %}"
-                            data-striped="true"
-                            data-click-to-select="true"
-                            data-pagination="true"
-                            data-search="true"
-                            data-page-list="[5, 10, 20, 50, 100, 200, ALL]"
-                            data-show-refresh="true"
-                            data-show-toggle="true"
-                            data-show-columns="true"
-                          >
+                        <table id="table" data-toggle="table" data-sort-name="system"
+                               data-sort-order="desc" data-url="{% url 'om:get_server_list' %}"
+                               data-striped="true" data-click-to-select="true"
+                               data-pagination="true" data-search="true"
+                               data-page-list="[5, 10, 20, 50, 100, 200, ALL]"
+                               data-show-refresh="true" data-show-toggle="true"
+                               data-filter-control="true" data-filter-show-clear="true"
+                               data-resizable="true"
+                        >
                             <thead>
                                 <tr>
                                     <th data-field="state" data-checkbox="true"></th>
-                                    <th data-field="system" data-sortable="true">系统</th>
-                                    <th data-field="env" data-sortable="true">环境</th>
-                                    <th data-field="entity" data-sortable="true">实体</th>
-                                    <th data-field="server_ip" data-sortable="true">IP</th>
-                                    <th data-field="server_hostname" data-sortable="true">主机名</th>
-                                    <th data-field="server_status" data-sortable="true">状态</th>
+                                    <th data-field="system" data-sortable="true" data-filter-control="select">系统</th>
+                                    <th data-field="entity" data-sortable="true" data-filter-control="select">实体</th>
+                                    <th data-field="server_ip" data-sortable="true" data-filter-control="input">IP</th>
+                                    <th data-field="server_hostname" data-sortable="true" data-filter-control="input">主机名</th>
+                                    <th data-field="sys" data-sortable="true" data-filter-control="input">系统类型</th>
+                                    <th data-field="env" data-sortable="true" data-filter-control="select">环境类型</th>
+                                    <th data-field="installed_agent" data-sortable="true" data-filter-control="select">是否可操作</th>
+                                    <th data-field="agent_name" data-sortable="true" data-filter-control="input">服务名</th>
                                 </tr>
                             </thead>
                         </table>
                         <div class="form-group">
-                                <div class="col-sm-10 col-sm-offset-5">
-                                    <button id="save_layer" class="btn btn-primary" type="submit">保存</button>
-                                    <button id="cancel_layer" class="btn btn-white" type="submit">取消</button>
-                                </div>
+                            <div class="col-sm-10 col-sm-offset-5">
+                                <button id="save_layer" class="btn btn-primary" type="submit">保存</button>
+                                <button id="cancel_layer" class="btn btn-white" type="submit">取消</button>
                             </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -65,6 +51,9 @@
     <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table.min.js' %}"></script>
     <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table-mobile.min.js' %}"></script>
     <script src="{% static 'om/js/plugins/bootstrap-table/locale/bootstrap-table-zh-CN.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/bootstrap-table/filter-control/bootstrap-table-filter-control.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/bootstrap-table/resizable/bootstrap-table-resizable.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/bootstrap-table/resizable/colResizable-1.5.source.js' %}"></script>
     <script type="text/javascript">
         var index = parent.layer.getFrameIndex(window.name); //获取窗口索引
         $('#save_layer').on('click', function(){

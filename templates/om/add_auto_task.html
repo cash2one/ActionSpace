@@ -1,0 +1,118 @@
+{% extends 'om/base.html' %}
+{% load form_extra_tag %}
+{% load staticfiles %}
+{% block body_begin %}
+<body class="gray-bg">
+{% endblock %}
+{% block body_content %}
+    <div class="wrapper wrapper-content  animated fadeInRight">
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="ibox ">
+                    <div class="ibox-title">
+                        <h5>添加自动任务</h5>
+                    </div>
+                    <div class="ibox-content">
+                        <form class="form-horizontal" method='post'>
+                            {% csrf_token %}
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label">任务名称</label>
+                                <div class="col-sm-8">
+                                    <input id="id_name" name="name" type="text" maxlength="100" placeholder="任务名称" class="form-control" value="{{ name }}" required="">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label">任务模板</label>
+                                <div class="col-sm-8">
+                                    <div class="input-group">
+                                        <select title="task_base" id="id_task_base" name="task_base" data-placeholder="请选择" class="chosen-select"  style="width:650px;">
+                                            {% for task in task_list %}
+                                            <option value="{{ task.id }}" {% if select_task_id == task.id %} selected {% endif %}>{{ task.id }}-{{ task.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label">是否启用</label>
+                                <div class="switch col-sm-8">
+                                    <div class="onoffswitch">
+                                        <input type="checkbox" {% if enabled == '是' %} checked {% endif %} class="onoffswitch-checkbox" id="id_enabled" name="enabled">
+                                        <label class="onoffswitch-label" for="id_enabled">
+                                            <span class="onoffswitch-inner"></span>
+                                            <span class="onoffswitch-switch"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label">任务类型</label>
+                                <div class="col-sm-8">
+                                    <div class="input-group">
+                                        <select title="task_type" id="id_task_type" name="task_type" data-placeholder="请选择" class="chosen-select"  style="width:650px;">
+                                            <option value="interval" {% if type == '周期任务' %} selected {% endif %}>周期任务</option>
+                                            <option value="cron" {% if type == '定时任务' %} selected {% endif %}>定时任务</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label">周期配置</label>
+                                <div class="col-sm-4">
+                                    <input id="id_interval_val" name="interval_val" type="number" min="0" max="100" step="1" placeholder="周期配置数值" class="form-control" value="{{ interval_val }}" required="">
+                                </div>
+                                <div class="col-sm-4">
+                                    <div class="input-group">
+                                        <select title="interval_task" id="id_interval_unit_type" name="interval_unit_type" data-placeholder="请选择" class="chosen-select"  style="width:100px;">
+                                            <option value="microseconds" {% if interval_unit == 'microseconds' %} selected {% endif %}>毫秒</option>
+                                            <option value="seconds" {% if interval_unit == 'seconds' %} selected {% endif %}>秒</option>
+                                            <option value="minutes" {% if interval_unit == 'minutes' %} selected {% endif %}>分钟</option>
+                                            <option value="hours" {% if interval_unit == 'hours' %} selected {% endif %}>小时</option>
+                                            <option value="days" {% if interval_unit == 'days' %} selected {% endif %}>天</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label">定时配置</label>
+                                <div class="col-sm-8">
+                                    <input id="id_cron" name="cron_val" placeholder="定时配置，格式与linux下的crontab配置一致" class="form-control" value="{{ cron }}" required="">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label">过期时间</label>
+                                <div class="col-sm-8">
+                                    <input id="id_expire_time" name="expire_time" type="text" class="form-control" placeholder="" value="{{ expires }}">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="col-sm-10 col-sm-offset-5">
+                                    <button class="btn btn-primary" type="submit" value="save">添加</button>
+                                    <button id="cancel_layer" class="btn btn-white" type="button">取消</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block other_js %}
+    <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table-mobile.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/bootstrap-table/locale/bootstrap-table-zh-CN.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/chosen/chosen.jquery.js' %}"></script>
+    <script src="{% static 'om/js/plugins/datetimepicker/jquery.datetimepicker.full.min.js' %}"></script>
+    <script type="text/javascript">
+        $(document).ready(function() {
+            $(".chosen-select").chosen();
+            $.datetimepicker.setLocale('ch');
+            $('#id_expire_time').datetimepicker({format:'Y-m-d H:i:s', mask:true});
+        });
+        $('#cancel_layer').on('click', function(){
+            var index = parent.layer.getFrameIndex(window.name); //获取窗口索引
+            parent.layer.close(index);
+        });
+    </script>
+{% endblock %}

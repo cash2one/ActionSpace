@@ -1,5 +1,9 @@
 {% extends 'om/base.html' %}
 {% load staticfiles %}
+{% block other_css %}
+    <script src="{% static 'om/js/echarts.min.js' %}"></script>
+    <script src="{% static 'om/js/echarts-liquidfill.min.js' %}"></script>
+{% endblock %}
 {% block body_begin %}
 <body class="gray-bg">
 {% endblock %}
@@ -16,63 +20,28 @@
             </div>
             <div class="ibox-content">
                 <div class="row">
-                    <div class="col-sm-3">
-                        <div class="widget style1">
-                            <div class="row">
-                                <div class="col-xs-4 text-center">
-                                    <i class="fa fa-clock-o fa-5x"></i>
-                                    <span> 今日已执行 </span>
-                                </div>
-                                <div class="col-xs-8 text-right">
-                                    <h2 class="font-bold">{{ today_task_count }}</h2>
-                                </div>
-                            </div>
+                    <div class="col-sm-2">
+                        <div class="row" id="server_count" style="width:100%; height:160px">
                         </div>
                     </div>
-                    <div class="col-sm-3">
-                        <div class="widget style1 navy-bg">
-                            <div class="row">
-                                <div class="col-xs-4">
-                                    <i class="fa fa-desktop fa-5x"></i>
-                                    <span> 主机数 </span>
-                                </div>
-                                <div class="col-xs-8 text-right">
-                                    <h2 class="font-bold">{{ server_count }}</h2>
-                                </div>
-                            </div>
+                    <div class="col-sm-2">
+                        <div class="row" id="flow_count" style="width:100%; height:160px">
                         </div>
                     </div>
-                    <div class="col-sm-3">
-                        <div class="widget style1 lazur-bg">
-                            <div class="row">
-                                <div class="col-xs-4">
-                                    <i class="fa fa-calendar fa-5x"></i>
-                                     <span> 本月统计 </span>
-                                </div>
-                                <div class="col-xs-8 text-right">
-                                    <div class="pl20 pr5 pb5 pt5" style="width:65%;">
-                                     <div>
-                                         <div>未执行：<span id="instanceSuccess">{{ month_task_no_run }}</span></div>
-                                         <div>执行中：<span id="instanceRunning">{{ month_task_running }}</span></div>
-                                         <div>成功：<span id="instanceSuccess">{{ month_task_finish }}</span></div>
-                                         <div>失败：<span id="instanceFail">{{ month_task_run_fail }}</span></div>
-                                     </div>
-                                    </div>
-                                </div>
-                            </div>
+                    <div class="col-sm-2">
+                        <div class="row" id="auto_task_count" style="width:100%; height:160px">
                         </div>
                     </div>
-                    <div class="col-sm-3">
-                        <div class="widget style1 yellow-bg">
-                            <div class="row">
-                                <div class="col-xs-4">
-                                    <i class="fa fa-list-alt fa-5x"></i>
-                                     <span> 常用作业数 </span>
-                                </div>
-                                <div class="col-xs-8 text-right">
-                                    <h2 class="font-bold">12</h2>
-                                </div>
-                            </div>
+                    <div class="col-sm-2">
+                        <div class="row" id="config_file_count" style="width:100%; height:160px">
+                        </div>
+                    </div>
+                    <div class="col-sm-2">
+                        <div class="row" id="today_task_count" style="width:100%; height:160px">
+                        </div>
+                    </div>
+                    <div class="col-sm-2">
+                        <div class="row" id="this_month" style="width:100%; height:160px">
                         </div>
                     </div>
                 </div>
@@ -91,8 +60,9 @@
                 <div class="ibox-content">
                     <table data-toggle="table" id="table" data-search="true" data-show-refresh="true" data-show-toggle="true"
                            data-show-columns="true"  data-minimum-count-columns="2" data-show-pagination-switch="true"
-                           data-pagination="true" data-id-field="id" data-page-list="[10, 25, 50, 100, ALL]"
-                           data-show-header="true" data-show-footer="false" data-url="{% url 'om:get_action_history_list' %}">
+                           data-pagination="true" data-id-field="id" data-page-list="[5, 10, 25, 50, 100, ALL]"
+                           data-show-header="true" data-show-footer="false" data-url="{% url 'om:get_action_history_list' %}"
+                           data-page-size="5">
                         <thead>
                             <tr>
                                 <th data-field="task_id">任务ID</th>
@@ -119,6 +89,87 @@
     <script src="{% static 'om/layer/layer.js' %}"></script>
     <!--suppress JSUnusedLocalSymbols -->
     <script type="text/javascript">
+        function make_liquid_chart(id, title, val){
+            //https://github.com/ecomfe/echarts-liquidfill
+            var radius = '90%';
+            var fontSize = 16;
+            var chart = echarts.init(document.getElementById(id));
+            var option = {
+                series: [{
+                    type: 'liquidFill',
+                    data: [0.6, 0.5, 0.4],
+                    color: ['red', '#0f0', 'rgb(0, 0, 255)'],
+                    itemStyle: {
+                        normal: {
+                            opacity: 0.6
+                        },
+                        emphasis: {
+                            opacity: 0.9
+                        }
+                    },
+                    radius: radius,
+                    label: {
+                        normal: {
+                            formatter: function () {
+                                return title+'\n'+val
+                            },
+                            textStyle: {
+                                fontSize: fontSize
+                            }
+                        }
+                    }
+                }]
+            };
+            chart.setOption(option);
+        }
+
+        function this_month_chart(){
+            var this_month_chart = echarts.init(document.getElementById('this_month'));
+            var option = {
+                title : {
+                    text: '本月',
+                    x:'center'
+                },
+                tooltip : {
+                    trigger: 'item',
+                    formatter: "{a} <br/>{b} : {c} ({d}%)"
+                },
+                legend: {
+                    orient: 'vertical',
+                    left: 'left',
+                    data: ['未执行','执行中','成功','失败']
+                },
+                series : [
+                    {
+                        name: '本月统计',
+                        type: 'pie',
+                        radius : '60%',
+                        center: ['60%', '60%'],
+                        data:[
+                            {value:{{ month_task_no_run }}, name:'未执行'},
+                            {value:{{ month_task_running }}, name:'执行中'},
+                            {value:{{ month_task_finish }}, name:'成功'},
+                            {value:{{ month_task_run_fail }}, name:'失败'}
+                        ],
+                        itemStyle: {
+                            emphasis: {
+                                shadowBlur: 10,
+                                shadowOffsetX: 0,
+                                shadowColor: 'rgba(0, 0, 0, 0.5)'
+                            }
+                        }
+                    }
+                ]
+            };
+            this_month_chart.setOption(option);
+        }
+        make_liquid_chart('today_task_count', '今日已执行', '{{ today_task_count }}');
+        make_liquid_chart('server_count', '主机数', '{{ server_count }}');
+        this_month_chart();
+        make_liquid_chart('flow_count', '作业流数', '{{ flow_count }}');
+        make_liquid_chart('auto_task_count', '定时任务流数', '{{ auto_task_count }}');
+        make_liquid_chart('config_file_count', '配置文件数', '{{ config_file_count }}');
+
         function show_detail(task_id){
             var detail_layer = layer.open({
                   type: 2,

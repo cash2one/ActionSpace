@@ -16,7 +16,7 @@ Including another URLconf
 from django.conf.urls import url, include
 from django.contrib import admin
 from django.views.generic import RedirectView
-from ActionSpace.view import UserViewSet, GroupViewSet, ServerViewSet
+from ActionSpace.view import UserViewSet, GroupViewSet, ServerViewSet, MachineViewSet, ok, login, guest_login
 from rest_framework import routers
 from django.conf import settings
 
@@ -25,15 +25,22 @@ router = routers.DefaultRouter()
 router.register(r'users', UserViewSet)
 router.register(r'groups', GroupViewSet)
 router.register(r'servers', ServerViewSet)
+router.register(r'machines', MachineViewSet)
 
 urlpatterns = [
     url(r'^$', RedirectView.as_view(pattern_name='om:index', permanent=False), name='index'),
+    url(r'^ok$', ok, name='ok'),
+    url(r'^login/$', login, name='login'),
+    url(r'^guest_login/$', guest_login, name='guest_login'),
     url(r'^api/', include(router.urls)),
     url(r'^om/', include('om.urls', namespace='om')),
+    url(r'^switch/', include('switch.urls', namespace='switch')),
+    url(r'^utils/', include('utils.urls', namespace='utils')),
     url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
     url(r'^admin/', admin.site.urls),
     url(r'^ckeditor/', include('ckeditor_uploader.urls')),
     url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
+    url(r'^select2/', include('django_select2.urls')),
 ]
 
 if settings.DEBUG and settings.USE_DEBUG_TOOLBAR:
@@ -42,5 +49,4 @@ if settings.DEBUG and settings.USE_DEBUG_TOOLBAR:
         url(r'^__debug__/', include(debug_toolbar.urls)),
     ]
 
-if settings.USE_ALL_AUTH:
-    urlpatterns += [url(r'^accounts/', include('allauth.urls'))]
+

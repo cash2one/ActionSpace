@@ -20,7 +20,11 @@
                             <thead>
                                 <tr>
                                     {% for field in fields %}
-                                        <th data-field="{{ field.name }}">{{ field.verbose_name }}</th>
+                                        {% if field.verbose_name == '作业流名称' %}
+                                            <th data-field="{{ field.name }}" data-editable="true">{{ field.verbose_name }}</th>
+                                        {% else %}
+                                            <th data-field="{{ field.name }}">{{ field.verbose_name }}</th>
+                                        {% endif %}
                                     {% endfor %}
                                     <th data-field="flow_action" data-formatter="actionFormatter" data-events="actionEvents">操作</th>
                                 </tr>
@@ -36,9 +40,27 @@
     <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table.min.js' %}"></script>
     <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table-mobile.min.js' %}"></script>
     <script src="{% static 'om/js/plugins/bootstrap-table/locale/bootstrap-table-zh-CN.min.js' %}"></script>
+    <script src="{% static 'om/js/bootstrap-editable.js' %}"></script>
+    <script src="{% static 'om/js/plugins/bootstrap-table/editable/bootstrap-table-editable.min.js' %}"></script>
     <script src="{% static 'om/layer/layer.js' %}"></script>
+    <script src="{% static 'om/js/plugins/toastr/toastr.min.js' %}"></script>
     <!--suppress JSUnresolvedVariable, JSUnusedLocalSymbols -->
     <script type="text/javascript">
+        $(document).ready(function() {
+            var $table = $('#table');
+            $table.bootstrapTable('hideColumn', 'desc');
+        });
+        $("#table").on('editable-save.bs.table', function(e, field, row, oldValue, $el) {
+            $.get('/om/update_flow_name/'+row.founder+"/"+row.id+"/" + row.name, function(result) {
+                if (result.result == 'Y') {
+                    toastr.success('修改成功！');
+                }
+                else {
+                    toastr.error(result.result);
+                    $('#table').bootstrapTable('refresh', {url: "{% url 'om:get_flow_list' %}"});
+                }
+            });
+        });
         function actionFormatter(value, row, index) {
             var actions = new Array()
             actions.push('<div class="btn-group">')
@@ -52,20 +74,8 @@
         }
         window.actionEvents = {
             'click .flow_exec_now': function (e, value, row, _) {
-                $.get('/om/create_task/'+row.id+"/-1", {'csrfmiddlewaretoken': '{{ csrf_token }}'},function(result) {
-                    if (result.result == 'Y') {
-                        var flow_edit_layer = layer.open({
-                          type: 1,
-                          title: '执行作业流[' + row.name + ']',
-                          area: ['700px', '530px'],
-                          fix: false, //不固定
-                          maxmin: true,
-                          content: "{{ result.desc }}"
-                        });
-                        layer.full(flow_edit_layer);
-                    } else {
-                        layer.msg(result.desc,{time: 2000});
-                    }
+                $.get('/om/create_task/'+row.id+"/-1", function(result) {
+                    layer.msg(result.desc,{time: 2000});
                 });
             },
             'click .flow_edit': function (e, value, row, _) {
@@ -81,12 +91,14 @@
                 layer.full(flow_edit_layer);
             },
             'click .flow_clone': function (e, value, row, index) {
-                $.get('/om/flow_clone/'+row.id+"/", {'csrfmiddlewaretoken': '{{ csrf_token }}'},function(result) {
-                    layer.msg('克隆后的ID为：'+result.id,{time: 2000, icon: 1});
-                    console.log(result)
-                    console.log(result.result)
-                    console.log(result.id)
-                    $('#table').bootstrapTable('refresh', {url: "{% url 'om:get_flow_list' %}"});
+                $.get('/om/flow_clone/'+row.id+"/", function(result) {
+                    if (result.result == 'Y') {
+                        layer.msg('克隆后的ID为：'+result.id,{time: 2000, icon: 1});
+                        $('#table').bootstrapTable('refresh', {url: "{% url 'om:get_flow_list' %}"});
+                    }
+                    else {
+                        layer.msg(result.desc, {time: 2000, icon: 1});
+                    }
                 });
             },
             'click .flow_delete': function (e, value, row, index) {
@@ -94,12 +106,18 @@
                     title: '删除确认',
                     btn: ['确认删除','取消删除']
                 }, function(){
-                    $.get('/om/flow_delete/'+row.id+"/", {'csrfmiddlewaretoken': '{{ csrf_token }}'},function(result) {
-                        $('#table').bootstrapTable('refresh', {url: "{% url 'om:get_flow_list' %}"});
-                        layer.msg('删除成功',{time: 2000, icon: 1});
+                    $.get('/om/flow_delete/'+row.id+"/"+row.founder,function(result) {
+                        if (result.result == 'Y')
+                        {
+                            $('#table').bootstrapTable('refresh');
+                            layer.msg('删除成功',{time: 2000, icon: 1});
+                        }
+                        else {
+                            layer.msg(result.desc,{time: 2000, icon: 1});
+                        }
                     });
                 });
-            },
+            }
         };
     </script>
 {% endblock %}

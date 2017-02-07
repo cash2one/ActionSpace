@@ -1,6 +1,9 @@
 {% extends 'om/base.html' %}
 {% load form_extra_tag %}
 {% load staticfiles %}
+{% block other_css %}
+    {{ form.media.css }}
+{% endblock %}
 {% block body_begin %}
 <body class="gray-bg">
 {% endblock %}
@@ -56,7 +59,10 @@
                                             {% elif field.name in disable_field_list %}
                                                 {{ field | set_attr:'readonly=readonly' }}
                                             {% elif field.name in normal_check_list %}
-                                                {{ field | set_attr:'size=30,style=width:200px;font-size:16px' }}
+                                                {{ field | set_attr:'style=display:none' }}
+                                                <p id="loading-{{ field.name }}">加载中，请稍后……</p>
+                                            {% elif field.name in heavy_check_list %}
+                                                {{ field | set_attr:'style=width:100%'}}
                                             {% else %}
                                                 {{ field | set_attr:'class=form-control' }}
                                             {% endif %}
@@ -88,62 +94,59 @@
     <script src="{% static 'codemirror/mode/perl/perl.js' %}"></script>
     <script src="{% static 'om/js/plugins/prettyfile/bootstrap-prettyfile.js' %}"></script>
     <script src="{% static 'om/layer/layer.js' %}"></script>
-    <!--suppress JSUnusedGlobalSymbols -->
+    <script src="{% static 'om/plugins/multi-select/js/jquery.quicksearch.min.js' %}"></script>
+    <script src="{% static 'om/plugins/multi-select/js/jquery.multi-select.min.js' %}"></script>
+    {{ form.media.js }}
+    <!--suppress JSUnusedGlobalSymbols, JSUnresolvedVariable -->
     <script>
+        var editor = CodeMirror.fromTextArea($("#id_script_content")[0], {
+            mode: 'python', lineNumbers: true, indentUnit: 4,
+            styleActiveLine: true, matchBrackets: true, theme: 'ambiance'
+        });
+
         $(document).ready(function() {
             $("#code_source_select").hide();
             $( 'input[type="file"]' ).prettyFile();
+
             {% for field_select in normal_check_list %}
-                $('#id_{{ field_select }}').multiselect({
-                    enableClickableOptGroups: true,
-                    enableCollapsibleOptGroups: true,
-                    enableFiltering: true,
-                    includeSelectAllOption: true,
-                    maxHeight: 450,
-                    buttonClass: 'btn btn-small btn-info',
-                    // numberDisplayed: 100,
-                    enableHTML: true,
-                    // delimiterText: '<br>',
-                    // buttonWidth: '600px',
-                    selectAllText: '全选',
-                    filterPlaceholder: '请输入IP或者HOST',
-                    allSelectedText: '全部被选中',
-                    nonSelectedText: '请选择',
-                    dropUp: false,
-                    buttonTitle: function(options){
-                        var labels = [];
-                        options.each(function () {
-                            labels.push($(this).text());
-                        });
-                        return labels.join(',');
-                    },
-                    buttonText: function(options) {
-                        if (options.length === 0) {
-                            return '请选择';
+                $('#id_{{ field_select }}').multiSelect({
+                    dblClick: true,
+                    selectableOptgroup: true,
+                    selectableHeader: "<input type='text' class='search-input' autocomplete='off' placeholder='搜索可选项'>",
+                    selectionHeader: "<input type='text' class='search-input' autocomplete='off' placeholder='搜索已选项'>",
+                    afterInit: function(ms){
+                      var that = this,
+                          $selectableSearch = that.$selectableUl.prev(),
+                          $selectionSearch = that.$selectionUl.prev(),
+                          selectableSearchString = '#'+that.$container.attr('id')+' .ms-elem-selectable:not(.ms-selected)',
+                          selectionSearchString = '#'+that.$container.attr('id')+' .ms-elem-selection.ms-selected';
+                      that.qs1 = $selectableSearch.quicksearch(selectableSearchString)
+                      .on('keydown', function(e){
+                        if (e.which === 40){
+                          that.$selectableUl.focus();
+                          return false;
                         }
-                        else {
-                            var result = '';
-                            options.each(function(i) {
-                                var val = $(this).html();
-                                if (i > 0) {
-                                    if (i%3 == 0 || val.length > 40) {
-                                        result += '<br>';
-                                    }
-                                    else {
-                                        result += ', ';
-                                    }
-                                }
-                                result += val;
-                            });
-                            return result;
-                         }
+                      });
+
+                      that.qs2 = $selectionSearch.quicksearch(selectionSearchString)
+                      .on('keydown', function(e){
+                        if (e.which == 40){
+                          that.$selectionUl.focus();
+                          return false;
+                        }
+                      });
+                    },
+                    afterSelect: function(){
+                      this.qs1.cache();
+                      this.qs2.cache();
+                    },
+                    afterDeselect: function(){
+                      this.qs1.cache();
+                      this.qs2.cache();
                     }
-            });
+                });
+                $('#loading-{{ field_select }}').remove();
             {% endfor %}
-        });
-         var editor = CodeMirror.fromTextArea($("#id_script_content")[0], {
-            mode: 'python', lineNumbers: true, indentUnit: 4,
-            styleActiveLine: true, matchBrackets: true, theme: 'ambiance'
         });
 
         function task_mode(mode) {

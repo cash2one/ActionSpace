@@ -2,6 +2,7 @@
 from django.contrib.auth.models import User, Group
 from rest_framework import serializers
 from om.models import Computer, Entity
+from switch.models import Machine
 
 
 # Serializers define the API representation.
@@ -32,3 +33,9 @@ class ServerSerializer(serializers.ModelSerializer):
         model = Computer
         fields = ('entity', 'env', 'ip', 'host', 'installed_agent')
         #  depth = 2
+
+
+class MachineSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Machine
+        fields = ('ip', 'mac_hex', 'entity_name', 'switch_ip', 'if_name')

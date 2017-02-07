@@ -1,0 +1,200 @@
+{% extends 'om/base.html' %}
+{% load staticfiles %}
+{% block other_css %}
+<!--suppress ALL -->
+    <style type="text/css">
+    body {margin:0 auto;overflow:hidden;}
+    .header{
+        margin:0 auto;
+        width:100%;
+        height:640px;
+        background-color:#000;
+        position:relative;
+        }
+    .header canvas {
+        width:100%;height:auto/*默认全屏显示 可自己设置高度640px*/;
+        display:inline-block;
+        vertical-align:baseline position:absolute;
+        z-index:-1;
+        }
+    .header .canvaszz{  /*用来解决视频右键菜单，用于视频上面的遮罩层*/
+        width:100%;
+        background-image: url({% static 'om/img/universe.jpg' %});
+        height:640px;
+        position:absolute;
+        z-index:10;
+        filter:alpha(opacity=100);
+        opacity: 0.4;
+        }
+    .header .loginscreen {
+        z-index:30;
+        display: block;
+        position:absolute;
+        top:120px;
+        left: 50%;
+        margin-left: -160px;
+        text-align:center;
+    }
+
+    .light-font {
+        color:#FFFFFF;
+        text-shadow:#0000CC 0px 1px 3px,#0000CC 1px 0px 3px,#0000CC 0px -1px 3px,#0000CC -1px 0px 3px;
+        filter:glow(color=#0000CC,strength=3);
+    }
+
+</style>
+{% endblock %}
+{% block body_begin %}
+<body class="gray-bg">
+{% endblock %}
+{% block body_content %}
+    <div class="header">
+            <div class="middle-box text-center loginscreen  animated fadeInDown">
+                <div>
+                    <div>
+                        <h1 class="logo-name light-font">OM</h1>
+                    </div>
+                    <h3>欢迎使用运维工作平台</h3>
+                    <label>动画</label>&nbsp;&nbsp<input id="animate" type="checkbox" checked>
+                    <form class="m-t" role="form" method='post'>
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <input type="text" id="id_username" name="username" class="form-control" placeholder="UM账号" required="">
+                        </div>
+                        <div class="form-group">
+                            <input type="password" id="id_password" name="password" class="form-control" placeholder="UM密码" required="">
+                        </div>
+                        <button type="submit" class="btn btn-primary block full-width m-b">登 录</button>
+                        {% if errmsg %}
+                        <p class="error" for="userName"><i class="fa fa-times-circle">{{ errmsg }}</i></p>
+                        {% endif %}
+                        <!--<p class="text-muted text-center"><a class="light-font" href="/guest_login/">以游客身份登录</a></p>-->
+                    </form>
+                </div>
+            </div>
+
+        <div class="canvaszz">
+        </div>
+        <canvas id="canvas"></canvas>
+    </div>
+{% endblock %}
+{% block other_js %}
+    <script>
+        //宇宙特效
+        "use strict";
+        var canvas = document.getElementById('canvas'),
+        ctx = canvas.getContext('2d'),
+        w = canvas.width = window.innerWidth,
+        h = canvas.height = window.innerHeight,
+
+        hue = 217,
+        stars = [],
+        count = 0,
+        maxStars = 1300;//星星数量
+        window.animate = true;
+
+        var canvas2 = document.createElement('canvas'), ctx2 = canvas2.getContext('2d');
+        canvas2.width = 100;
+        canvas2.height = 100;
+        var half = canvas2.width / 2,
+        gradient2 = ctx2.createRadialGradient(half, half, 0, half, half, half);
+        gradient2.addColorStop(0.025, '#CCC');
+        gradient2.addColorStop(0.1, 'hsl(' + hue + ', 61%, 33%)');
+        gradient2.addColorStop(0.25, 'hsl(' + hue + ', 64%, 6%)');
+        gradient2.addColorStop(1, 'transparent');
+
+        ctx2.fillStyle = gradient2;
+        ctx2.beginPath();
+        ctx2.arc(half, half, half, 0, Math.PI * 2);
+        ctx2.fill();
+
+        // End cache
+
+        function random(min, max) {
+          if (arguments.length < 2) {
+            max = min;
+            min = 0;
+          }
+
+          if (min > max) {
+            var hold = max;
+            max = min;
+            min = hold;
+          }
+
+          return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function maxOrbit(x, y) {
+          var max = Math.max(x, y),
+            diameter = Math.round(Math.sqrt(max * max + max * max));
+          return diameter / 2;
+          //星星移动范围，值越大范围越小，
+        }
+
+        var Star = function() {
+
+          this.orbitRadius = random(maxOrbit(w, h));
+          this.radius = random(60, this.orbitRadius) / 8;
+          //星星大小
+          this.orbitX = w / 2;
+          this.orbitY = h / 2;
+          this.timePassed = random(0, maxStars);
+          this.speed = random(this.orbitRadius) / 100000;
+          //星星移动速度
+          this.alpha = random(2, 10) / 10;
+
+          count++;
+          stars[count] = this;
+        }
+
+        Star.prototype.draw = function() {
+          var x = Math.sin(this.timePassed) * this.orbitRadius + this.orbitX,
+            y = Math.cos(this.timePassed) * this.orbitRadius + this.orbitY,
+            twinkle = random(10);
+
+          if (twinkle === 1 && this.alpha > 0) {
+            this.alpha -= 0.05;
+          } else if (twinkle === 2 && this.alpha < 1) {
+            this.alpha += 0.05;
+          }
+
+          ctx.globalAlpha = this.alpha;
+          ctx.drawImage(canvas2, x - this.radius / 2, y - this.radius / 2, this.radius, this.radius);
+          this.timePassed += this.speed;
+        }
+
+        for (var i = 0; i < maxStars; i++) {
+            new Star();
+        }
+
+        function animation() {
+            if (!window.animate) {
+                return
+            }
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.globalAlpha = 0.5; //尾巴
+            ctx.fillStyle = 'hsla(' + hue + ', 64%, 6%, 2)';
+            ctx.fillRect(0, 0, w, h)
+
+            ctx.globalCompositeOperation = 'lighter';
+            for (var i = 1, l = stars.length; i < l; i++) {
+                stars[i].draw();
+            };
+            window.requestAnimationFrame(animation);
+        }
+
+        animation();
+        $("#animate").change(function () {
+            if($(this).is(':checked')){
+                if (!window.animate) {
+                    window.animate = true;
+                    animation();
+                }
+            }else{
+                window.animate = false;
+            }
+        });
+
+    </script>
+{% endblock %}

@@ -47,13 +47,16 @@
                                         <button type="button" class="btn btn-success" id="choose_server"><i class="fa fa-desktop"></i>&nbsp;选择服务器</button>
                                     </div>
                                     <div>
-                                        <table id="table" name="table" data-toggle="table" data-pagination="true" data-id-field="id" data-page-size="3"
+                                        <table id="table" data-toggle="table" data-pagination="true" data-id-field="id" data-page-size="3"
                                             data-page-list="[3, 10, ALL]" data-height="250">
                                             <thead>
                                                 <tr>
                                                     <th data-field="server_ip">IP</th>
-                                                    <th data-field="server_status">状态</th>
                                                     <th data-field="server_hostname">主机名</th>
+                                                    <th data-field="entity" data-sortable="true">实体</th>
+                                                    <th data-field="env" data-sortable="true">环境</th>
+                                                    <th data-field="sys" data-sortable="true">系统</th>
+                                                    <th data-field="agent_name" data-sortable="true">服务名</th>
                                                     <th data-field="server_action" data-formatter="actionFormatter" data-events="actionEvents">操作</th>
                                                 </tr>
                                             </thead>
@@ -68,7 +71,7 @@
                                     <div class="input-group">
                                         <select id="id_exec_user" name="exec_user" data-placeholder="请选择" class="chosen-select"  style="width:650px;">
                                             {% for user in users %}
-                                            <option value="{{ user.name }}">{{ user.name }}</option>
+                                                <option value="{{ user.name }}">{{ user.name }}</option>
                                             {% endfor %}
                                         </select>
                                     </div>
@@ -138,13 +141,12 @@ def process():
 
 if __name__ == '__main__':
     process()
-                                    </textarea>
+</textarea>
                                 </div>
                             </div>
                             <div class="form-group">
                                 <div class="col-sm-10 col-sm-offset-5">
-                                    <button class="btn btn-primary" type="submit" value="save">执行脚本</button>
-                                    <button class="btn btn-white" id="cancel_form" type="button" value="cancel">取消</button>
+                                    <button class="btn btn-primary" type="submit" value="save">创建任务</button>
                                 </div>
                             </div>
                         </form>
@@ -153,6 +155,9 @@ if __name__ == '__main__':
             </div>
         </div>
     </div>
+    {% endif %}
+{% endblock %}
+{% if not saved %}
     {% block other_js %}
         <script src="{% static 'om/js/plugins/peity/jquery.peity.min.js' %}"></script>
         <script src="{% static 'om/js/plugins/chosen/chosen.jquery.js' %}"></script>
@@ -160,6 +165,7 @@ if __name__ == '__main__':
         <script src="{% static 'codemirror/mode/javascript/javascript.js' %}"></script>
         <script src="{% static 'codemirror/mode/python/python.js' %}"></script>
         <script src="{% static 'codemirror/mode/perl/perl.js' %}"></script>
+        <script src="{% static 'codemirror/mode/shell/shell.js' %}"></script>
         <script src="{% static 'om/layer/layer.js' %}"></script>
         <script src="{% static 'om/js/plugins/prettyfile/bootstrap-prettyfile.js' %}"></script>
         <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table.min.js' %}"></script>
@@ -210,7 +216,7 @@ if __name__ == '__main__':
             }
 
             function set_code_script(s_id) {
-                $.get('/om/get_common_script_content/'+s_id, {'csrfmiddlewaretoken': '{{ csrf_token }}'},function(result) {
+                $.get('/om/get_common_script_content/'+s_id, function(result) {
                     editor.setValue(result.content);
                 });
             }
@@ -258,5 +264,4 @@ if __name__ == '__main__':
             });
         </script>
     {% endblock %}
-    {% endif %}
-{% endblock %}
+{% endif %}

@@ -1,0 +1,20 @@
+{% extends 'om/base.html' %}
+{% load staticfiles %}
+{% block other_js %}
+    <script src="{% static 'om/js/jquery.min.js' %}"></script>
+    <script src="{% static 'om/js/bootstrap.min.js' %}"></script>
+    <script src="{% static 'om/layer/layer.js' %}"></script>
+    <script type="text/javascript">
+        layer.alert('保存失败！[' + '{{ save.error_msg }}' +']',{icon: 5});
+    </script>
+    <script type="text/javascript">
+        $(document).ready(function() {
+            var index = parent.layer.getFrameIndex(window.name); //获取窗口索引
+            layer.msg(
+                '{{ msg }}',
+                {time: 1000},
+                function(){parent.layer.close(index);}
+            );
+        });
+    </script>
+{% endblock %}

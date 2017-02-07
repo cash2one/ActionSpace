@@ -1,0 +1,9 @@
+命令编号 命令模板 步骤说明 OID 解析表达式
+1	snmpwalk -v 1 -c {communication} {ip} .{oid}|grep -e '23.1.2.1.1.[4-9]'|sort -t. -n -k10	在汇聚交换机上找出所有下连交换机	1.3.6.1.4.1.9.9.23.1.2.1	.*\.(?P<action_num>\d+)\.(?P<port_num>\d+)\.\d+\s=\s(Hex-)?STRING:\s(?P<peer_info>.+)
+2	snmpwalk -v 1 -c {communication} {ip} .{oid}	遍历（下联）交换机的所有网口	1.3.6.1.2.1.31.1.1.1.1	.*\.(?P<port_num>\d+)\s=\sSTRING:\s(?P<name>[\w/-]+)
+3	snmpwalk -v 1 -c {communication} {ip} .{oid}	遍历下联交换机下的所有vlan	1.3.6.1.4.1.9.9.46.1.3.1.1.2	^.*\.(?P<vlan_id>\d+).*
+4	snmpwalk -v 1 -c {communication}@{vlan_id} {ip} .{oid}	根据vlan去遍历所有的主机（得到mac地址）	1.3.6.1.2.1.17.4.3.1.1	.*\.(?P<mac_decimal>(\d{1,3}\.){5}\d{1,3})\s=\sHex-STRING:\s(?P<mac_hex>([0-9A-Z]{2}\s){5}[0-9A-Z]{2})
+5	snmpwalk -v 1 -c {communication}@{vlan_id} {ip} .{oid}	For each VLAN, get the bridge port number.	1.3.6.1.2.1.17.4.3.1.2	.*\.(?P<mac_decimal>(\d{1,3}\.){5}\d{1,3})\s=\sINTEGER:\s(?P<port_num>\d+)
+6	snmpwalk -v 1 -c {communication}@{vlan_id} {ip} .{oid}	获取网口号和桥接口的map关系	1.3.6.1.2.1.17.1.4.1.2	.*\.(?P<port_num>\d+)\s=\sINTEGER:\s(?P<net_port_num>\d+)
+7	snmpwalk -v 1 -c {communication} {ip} .{oid}	根据mac地址在arp表里解析出IP(不用)	1.3.6.1.2.1.3.1.1.2	.*\.(?P<ip>(\d+\.){3}\d+)\s=\sHex-STRING:\s(?P<mac_hex>([0-9A-Z]{2}\s){5}[0-9A-Z]{2})
+41	NA	当第4步解析不出是使用新的解析表达式	NA	.*\.(?P<mac_decimal>(\d{1,3}\.){5}\d{1,3})\s=\sSTRING:\s.*

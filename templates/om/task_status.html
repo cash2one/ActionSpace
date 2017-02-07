@@ -34,6 +34,11 @@
                                         </div>
                                     </div>
                                 {% endif %}
+                                <div class="form-group">
+                                    <div class="col-sm-10 col-sm-offset-5">
+                                        <button id="cancel_layer" class="btn btn-white" type="button">关闭</button>
+                                    </div>
+                                </div>
                             </form>
                         {% else %}
                             无法查看结果，可能任务未发起。
@@ -53,32 +58,10 @@
     <script src="{% static 'om/js/plugins/prettyfile/bootstrap-prettyfile.js' %}"></script>
     <script>
         $(document).ready(function(){
-            $("#lightVersion").click(function(event){
-                event.preventDefault();
-                $("#ibox-content").removeClass("ibox-content");
-                $("#vertical-timeline").removeClass("dark-timeline");
-                $("#vertical-timeline").addClass("light-timeline")
+            $('#cancel_layer').on('click', function(){
+                var index = parent.layer.getFrameIndex(window.name);
+                parent.layer.close(index);
             });
-            $("#darkVersion").click(function(event){
-                event.preventDefault();
-                $("#ibox-content").addClass("ibox-content");
-                $("#vertical-timeline").removeClass("light-timeline");
-                $("#vertical-timeline").addClass("dark-timeline")
-            });
-            $("#leftVersion").click(function(event){
-                event.preventDefault();
-                $("#vertical-timeline").toggleClass("center-orientation")
-            });
-            $.get('/om/detail_content/'+'{{ task }}/'+1, {'csrfmiddlewaretoken': '{{ csrf_token }}'},function(result) {
-                    $("#ibox-content").html(result);
-                });
-            function update() {
-                $.get('/om/detail_content/'+'{{ task }}/'+0, {'csrfmiddlewaretoken': '{{ csrf_token }}'},function(result) {
-                    $("#ibox-content").html(result);
-                    update()
-                });
-            }
-            update()
         });
     </script>
 {% endblock %}

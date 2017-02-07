@@ -44,11 +44,11 @@ class Salt(object):
     """
 
     SALT_INFO = {
-        'UAT': {'url': 'uat_url', 'user': 'uat_user', 'pwd': 'uat_pwd'},
-        'PRD': {'url': 'prd_url', 'user': 'prd_user', 'pwd': 'prd_pwd'}
+        'UAT': {'url': 'salturl', 'user': 'saltuser', 'pwd': 'saltpwd_pw'},
+        'PRD': {'url': 'salturl', 'user': 'saltuser', 'pwd': 'saltpwd_pw'}
     }
 
-    FILE_SERVER = 'http://stockmirrors.paic.com.cn/iso/wls81/'
+    FILE_SERVER = 'fileserverurl'
 
     # noinspection PyUnresolvedReferences
     def __init__(self, env):
@@ -66,12 +66,13 @@ class Salt(object):
         self.token = result.cookies
 
     def _post(self, hosts, data):
-        host_multi = isinstance(hosts, (list, set)) and len(hosts) > 1
-        if data.get('expr_form') is None:
-            data['expr_form'] = 'list' if host_multi else self.default_host_type
-        if data.get('client') is None:
-            data['client'] = self.client_type
-        data['tgt'] = ','.join(hosts) if host_multi else hosts
+        if hosts is not None:
+            host_multi = isinstance(hosts, (list, set)) and len(hosts) > 1
+            if data.get('expr_form') is None:
+                data['expr_form'] = 'list' if host_multi else self.default_host_type
+            if data.get('client') is None:
+                data['client'] = self.client_type
+            data['tgt'] = ','.join(hosts) if host_multi else hosts
         logger.info('data:{data}'.format(data=str(data)))
         back = requests.post(url=self.url, cookies=self.token, verify=False, data=data)
         result = back.json() if back.status_code == 200 else back.text
@@ -101,3 +102,20 @@ class Salt(object):
         result, back = self._post(hosts, {'fun': 'test.ping'})
         logger.info('{r}:{b}'.format(r=result, b=pformat(back)))
         return result, back
+
+    def manage_status(self):
+        result, back = self._post(None, {'client': 'runner', 'fun': 'manage.status'})
+        logger.info('{r}:{b}'.format(r=result, b='long ...'))
+        return result, back
+
+    def grains(self, host, items=None):
+        arg = {'fun': 'grains.items'} if items is None else {'fun': 'grains.item', 'arg': items}
+        result, back = self._post(host, arg)
+        logger.info('{r}:{b}'.format(r=result, b=repr(items)))
+        return result, back
+
+    def os_type(self, host='*'):
+        return self.grains(host, ['os'])
+
+    def hwaddr_interfaces(self, host='*'):
+        return self.grains(host, ['hwaddr_interfaces'])

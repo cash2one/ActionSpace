@@ -8,8 +8,8 @@
         <div class="col-sm-12">
             <div class="ibox">
                 <div class="ibox-content text-center">
-                    <button class="btn btn-primary" id="toggle_group_edit_flow">切换视图</button>
-                    <button class="btn btn-primary" id="add_group_edit_flow"><i class="fa fa-plus">增加作业组</i></button>
+                    <button class="btn btn-info" id="toggle_group_edit_flow"><i class="fa fa-exchange">切换视图</i></button>
+                    <button class="btn btn-info" id="add_group_edit_flow"><i class="fa fa-plus">增加作业组</i></button>
                 </div>
             </div>
         </div>
@@ -34,6 +34,11 @@
                                         </a>
                                     </li>
                                     <li>
+                                        <a class="btn btn-w-m btn-link" id="set_host_{{group.group.id}}">
+                                            <i class="fa fa-edit">批量指定IP</i>
+                                        </a>
+                                    </li>
+                                    <li>
                                         <a class="btn btn-w-m btn-link" id="del_task_{{group.group.id}}">
                                             <i class="fa fa-remove">删除组</i>
                                         </a>
@@ -52,6 +57,9 @@
                                          <a href="#" class="pull-right btn btn-xs btn-primary" id="edit_task_{{group.group.id}}_{{job.id}}">
                                              <i class="fa fa-edit">编辑</i>
                                          </a>
+                                        <a href="#" class="pull-right btn btn-xs btn-primary" id="create_quick_task_{{group.group.id}}_{{job.id}}">
+                                             <i class="fa fa-edit">创建快速任务</i>
+                                         </a>
                                     </li>
                                 {% endfor %}
                             </ul>
@@ -69,7 +77,7 @@
                 <div class="ibox">
                     <div class="ibox-content text-center">
                     <button class="btn btn-primary" id="exec_edit_flow"><i class="fa fa-arrow-circle-o-right">创建任务</i></button>
-                    <button class="btn btn-primary" id="get_back"><i class="fa fa-reply">返回</i></button>
+                    <button class="btn btn-info" id="get_back"><i class="fa fa-reply">返回</i></button>
                     </div>
                 </div>
             </div>
@@ -94,20 +102,8 @@
         $(document).ready(
             function(){
                 $("#exec_edit_flow").on("click", function(){
-                    $.get('/om/create_task/'+'{{ flow.id }}'+'/-1', {'csrfmiddlewaretoken': '{{ csrf_token }}'},function(result) {
-                        if (result.result == 'Y') {
-                            var flow_edit_layer = layer.open({
-                              type: 1,
-                              title: '执行作业流[' + '{{ flow.name }}' + ']',
-                              area: ['700px', '530px'],
-                              fix: false, //不固定
-                              maxmin: true,
-                              content: "{{ result.desc }}"
-                            });
-                            layer.full(flow_edit_layer);
-                        } else {
-                            layer.msg(result.desc,{time: 2000});
-                        }
+                    $.get('/om/create_task/'+'{{ flow.id }}'+'/-1', function(result) {
+                        layer.msg(result.desc,{time: 5000});
                     });
                 });
                 function save() {
@@ -115,9 +111,13 @@
                         type: 'POST',
                         url: "{%url 'om:save_edit_flow'%}",
                         data: JSON.stringify($('#result').data()),
-                        success: function(_) {
-                            toastr.success('已保存修改！');
-                            //alert(JSON.stringify($('#result').data()))
+                        success: function(result) {
+                            if (result.result == 'Y') {
+                                toastr.success(result.desc);
+                            }
+                            else {
+                                toastr.error(result.desc);
+                            }
                         }
                     });
                 }
@@ -135,7 +135,7 @@
                                 $('#result').data('id', {{flow.id}});
                                 $('#result').data('flow', $(this).sortable("toArray"));
                             }
-                        }).disableSelection()
+                        }).disableSelection();
                     {% for group in groups %}
                         $(".sortable-list-task-{{group.group.id}}").sortable({
                             tolerance:"pointer", forcePlaceholderSize:!0, opacity:.8, axis: 'y',cursor: 'move',
@@ -158,6 +158,17 @@
                                 });
                                 layer.full(edit_task_{{group.group.id}}_layer);
                         });
+                        $('#set_host_{{group.group.id}}').on('click', function() {
+                            var set_host_{{group.group.id}}_layer = layer.open({
+                                  type: 2,
+                                  title: '编辑组[' + '{{ group.group.name }}' + ']',
+                                  area: ['700px', '530px'],
+                                  fix: false, //不固定
+                                  maxmin: true,
+                                  content: "{%url 'om:set_group_host' group.group.id %}"
+                                });
+                                layer.full(set_host_{{group.group.id}}_layer);
+                        });
                         $('#add_task_{{group.group.id}}').on('click', function() {
                             var add_task_{{group.group.id}}_layer = layer.open({
                                   type: 2,
@@ -165,7 +176,7 @@
                                   area: ['700px', '530px'],
                                   fix: false, //不固定
                                   maxmin: true,
-                                  content: "{%url 'om:new_job_for_group' group.group.id %}"
+                                  content: "{%url 'om:new_job' group.group.id %}"
                                 });
                                 layer.full(add_task_{{group.group.id}}_layer);
                         });
@@ -190,6 +201,11 @@
                                     });
                         });
                         {% for job in group.job_list %}
+                            $("#create_quick_task_{{group.group.id}}_{{job.id}}").on('click', function(){
+                                $.get("{%url 'om:job_quick_task' job.id %}", function(result) {
+                                    layer.msg(result.msg);
+                                });
+                            });
                             $('#edit_task_{{group.group.id}}_{{job.id}}').on('click', function(){
                                 var edit_task_{{group.group.id}}_{{job.id}}_layer = layer.open({
                                   type: 2,

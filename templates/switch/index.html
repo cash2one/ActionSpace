@@ -1,0 +1,88 @@
+{% extends 'om/base.html' %}
+{% load staticfiles %}
+{% block body_begin %}
+<body class="gray-bg">
+{% endblock %}
+{% block body_content %}
+    <div class="wrapper wrapper-content  animated fadeInRight">
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="ibox ">
+                    <div class="ibox-title">
+                        <h5>执行作业流</h5>
+                    </div>
+                    <div class="ibox-content">
+                        <form class="form-horizontal">
+                            <div class="form-group">
+                                <label class="col-sm-1 control-label">选择生成时间</label>
+                                <div class="col-sm-6">
+                                    <select id="id_select" data-placeholder="请选择" style="width:300px;" >
+                                        {% for search in search_list %}
+                                            <option value="{{ search.id }}">{{ search.search_time|date:'Y-m-d H:i:s' }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-sm-3">
+                                    <button class="btn btn-white" id="export_excel" type="button" value="cancel">导出到excel</button>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-1 control-label">主机列表</label>
+                                <div class="col-sm-9">
+                                    <table id="table" data-toggle="table" data-sort-name="system"
+                                           data-sort-order="desc" data-url="{% url 'switch:get_machine_list' current_select %}"
+                                           data-striped="true" data-click-to-select="true"
+                                           data-pagination="true" data-search="true"
+                                           data-icon-size="sm" data-resizable="true"
+                                           data-page-list="[5, 10, 20, 50, 100, 200, ALL]"
+                                           data-show-refresh="true" data-show-toggle="true"
+                                           data-filter-control="true" data-filter-show-clear="true"
+                                    >
+                                        <thead>
+                                        <tr>
+                                            <th data-field="ip" data-sortable="true" data-filter-control="input" data-width="160">主机</th>
+                                            <th data-field="mac_hex" data-sortable="true" data-filter-control="input" data-width="150">MAC地址</th>
+                                            <th data-field="entity_name" data-sortable="true" data-filter-control="input" data-width="300">逻辑实体</th>
+                                            <th data-field="switch_ip" data-sortable="true" data-filter-control="select" data-width="80">交换机IP</th>
+                                            <th data-field="net_face" data-sortable="true" data-filter-control="input" data-width="60">网口</th>
+                                        </tr>
+                                        </thead>
+                                    </table>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block other_js %}
+    <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/bootstrap-table/locale/bootstrap-table-zh-CN.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/bootstrap-table/toolbar/bootstrap-table-toolbar.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/bootstrap-table/filter-control/bootstrap-table-filter-control.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/bootstrap-table/resizable/bootstrap-table-resizable.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/bootstrap-table/resizable/colResizable-1.5.source.js' %}"></script>
+    <script src="{% static 'om/js/plugins/chosen/chosen.jquery.js' %}"></script>
+    <script>
+            $(document).ready(function() {
+                $("#id_select").chosen();
+                $('#id_select').change(function (){
+                    {% if current_select %}
+                        $('#table').bootstrapTable("refresh", {url: '/switch/get_machine_list/{{ current_select }}' })
+                    {% endif %}
+                });
+                $('#export_excel').click(function () {
+                    var select_id = $('#id_select').children('option:selected').val();
+                    window.location='/switch/export_excel/'+select_id;
+                });
+                var $table = $('#table');
+                $('#toolbar').find('select').change(function () {
+                $table.bootstrapTable('refreshOptions', {
+                  exportDataType: $(this).val()
+                });
+              });
+            });
+    </script>
+{% endblock %}

@@ -41,18 +41,9 @@
                                     <div class="form-group">
                                         <label class="col-sm-2 control-label">{{ field.label_tag }}</label>
                                         <div class="col-sm-8" style='display:block;'>
-                                            {% if field.name in check_field_list %}
-                                                <div class="switch">
-                                                    <div class="onoffswitch">
-                                                        {{ field | set_attr:'class=onoffswitch-checkbox' }}
-                                                        <label class="onoffswitch-label" for="{{ field.id_for_label }}">
-                                                            <span class="onoffswitch-inner"></span>
-                                                            <span class="onoffswitch-switch"></span>
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                            {% elif field.name in disable_field_list %}
-                                                {{ field | set_attr:'readonly=readonly' }}
+                                            {% if field.name in multiselect_list %}
+                                                {{ field | set_attr:'style=display:none' }}
+                                                <p id="loading-{{ field.name }}">加载中，请稍后……</p>
                                             {% else %}
                                                 {{ field | set_attr:'class=form-control' }}
                                             {% endif %}
@@ -72,33 +63,80 @@
                 </div>
             </div>
         </div>
-        {% block other_js %}
-            <script src="{% static 'om/js/plugins/peity/jquery.peity.min.js' %}"></script>
-            <script src="{% static 'codemirror/lib/codemirror.js' %}"></script>
-            <script src="{% static 'codemirror/mode/shell/shell.js' %}"></script>
-            <script src="{% static 'codemirror/mode/python/python.js' %}"></script>
-            <script src="{% static 'codemirror/mode/perl/perl.js' %}"></script>
-            <script src="{% static 'om/js/plugins/prettyfile/bootstrap-prettyfile.js' %}"></script>
-            <script>
-                $(document).ready(function() {
-                    $('#cancel_form').click(function (e) {
-                        parent.layer.close(parent.layer.getFrameIndex(window.name));
-                    });
-                    function set_job_list() {
-                        var all = [];
-                        $('#id_job_list').find('option:selected').each(function() {
-                            console.log($(this)[0].value)
-                            all.push($(this)[0].value);
-                        });
-                        $('#id_job_list_comma_sep').val(all.join(','));
-                    }
-                    $('#id_job_list').change(function(){
-                        set_job_list()
-                    });
-                    set_job_list();
-                });
-            </script>
-        {% endblock %}
     {% endif %}
 </body>
 {% endblock %}
+{% if not save.saved %}
+    {% block other_js %}
+        <script src="{% static 'om/js/plugins/peity/jquery.peity.min.js' %}"></script>
+        <script src="{% static 'codemirror/lib/codemirror.js' %}"></script>
+        <script src="{% static 'codemirror/mode/shell/shell.js' %}"></script>
+        <script src="{% static 'codemirror/mode/python/python.js' %}"></script>
+        <script src="{% static 'codemirror/mode/perl/perl.js' %}"></script>
+        <script src="{% static 'om/js/plugins/prettyfile/bootstrap-prettyfile.js' %}"></script>
+        <script src="{% static 'om/plugins/multi-select/js/jquery.quicksearch.min.js' %}"></script>
+        <script src="{% static 'om/plugins/multi-select/js/jquery.multi-select.min.js' %}"></script>
+        <!--suppress JSUnresolvedVariable -->
+        <script>
+            $(document).ready(function() {
+                $('#cancel_form').click(function (e) {
+                    parent.layer.close(parent.layer.getFrameIndex(window.name));
+                });
+
+                {% for field_select in multiselect_list %}
+                    $('#id_{{ field_select }}').multiSelect({
+                        dblClick: true,
+                        keepOrder: true,
+                        selectableOptgroup: true,
+                        selectableHeader: "<input type='text' class='search-input' autocomplete='off' placeholder='搜索可选项'>",
+                        selectionHeader: "<input type='text' class='search-input' autocomplete='off' placeholder='搜索已选项'>",
+                        afterInit: function(ms){
+                          var that = this,
+                              $selectableSearch = that.$selectableUl.prev(),
+                              $selectionSearch = that.$selectionUl.prev(),
+                              selectableSearchString = '#'+that.$container.attr('id')+' .ms-elem-selectable:not(.ms-selected)',
+                              selectionSearchString = '#'+that.$container.attr('id')+' .ms-elem-selection.ms-selected';
+                          that.qs1 = $selectableSearch.quicksearch(selectableSearchString)
+                          .on('keydown', function(e){
+                            if (e.which === 40){
+                              that.$selectableUl.focus();
+                              return false;
+                            }
+                          });
+
+                          that.qs2 = $selectionSearch.quicksearch(selectionSearchString)
+                          .on('keydown', function(e){
+                            if (e.which == 40){
+                              that.$selectionUl.focus();
+                              return false;
+                            }
+                          });
+                        },
+                        afterSelect: function(){
+                          this.qs1.cache();
+                          this.qs2.cache();
+                        },
+                        afterDeselect: function(){
+                          this.qs1.cache();
+                          this.qs2.cache();
+                        }
+                    });
+                    $('#loading-{{ field_select }}').remove();
+                {% endfor %}
+
+                function set_job_list() {
+                    var all = [];
+                    $('#id_job_list').find('option:selected').each(function() {
+                        console.log($(this)[0].value)
+                        all.push($(this)[0].value);
+                    });
+                    $('#id_job_list_comma_sep').val(all.join(','));
+                }
+                $('#id_job_list').change(function(){
+                    set_job_list()
+                });
+                set_job_list();
+            });
+        </script>
+    {% endblock %}
+{% endif %}

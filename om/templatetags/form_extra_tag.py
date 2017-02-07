@@ -1,5 +1,6 @@
 # -*- encoding=utf-8 -*-
 from django import template
+from om.models import ExecUser
 register = template.Library()
 
 
@@ -16,3 +17,14 @@ def set_attr(bound_field, attr_info):
             bound_field.field.widget.attrs[info[0]] = info[1]
     return bound_field
 
+
+@register.filter(name='only_superuser_has_root')
+def only_superuser_has_root(bound_field, user):
+    """
+    :param bound_field:
+    :param user:用户
+    :return:
+    """
+    if not user.is_superuser:
+        bound_field.field.widget.choices.queryset = ExecUser.objects.exclude(name='root')
+    return bound_field

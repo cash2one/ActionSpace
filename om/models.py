@@ -2,6 +2,7 @@
 from __future__ import print_function
 from __future__ import unicode_literals
 from django.db import models
+from django.contrib.auth.models import User
 from django.core.validators import validate_comma_separated_integer_list, validate_ipv46_address
 from om.util import *
 
@@ -17,6 +18,7 @@ class System(models.Model):
     class Meta:
         verbose_name = '系统'
         verbose_name_plural = '系统'
+        ordering = ['name']
 
 
 class Entity(models.Model):
@@ -30,6 +32,7 @@ class Entity(models.Model):
     class Meta:
         verbose_name = '实体'
         verbose_name_plural = '实体'
+        ordering = ['name']
 
 
 class Computer(models.Model):
@@ -45,7 +48,7 @@ class Computer(models.Model):
     desc = models.CharField(max_length=400, verbose_name='备注', default='NA')
 
     def __str__(self):
-        return get_name('{host}-{ip}'.format(host=self.host, ip=self.ip))
+        return get_name(self.agent_name)
 
     def entity_name(self):
         entitys = self.entity.all()
@@ -55,6 +58,30 @@ class Computer(models.Model):
     class Meta:
         verbose_name = '主机'
         verbose_name_plural = '主机'
+        ordering = ['ip']
+
+
+class ComputerGroup(models.Model):
+    name = models.CharField(max_length=100, verbose_name='组名')
+    computer_list = models.ManyToManyField(Computer, verbose_name='主机列表')
+    founder = models.CharField(max_length=50, verbose_name='创建人', default='NA')
+    last_modified_by = models.CharField(max_length=50, verbose_name='最后修改人', default='NA')
+    created_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    last_modified_time = models.DateTimeField(verbose_name="最后修改时间", auto_now=True)
+    ENV_TYPE = (('PRD', '生产环境'), ('UAT', '测试环境'), ('FAT', '开发环境'))
+    env = models.CharField(max_length=20, choices=ENV_TYPE, verbose_name='环境类型', default='FAT')
+
+    def __str__(self):
+        return get_name('{env}-{name}'.format(env=self.env, name=self.name))
+
+    def computer(self):
+        computers = self.computer_list.all()
+        return ','.join([x.ip for x in computers]) if len(computers) > 0 else '无'
+    computer.short_description = '主机组'
+
+    class Meta:
+        verbose_name = '主机组'
+        verbose_name_plural = '主机组'
 
 
 class Flow(models.Model):
@@ -144,6 +171,7 @@ class ServerFile(models.Model):
 
 class Job(models.Model):
     name = models.CharField(max_length=100, verbose_name='作业名称')
+    server_list = models.ManyToManyField(Computer, blank=True, verbose_name='服务器列表')
     founder = models.CharField(max_length=50, verbose_name='创建人', default='NA')
     last_modified_by = models.CharField(max_length=50, verbose_name='最后修改人', default='NA')
     created_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
@@ -159,7 +187,6 @@ class Job(models.Model):
     pause_finish_tip = models.CharField(max_length=100, verbose_name='执行完成暂停提示', default='执行完成，请确认后继续。')
     script_content = models.TextField(verbose_name='脚本内容', blank=True)
     script_param = models.CharField(max_length=100, verbose_name='脚本参数', blank=True)
-    server_list = models.ManyToManyField(Computer, blank=True, verbose_name='服务器列表')
     desc = models.CharField(max_length=400, verbose_name='备注', default='NA')
 
     def __str__(self):
@@ -210,7 +237,12 @@ class Task(models.Model):
         verbose_name = '任务'
         verbose_name_plural = '任务'
         # app_label = '任务管理'
-        permissions = (('can_approval_task', '审批任务是否可执行'),)
+        permissions = (
+            ('can_approval_task', '审批任务是否可执行'),
+            ('can_do_quick_script', '可快速执行脚本'),
+            ('can_do_quick_file', '可快速上传文件'),
+            ('can_exec_approved_task', '可执行已审批的任务')
+        )
 
 
 class TaskFlow(models.Model):
@@ -231,10 +263,12 @@ class TaskJobGroup(models.Model):
     name = models.CharField(max_length=100, verbose_name='作业组名称')
     group_id = models.IntegerField(verbose_name='作业组ID')
     flow = models.ForeignKey(TaskFlow, on_delete=models.CASCADE, verbose_name='作业流')
+    step = models.IntegerField(verbose_name='作业组序号', default=-1)
 
     class Meta:
         verbose_name = '[任务]作业组'
         verbose_name_plural = '[任务]作业组'
+        ordering = ['step']
         # app_label = '任务管理'
 
     def __str__(self):
@@ -263,14 +297,24 @@ class TaskJob(models.Model):
     exec_output = models.TextField(verbose_name='执行结果输出', blank=True)
     exec_user = models.CharField(max_length=100, default='', verbose_name='执行用户')
     server_list = models.TextField(max_length=10000, default='', verbose_name='服务器列表')
+    step = models.IntegerField(verbose_name='作业序号', default=-1)
 
     class Meta:
         verbose_name = '[任务]作业'
         verbose_name_plural = '[任务]作业'
+        ordering = ['step']
         # app_label = '任务管理'
 
     def __str__(self):
         return get_name(self.name)
+
+    # noinspection PyBroadException
+    def cost_time(self):
+        try:
+            count = (self.end_time - self.begin_time).seconds
+            return str(count) if count > 0 else '小于1'
+        except Exception as _:
+            return 0
 
 
 class CommonScript(models.Model):
@@ -286,3 +330,47 @@ class CommonScript(models.Model):
 
     def __str__(self):
         return get_name(self.name)
+
+
+class SaltMinion(models.Model):
+    name = models.CharField(max_length=100, default='', verbose_name='名称')
+    status = models.CharField(max_length=5, default='', verbose_name='状态')
+    ENV_TYPE = (('PRD', '生产环境'), ('UAT', '测试环境'), ('FAT', '开发环境'))
+    env = models.CharField(max_length=20, choices=ENV_TYPE, verbose_name='环境类型', default='UAT')
+    update_time = models.DateTimeField(auto_now_add=True, verbose_name='更新时间')
+
+    def __str__(self):
+        return get_name(self.name)
+
+    class Meta:
+        verbose_name = 'SALT主机'
+        verbose_name_plural = 'SALT主机'
+
+
+class MacAddr(models.Model):
+    mac_hex = models.CharField(max_length=20, verbose_name='MAC地址（16进制）', default='')
+    interface = models.CharField(max_length=200, verbose_name='网口', default='')
+    minion = models.ForeignKey(SaltMinion, verbose_name='主机', null=True)
+
+    def __str__(self):
+        return get_name('{face}:{hex}'.format(face=self.interface, hex=self.mac_hex))
+
+    class Meta:
+        verbose_name = 'MAC地址'
+        verbose_name_plural = 'MAC地址'
+
+
+class CallLog(models.Model):
+    user = models.ForeignKey(User, verbose_name='用户')
+    action = models.CharField(max_length=200, verbose_name='操作', default='')
+    date_time = models.DateTimeField(verbose_name='时间', auto_now=True)
+    TYPES = (('message', 'websocket消息'), ('request', '请求'), ('other', '其他'))
+    type = models.CharField(max_length=100, choices=TYPES, default='other', verbose_name='类型')
+    detail = models.TextField(verbose_name='详情', default='')
+
+    def __str__(self):
+        return get_name('{un}:{action}'.format(un=self.user.username, action=self.action))
+
+    class Meta:
+        verbose_name = '调用日志'
+        verbose_name_plural = '调用日志'

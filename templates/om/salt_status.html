@@ -1,0 +1,104 @@
+{% extends 'om/base.html' %}
+{% load staticfiles %}
+{% block body_begin %}
+<body class="gray-bg">
+{% endblock %}
+{% block body_content %}
+    <div class="wrapper wrapper-content  animated fadeInRight">
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="ibox ">
+                    <div class="ibox-title">
+                        <h5>信息查询</h5>
+                    </div>
+                    <div class="ibox-content">
+                        {% if user.is_superuser %}
+                            <button id="refresh-server" class="btn btn-primary" type="button" value="save">更新</button>
+                        {% endif %}
+                        <table id="table" data-toggle="table" data-sort-name="system"
+                               data-sort-order="desc" data-url="{% url 'om:salt_status_api' %}"
+                               data-striped="true" data-click-to-select="true"
+                               data-pagination="true" data-search="true"
+                               data-page-list="[5, 10, 20, 50, 100, 200, ALL]"
+                               data-show-refresh="true" data-show-toggle="true"
+                               data-filter-control="true" data-filter-show-clear="true">
+                            <thead>
+                                <tr>
+                                    <th data-field="name" data-sortable="true" data-filter-control="input">主机</th>
+                                    <th data-field="status" data-sortable="true" data-filter-control="select">状态</th>
+                                    <th data-field="env" data-sortable="true" data-filter-control="select">环境类型</th>
+                                    <th data-field="update_time" data-sortable="true">更新时间</th>
+                                    <th data-field="action" data-formatter="formatter" data-events="events">操作</th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block other_js %}
+    <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table-mobile.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/bootstrap-table/locale/bootstrap-table-zh-CN.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/bootstrap-table/filter-control/bootstrap-table-filter-control.min.js' %}"></script>
+    <script src="{% static 'om/js/reconnecting-websocket.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/toastr/toastr.min.js' %}"></script>
+    <script src="{% static 'om/layer/layer.js' %}"></script>
+    <!--suppress JSUnresolvedVariable, JSUnusedLocalSymbols -->
+    <script type="text/javascript">
+        $(document).ready(function (){
+            var ws_scheme = window.location.protocol == "https:" ? "wss" : "ws";
+            var url = ws_scheme + '://' + window.location.host + window.location.pathname;
+            url += '?session_key={{ request.session.session_key }}';
+            //noinspection JSUnresolvedFunction
+            var inst = new ReconnectingWebSocket(url);
+            inst.onmessage = function(msg) {
+                if (msg.data == 'Y') {
+                    toastr.success('刷新成功！');
+                    $('#table').bootstrapTable("refresh")
+                }
+                else {
+                    toastr.error(msg.data);
+                }
+                layer.closeAll('loading');
+            };
+            {% if user.is_superuser %}
+                $('#refresh-server').on('click', function () {
+                    layer.load();
+                    inst.send(JSON.stringify({'info': 'refresh-server'}));
+                });
+            {% endif %}
+        });
+        function formatter(value, row, index) {
+            var actions = new Array()
+            actions.push('<div class="btn-group">');
+            actions.push('<button class="btn btn-xs btn-success show_info" title="查看"><i class="fa fa-edit">查看</i></button>');
+            actions.push('<div class="btn-group">');
+            actions.push('</div>');
+            return actions.join('&nbsp;&nbsp;');
+        }
+        window.events = {
+        'click .show_info': function (e, value, row, _) {
+            if (row.status != 'up') {
+                layer.msg('仅状态未up的可以查看', {time: 3000});
+                return
+            }
+            $.post("{% url 'om:get_grains' %}", {
+                'csrfmiddlewaretoken': '{{ csrf_token }}',
+                'agent_name': row.name
+            },function(result) {
+                var json_layer = layer.open({
+                  type: 1,
+                  skin: 'layui-layer-demo', //样式类名
+                  closeBtn: 0, //不显示关闭按钮
+                  anim: 2, area: ['80%', '80%'],
+                  shadeClose: true, //开启遮罩关闭
+                  content: '<pre>' + JSON.stringify(result.return[0][row.name], null, 4) + '</pre>'
+                });
+                //layer.full(json_layer);
+            });
+        }};
+    </script>
+{% endblock %}

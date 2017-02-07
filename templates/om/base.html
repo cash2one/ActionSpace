@@ -7,15 +7,12 @@
     <meta http-equiv="Cache-Control" content="no-siteapp" />
     <title>运维工作平台 - 主页</title>
     {% load staticfiles %}
-    <meta name="keywords" content="H+">
-    <meta name="description" content="H+">
-
-    <!--[if lt IE 9]>
-    <meta http-equiv="refresh" content="0;ie.html" />
-    <![endif]-->
+    <meta name="keywords" content="OM">
+    <meta name="description" content="OM">
     
     <link rel="shortcut icon" href="{% static 'om/favicon.ico' %}">
     <link href="{% static 'om/css/bootstrap.min14ed.css' %}" rel="stylesheet">
+    <link href="{% static 'om/css/bootstrap-editable.css' %}" rel="stylesheet">
     <link href="{% static 'om/css/font-awesome.min93e3.css' %}" rel="stylesheet">
     <link href="{% static 'om/css/animate.min.css' %}" rel="stylesheet">
     <link href="{% static 'om/css/style.min862f.css' %}" rel="stylesheet">
@@ -25,8 +22,9 @@
     <link href="{% static 'om/css/plugins/chosen/chosen.css' %}" rel="stylesheet">
     <link href="{% static 'om/css/plugins/bootstrap-table/bootstrap-table.min.css' %}" rel="stylesheet">
     <link href="{% static 'om/css/plugins/toastr/toastr.min.css' %}" rel="stylesheet">
-    <link href="//cdn.bootcss.com/bootstrap-multiselect/0.9.13/css/bootstrap-multiselect.css" rel="stylesheet">
-
+    <link href="{% static 'om/css/plugins/datetimepicker/jquery.datetimepicker.min.css' %}" rel="stylesheet">
+    <link href="{% static 'om/plugins/multi-select/css/multi-select.min.css' %}" rel="stylesheet">
+    {% block other_css %}{% endblock %}
 </head>
 
 {% block body_begin %}<body class="fixed-sidebar full-height-layout gray-bg" style="overflow:hidden">{% endblock %}
@@ -35,14 +33,17 @@
 
 {% block script %}
     <script src="{% static 'om/js/jquery.min.js' %}"></script>
+    <script src="{% static 'om/js/clipBoard.js' %}"></script>
     <script src="{% static 'om/js/bootstrap.min.js' %}"></script>
     <script src="{% static 'om/js/content.min.js' %}"></script>
-    <script src='//cdn.bootcss.com/reconnecting-websocket/1.0.0/reconnecting-websocket.min.js'></script>
-    <script src='//cdn.bootcss.com/bootstrap-multiselect/0.9.13/js/bootstrap-multiselect.min.js'></script>
 {% endblock %}
 
 {% block other_js %}{% endblock %}
-
+<!--[if lt IE 9]>
+    <script>
+        alert('需要使用chrome，firefox或者IE 10以上浏览器，否则可能显示错误！')
+    </script>
+<![endif]-->
 {% block body_end %}
 </body>
 </html>

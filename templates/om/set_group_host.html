@@ -1,0 +1,62 @@
+{% extends 'om/base.html' %}
+{% load staticfiles %}
+{% block body_begin %}
+<body class="gray-bg">
+{% endblock %}
+{% block body_content %}
+    <div class="wrapper wrapper-content  animated fadeInRight">
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="ibox ">
+                    <div class="ibox-title">
+                        <h5>执行作业流</h5>
+                    </div>
+                    <div class="ibox-content">
+                        <form class="form-horizontal" method='post' onsubmit="return before_submit()">
+                            {% csrf_token %}
+                            <table id="table" data-toggle="table" data-sort-name="system"
+                                   data-sort-order="desc" data-url="{% url 'om:get_server_list' %}"
+                                   data-striped="true" data-click-to-select="true"
+                                   data-pagination="true" data-search="true"
+                                   data-page-list="[5, 10, 20, 50, 100, 200, ALL]"
+                                   data-show-refresh="true" data-show-toggle="true">
+                                <thead>
+                                    <tr>
+                                        <th data-field="state" data-checkbox="true"></th>
+                                        <th data-field="system" data-sortable="true">系统</th>
+                                        <th data-field="entity" data-sortable="true">实体</th>
+                                        <th data-field="server_ip" data-sortable="true">IP</th>
+                                        <th data-field="server_hostname" data-sortable="true">主机名</th>
+                                    </tr>
+                                </thead>
+                            </table>
+                            <input id="id_server_list" name="server_list" type="hidden" class="form-control">
+                            <div class="form-group">
+                                <div class="col-sm-10 col-sm-offset-5">
+                                    <button id="save_layer" class="btn btn-primary" type="submit">保存</button>
+                                    <button id="cancel_layer" class="btn btn-white" type="button">取消</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block other_js %}
+    <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table-mobile.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/bootstrap-table/locale/bootstrap-table-zh-CN.min.js' %}"></script>
+    <script type="text/javascript">
+        function before_submit() {
+            $('#id_server_list').val(JSON.stringify($('#table').bootstrapTable("getSelections")));
+            return true;
+        }
+
+        $('#cancel_layer').on('click', function(){
+            var index = parent.layer.getFrameIndex(window.name); //获取窗口索引
+            parent.layer.close(index);
+        });
+    </script>
+{% endblock %}

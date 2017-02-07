@@ -1,0 +1,62 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+ <head></head>
+ <body style="margin: 0; padding: 0;">
+  <meta http-equiv="Content-Type" content="Multipart/Alternative; charset=UTF-8" /> 
+  <title>Demystifying Email Design</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />   
+  <table width="100%" border="0" cellspacing="0" cellpadding="0"> 
+   <tbody>
+    <tr> 
+     <td align="center" valign="top"><br /> <br />
+      <table width="90%" border="0" cellspacing="0" cellpadding="0">
+       <tbody>
+        <tr> 
+         <td align="left" valign="top" bgcolor="#ffffff" style="background-color:#ffffff;">
+          <table width="95%" border="0" align="center" cellpadding="0" cellspacing="0" style="margin-bottom:15px;">
+           <tbody>
+            <tr>
+             <td width="75%" align="left" valign="middle" style="font-family:Arial, Helvetica, sans-serif; color:#4e4e4e; font-size:13px; padding-right:10px;">
+              <div style="font-size:24px;">
+               {{ tid }}-{{ name }}
+              </div>
+             </td>
+            </tr>
+           </tbody>
+          </table>
+          {% for show in info %}
+             <table width="95%" border="0" align="center" cellpadding="0" cellspacing="0" style="margin-bottom:15px;">
+                <tbody>
+                <tr>
+                  <td align="left" valign="middle" style="padding:0px 20px 0px 20px; font-family:Arial, Helvetica, sans-serif; color:#ffffff;">
+                      <div style="color: white;font:'微软雅黑';border:4px #ccc outset;background-color:white;overflow:hidden">
+                        <div style="background-color:#08246B;margin-bottom:2px;"><span>&nbsp;&nbsp;{{ show.name }}</span></div>
+                            <pre style="outline:none;color: white;margin: 0;padding: 0;font: 'Courier New';background-color:#000;border: 0;display: block;max-height: 420px;overflow-y:scroll;" >{{ show.output }}</pre>
+                      </div>
+                  </td>
+                </tr>
+                </tbody>
+             </table>
+              <br />
+          {% endfor %}
+          <table width="95%" border="0" align="center" cellpadding="0" cellspacing="0" style="margin-bottom:20px;"> 
+           <tbody>
+            <tr> 
+             <td width="50%" align="left" valign="middle" style="padding:10px;">
+              <table width="75%" border="0" cellspacing="0" cellpadding="4"> 
+               <tbody>
+                <tr> 
+                 <td align="left" valign="top" style="font-family:Verdana, Geneva, sans-serif; font-size:14px; color:#000000;"><b>OM运维工作平台:</b> <a href="http://om.paic.com.cn/" style="color:#595959; text-decoration:none;">http://om.paic.com.cn/</a></td> 
+                </tr>
+               </tbody>
+              </table></td>
+            </tr> 
+           </tbody>
+          </table></td> 
+        </tr> 
+       </tbody>
+      </table> <br /> <br /></td> 
+    </tr> 
+   </tbody>
+  </table>
+ </body>
+</html>

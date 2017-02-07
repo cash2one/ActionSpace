@@ -12,11 +12,12 @@
                         <h5>快速分发文件</h5>
                     </div>
                     <div class="ibox-content">
-                        <form class="form-horizontal">
+                        <form class="form-horizontal" method='post' onsubmit="return before_submit()">
+                            {% csrf_token %}
                             <div class="form-group">
                                 <label class="col-sm-2 control-label">任务名称</label>
                                 <div class="col-sm-8">
-                                    <input type="email" placeholder="任务名称" class="form-control">
+                                    <input id="id_name" name="name" type="text" placeholder="任务名称" class="form-control" required>
                                 </div>
                             </div>
                             <div class="form-group">
@@ -31,12 +32,13 @@
                                             <thead>
                                                 <tr>
                                                     <th data-field="server_ip">IP</th>
-                                                    <th data-field="server_status">状态</th>
                                                     <th data-field="server_hostname">主机名</th>
+                                                    <th data-field="entity" data-sortable="true">实体</th>
                                                     <th data-field="server_action" data-formatter="actionFormatter" data-events="actionEvents">操作</th>
                                                 </tr>
                                             </thead>
                                         </table>
+                                        <input id="id_server_list" name="server_list" type="hidden" class="form-control">
                                     </div>
                                 </div>
                             </div>
@@ -44,76 +46,84 @@
                                 <label class="col-sm-2 control-label">执行账户</label>
                                 <div class="col-sm-8">
                                     <div class="input-group">
-                                        <select data-placeholder="请选择" class="chosen-select"  style="width:650px;">
-                                            <option value="">执行账户</option>
-                                            <option value="1" hassubinfo="true">root</option>
-                                            <option value="2" hassubinfo="true">wls81</option>
-                                            <option value="3" hassubinfo="true">deployop</option>
-                                            <option value="4" hassubinfo="true">logarchive</option>
+                                        <select id="id_exec_user" name="exec_user" data-placeholder="请选择" class="chosen-select"  style="width:650px;">
+                                            {% for user in users %}
+                                                <option value="{{ user.name }}">{{ user.name }}</option>
+                                            {% endfor %}
                                         </select>
                                     </div>
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label class="col-sm-2 control-label">文件来源</label>
+                                <label class="col-sm-2 control-label">选择文件</label>
                                 <div class="col-sm-8">
-                                    <div class="radio radio-info radio-inline">
-                                        <input type="radio" id="local_file" value="local_file" name="file_source" checked="">
-                                        <label for="local_file"> 本地文件 </label>
-                                    </div>
-                                    <div class="radio radio-info radio-inline">
-                                        <input type="radio" id="server_file" value="server_file" name="file_source">
-                                        <label for="server_file"> 服务器文件 </label>
+                                    <div class="input-group">
+                                        <select id="id_file_select" name="file_select" data-placeholder="请选择" class="chosen-select"  style="width:650px;" multiple title="file_select" required>
+                                            {% for file in files %}
+                                                <option value="{{ file.id }}">{{ file.name }}</option>
+                                            {% endfor %}
+                                        </select>
                                     </div>
                                 </div>
                             </div>
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label">目标路径</label>
+                                <div class="col-sm-8">
+                                    <input type="text" id="id_server_path" name="server_path" class="form-control" placeholder="输出目标路径或者全名" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="col-sm-10 col-sm-offset-5">
+                                    <button class="btn btn-primary" type="submit" value="save">创建任务</button>
+                                </div>
+                            </div>
                         </form>
-                        <div class="text-center">
-                            <a data-toggle="modal" class="btn btn-primary">开始执行</a>
-                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 {% endblock %}
-    {% block other_js %}
-        <script src="{% static 'om/js/plugins/peity/jquery.peity.min.js' %}"></script>
-        <script src="{% static 'om/js/plugins/chosen/chosen.jquery.js' %}"></script>
-        <script src="{% static 'om/layer/layer.js' %}"></script>
-        <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table.min.js' %}"></script>
-        <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table-mobile.min.js' %}"></script>
-        <script src="{% static 'om/js/plugins/bootstrap-table/locale/bootstrap-table-zh-CN.min.js' %}"></script>
-        <!--suppress JSUnusedLocalSymbols -->
-        <script>
-            $(".chosen-select").chosen();
-            $('#choose_server').on('click', function(){
-                var choose_server_layer = layer.open({
-                  type: 2,
-                  area: ['700px', '530px'],
-                  fix: false, //不固定
-                  maxmin: true,
-                  content: "{%url 'om:choose_server'%}"
-                });
-                layer.full(choose_server_layer);
+{% block other_js %}
+    <script src="{% static 'om/js/plugins/peity/jquery.peity.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/chosen/chosen.jquery.js' %}"></script>
+    <script src="{% static 'om/layer/layer.js' %}"></script>
+    <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table-mobile.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/bootstrap-table/locale/bootstrap-table-zh-CN.min.js' %}"></script>
+    <!--suppress JSUnusedLocalSymbols -->
+    <script>
+        $(".chosen-select").chosen();
+        $('#choose_server').on('click', function(){
+            var choose_server_layer = layer.open({
+              type: 2,
+              area: ['700px', '530px'],
+              fix: false, //不固定
+              maxmin: true,
+              content: "{%url 'om:choose_server'%}"
             });
+            layer.full(choose_server_layer);
+        });
 
-           function actionFormatter(value, row, index) {
-                return [
-                    '<a class="delete_server" href="javascript:void(0)" title="删除">',
-                    '<button type="button" class="btn btn-xs btn-info">删除</button>',
-                    '</a>'
-                ].join('');
+       function actionFormatter(value, row, index) {
+            return [
+                '<a class="delete_server" href="javascript:void(0)" title="删除">',
+                '<button type="button" class="btn btn-xs btn-info">删除</button>',
+                '</a>'
+            ].join('');
+       };
+
+       setTimeout(function () {$('#table').bootstrapTable('resetView');}, 200);
+
+       function before_submit() {
+                $('#id_server_list').val(JSON.stringify($('#table').bootstrapTable("getData")));
+                return true;
             }
 
-            setTimeout(function () {
-                $('#table').bootstrapTable('resetView');
-            }, 200);
-
-            window.actionEvents = {
-                'click .delete_server': function (e, value, row, index) {
-                    $('#table').bootstrapTable('remove', {field: 'server_ip', values: [row.server_ip]});
-                }
-            };
-        </script>
-    {% endblock %}
+        window.actionEvents = {
+            'click .delete_server': function (e, value, row, index) {
+                $('#table').bootstrapTable('remove', {field: 'server_ip', values: [row.server_ip]});
+            }
+        };
+    </script>
+{% endblock %}
