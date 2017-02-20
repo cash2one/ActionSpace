@@ -12,10 +12,8 @@
                         <h5>执行作业流</h5>
                     </div>
                     <div class="ibox-content">
-                        <table data-toggle="table" id="table" data-toolbar="#toolbar"
-                               data-show-pagination-switch="true" data-id-field="id" data-page-list="[10, 25, 50]"
-                               data-show-footer="false" data-url="{% url 'om:get_action_history_list' %}"
-
+                        <table data-toggle="table" id="table" data-url="{% url 'om:get_action_history_list' %}"
+                               data-id-field="id" data-page-list="[10, 25, 50]"
                                data-show-toggle="true" data-resizable="true"
                                data-minimum-count-columns="2" data-show-columns="true"
                                data-show-refresh="true" data-icon-size="sm" data-search="true"
