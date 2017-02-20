@@ -59,7 +59,7 @@
             <div class="ibox-content">
                 <div class="ibox-content">
                     <table data-toggle="table" id="table" data-page-size="5"
-                           data-id-field="id" data-page-list="[5, 10, 25, 50]"
+                           data-id-field="id" data-page-list="[5, 10, 25, 50{% if user.is_superuser %},ALL{% endif %}]"
                            data-show-header="true" data-show-footer="false" data-url="{% url 'om:get_action_history_list' %}"
                            data-show-toggle="true" data-resizable="true"
                            data-minimum-count-columns="2" data-show-columns="true"

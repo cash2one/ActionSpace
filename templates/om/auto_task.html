@@ -22,7 +22,7 @@
                                data-striped="true" data-click-to-select="true"
                                data-pagination="true" data-search="true"
                                data-icon-size="sm" data-resizable="true"
-                               data-page-list="[5, 10, 20, 50, 100, 200, ALL]"
+                               data-page-list="[5, 10, 20, 50{% if user.is_superuser %},ALL{% endif %}]"
                                data-show-refresh="true" data-show-toggle="true"
                                data-filter-control="true" data-filter-show-clear="true"
                                data-toolbar="#toolbar"

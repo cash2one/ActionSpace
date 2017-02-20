@@ -13,7 +13,7 @@
                     </div>
                     <div class="ibox-content">
                         <table data-toggle="table" id="table" data-url="{% url 'om:get_action_history_list' %}"
-                               data-id-field="id" data-page-list="[10, 25, 50]"
+                               data-id-field="id" data-page-list="[10, 25, 50{% if user.is_superuser %},ALL{% endif %}]"
                                data-show-toggle="true" data-resizable="true"
                                data-minimum-count-columns="2" data-show-columns="true"
                                data-show-refresh="true" data-icon-size="sm" data-search="true"
