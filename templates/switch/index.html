@@ -32,7 +32,7 @@
                                     <table id="table" data-toggle="table"
                                            data-url="{% url 'switch:get_machine_list' current_select %}"
                                            data-striped="true" data-click-to-select="true"
-                                           data-page-list="[10, 20, 50]"
+                                           data-page-list="[10, 20, 50{% if user.is_superuser %},ALL{% endif %}]"
 
                                            data-show-toggle="true" data-resizable="true"
                                            data-minimum-count-columns="2" data-show-columns="true"
