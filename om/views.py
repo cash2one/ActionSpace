@@ -28,25 +28,21 @@ import time
 @login_required
 def index(request):
     settings.logger.info(request.user.username)
-    #  host_ora = {
-    #      'UAT': {'notebook': 'http://10.25.167.89:8888/note/tree', 'flower': 'http://10.25.167.89:5555/'},
-    #      'PRD': {'notebook': 'http://26.4.4.78:8081/note/tree', 'flower': 'http://26.4.4.78:8082/'}
-    #  }
     host_nginx = {
         'UAT': {
-            'notebook': 'http://stg-om.paic.com.cn/note/',
-            'flower': 'http://stg-om.paic.com.cn/flower/',
-            'redis': 'http://stg-om.paic.com.cn/redis/'
+            'notebook': 'notebook_uat_url',
+            'flower': 'flower_uat_url',
+            'redis': 'redis_uat_url'
         },
         'PRD': {
-            'notebook': 'http://om.paic.com.cn/note/',
-            'flower': 'http://om.paic.com.cn/flower/',
-            'redis': 'http://om.paic.com.cn/redis/'
+            'notebook': 'notebook_prd_url',
+            'flower': 'flower_prd_url',
+            'redis': 'redis_prd_url'
         }
     }
     # noinspection PyShadowingNames
     from django.contrib.auth.models import Group as UG
-    is_internal = UG.objects.get(name='应用服务二组').user_set.filter(username=request.user.username).exists()
+    is_internal = UG.objects.get(name='my group').user_set.filter(username=request.user.username).exists()
     return render(request, 'om/index.html', {
         'user': request.user, 'host': host_nginx[settings.OM_ENV],
         'is_internal': is_internal or request.user.is_superuser
