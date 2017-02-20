@@ -1,5 +1,6 @@
 # coding=utf-8
 from __future__ import absolute_import
+from functools import reduce
 from celery import shared_task
 from celery.utils.log import get_task_logger
 from celery.result import AsyncResult
@@ -18,6 +19,7 @@ import json
 import re
 import traceback
 import uuid
+from django.db.models import Q
 
 task_logger = get_task_logger(__name__)
 
@@ -147,10 +149,9 @@ def sync_computer_sys_type(env_input=None):
         if result:
             total = back['return'][0]
             for agent, info in total.items():
-                for cp in Computer.objects.filter(ip__in=agent):
+                for cp in Computer.objects.filter(agent_name=agent):
                     cp.sys = 'windows' if info['os'] == 'Windows' else 'linux'
                     cp.save()
-                    settings.logger.error('OK')
         else:
             settings.logger.error('fail')
 
@@ -239,12 +240,12 @@ def unlock_win(message):
         message.reply_channel.send({"text": '至少选择一台机器！'})
         return
 
-    if Computer.objects.filter(sys='linux', ip__in=server_info).exists():
+    ips = [x['ip'] for x in server_info]
+
+    if Computer.objects.filter(sys='linux', ip__in=ips).exists():
         settings.logger.warn('the system is linux, can not unlock!')
         message.reply_channel.send({"text": '仅支持windows系统解锁！'})
         return
-
-    ips = [x['ip'] for x in server_info]
 
     if settings.OM_ENV == 'PRD':  # 只有生产环境可以双通
         prd_agents = list(Computer.objects.filter(ip__in=ips, env='PRD').values_list('agent_name', flat=True))
@@ -476,6 +477,9 @@ class JobCallback(object):
         from collections import OrderedDict
         self.groups = OrderedDict()
         reg = r'\[\[(?P<action>[a-z]+)\|(?P<arg>([\u2E80-\u9FFF]|.)*?)\]\]'
+        # 示例：
+        # [[mail | {'to': 'weiquanzu603@pingan.com.cn', 'subject': '邮件主题', 'message': '邮件内容'}]]
+        # [[confirm | {'message': '消息'}]]
         last_msg = msg.replace('\n', '').replace('\r', '')
         for val in re.finditer(reg, 'last_msg:' + last_msg):
             try:
@@ -627,3 +631,27 @@ def celery_auto_task(tid, sender):
     # new_task.async_result = self.id
     new_task.approval('自动', 'Y', '自动审核通过')
     return exec_task(new_task.id, sender)
+
+
+def get_paged_query(query, search_fields, request, force_order=None):
+    search = request.GET.get('search')
+    settings.logger.info(repr(request.GET))
+    try:
+        if force_order is not None:
+            query = query.order_by(force_order)
+        offset = int(request.GET.get('offset'))
+        limit = int(request.GET.get('limit'))
+        sort_val = request.GET.get('sort')
+        order = request.GET.get('order')
+        if all([sort_val, order]):
+            query = query.order_by('-'+sort_val if order == 'desc' else sort_val)
+        if search is not None:
+            select = Q()
+            for t in [t for t in search.replace('\t', ' ').replace('\n', ' ').split(' ') if not t == '']:
+                select &= reduce(lambda x, y: x | Q(**{y: t}), search_fields, Q(**{search_fields[0]: t}))
+            query = query.filter(select).distinct()
+        query_count = query.count()
+        return query[int(offset): min(offset + limit, query_count)], query_count
+    except Exception as e:
+        settings.logger.error(repr(e))
+        return query, query.count()

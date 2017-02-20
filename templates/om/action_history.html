@@ -12,23 +12,42 @@
                         <h5>执行作业流</h5>
                     </div>
                     <div class="ibox-content">
-                        <table data-toggle="table" id="table" data-toolbar="#toolbar" data-search="true" data-show-refresh="true" data-show-toggle="true"
-                           data-show-columns="true"  data-show-export="true"  data-minimum-count-columns="2" data-show-pagination-switch="true" data-pagination="true" data-id-field="id" data-page-list="[10, 25, 50, 100, ALL]"
-                           data-show-footer="false" data-url="{% url 'om:get_action_history_list' %}">
+                        <table data-toggle="table" id="table" data-toolbar="#toolbar"
+                               data-show-pagination-switch="true" data-id-field="id" data-page-list="[10, 25, 50]"
+                               data-show-footer="false" data-url="{% url 'om:get_action_history_list' %}"
+
+                               data-show-toggle="true" data-resizable="true"
+                               data-minimum-count-columns="2" data-show-columns="true"
+                               data-show-refresh="true" data-icon-size="sm" data-search="true"
+                               data-pagination="true" data-side-pagination="server"
+                               data-show-export="true"
+                               data-export-types="['json', 'xml', 'png', 'csv', 'txt', 'sql', 'doc', 'excel', 'pdf']"
+                               data-export-options='{
+                                 "fileName": "任务",
+                                 "worksheetName": "任务",
+                                 "jspdf": {
+                                   "autotable": {
+                                     "styles": { "rowHeight": 20, "fontSize": 10 },
+                                     "headerStyles": { "fillColor": 255, "textColor": 0 },
+                                     "alternateRowStyles": { "fillColor": [60, 69, 79], "textColor": 255 }
+                                   }
+                                 }
+                               }'
+                        >
                             <thead>
                                 <tr>
-                                    <th data-field="task_id">ID</th>
-                                    <th data-field="task_name">任务名称</th>
-                                    <th data-field="approval_status">审批状态</th>
-                                    <th data-field="approver">审批人</th>
-                                    <th data-field="approval_desc">审批意见</th>
-                                    <th data-field="run_user">启动人</th>
-                                    <th data-field="founder">创建人</th>
-                                    <th data-field="task_status">任务状态</th>
-                                    <th data-field="start_time">开始时间</th>
-                                    <th data-field="end_time">结束时间</th>
-                                    <th data-field="cost_time">耗时（秒）</th>
-                                    <th data-field="action" data-formatter="actionFormatter" data-events="actionEvents">操作</th>
+                                    <th data-field="id" data-sortable="true" data-width="15">ID</th>
+                                    <th data-field="name" data-sortable="true">任务名称</th>
+                                    <th data-field="approval_status" data-sortable="true" data-width="40">审批状态</th>
+                                    <th data-field="approver" data-sortable="true">审批人</th>
+                                    <th data-field="approval_desc" data-sortable="true">审批意见</th>
+                                    <th data-field="exec_user" data-sortable="true" data-width="80">启动人</th>
+                                    <th data-field="founder" data-sortable="true" data-width="80">创建人</th>
+                                    <th data-field="status" data-sortable="true" data-width="40">任务状态</th>
+                                    <th data-field="start_time" data-sortable="true" data-width="160">开始时间</th>
+                                    <th data-field="end_time" data-sortable="true" data-width="160">结束时间</th>
+                                    <th data-field="cost_time" data-width="15">耗时（秒）</th>
+                                    <th data-field="action" data-formatter="actionFormatter" data-events="actionEvents" data-width="180">操作</th>
                                 </tr>
                             </thead>
                         </table>
@@ -39,9 +58,7 @@
     </div>
 {% endblock %}
 {% block other_js %}
-    <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table.min.js' %}"></script>
-    <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table-mobile.min.js' %}"></script>
-    <script src="{% static 'om/js/plugins/bootstrap-table/locale/bootstrap-table-zh-CN.min.js' %}"></script>
+    {% include 'om/table_load.html' %}
     <script src="{% static 'om/layer/layer.js' %}"></script>
     <script src="{% static 'om/js/plugins/toastr/toastr.min.js' %}"></script>
     <!--suppress JSUnusedLocalSymbols, JSUnresolvedVariable -->
@@ -98,7 +115,7 @@
         }
         window.actionEvents = {
             'click .status': function (e, value, row, index) {
-                show_task_status(row.task_id);
+                show_task_status(row.id);
             },
             'click .approval_task': function (e, value, row, index) {
                 var detail_layer = layer.open({
@@ -106,19 +123,19 @@
                     area: ['700px', '530px'],
                     fix: false, //不固定
                     maxmin: true,
-                    content: "/om/approval_task/" + row.task_id
+                    content: "/om/approval_task/" + row.id
                 });
                 layer.full(detail_layer);
             },
             'click .exec_task': function (e, value, row, index) {
-                $.get('/om/exec_task/'+row.task_id, function(result) {
+                $.get('/om/exec_task/'+row.id, function(result) {
                     if (result.result == 'Y') {
                         var detail_layer = layer.open({
                             type: 2,
                             area: ['700px', '530px'],
                             fix: false, //不固定
                             maxmin: true,
-                            content: "/om/action_detail/" + row.task_id
+                            content: "/om/action_detail/" + row.id
                         });
                         layer.full(detail_layer);
                     } else {
@@ -127,13 +144,13 @@
                 });
             },
             'click .redo': function (e, value, row, index) {
-                $.get('/om/redo_create_task/'+row.task_id, function(result) {
+                $.get('/om/redo_create_task/'+row.id, function(result) {
                     $('#table').bootstrapTable('refresh');
                     layer.msg(result.desc,{time: 2000});
                 });
             },
             'click .detail': function (e, value, row, index) {
-                show_detail(row.task_id);
+                show_detail(row.id);
             }
         };
     </script>

@@ -12,26 +12,40 @@
                         <h5>为作业组批量设置服务器IP</h5>
                     </div>
                     <div class="ibox-content">
-                        <table id="table" data-toggle="table" data-sort-name="system"
-                               data-sort-order="desc" data-url="{% url 'om:get_server_list' %}"
+                        <table id="table" data-toggle="table"
+                               data-url="{% url 'om:get_server_list' %}"
                                data-striped="true" data-click-to-select="true"
-                               data-pagination="true" data-search="true"
-                               data-page-list="[5, 10, 20, 50, 100, 200, ALL]"
-                               data-show-refresh="true" data-show-toggle="true"
-                               data-filter-control="true" data-filter-show-clear="true"
+                               data-page-list="[10, 20, 50]"
+                               data-show-toggle="true"
+                               data-filter-control="false" data-filter-show-clear="false"
                                data-resizable="true"
+                               data-minimum-count-columns="2" data-show-columns="true"
+                               data-show-refresh="true" data-icon-size="sm" data-search="true"
+                               data-pagination="true" data-side-pagination="server"
+                               data-show-export="true"
+                               data-export-types="['json', 'xml', 'png', 'csv', 'txt', 'sql', 'doc', 'excel', 'pdf']"
+                               data-export-options='{
+                                 "fileName": "服务器",
+                                 "worksheetName": "服务器",
+                                 "jspdf": {
+                                   "autotable": {
+                                     "styles": { "rowHeight": 20, "fontSize": 10 },
+                                     "headerStyles": { "fillColor": 255, "textColor": 0 },
+                                     "alternateRowStyles": { "fillColor": [60, 69, 79], "textColor": 255 }
+                                   }
+                                 }
+                               }'
                         >
                             <thead>
                                 <tr>
                                     <th data-field="state" data-checkbox="true"></th>
-                                    <th data-field="system" data-sortable="true" data-filter-control="select">系统</th>
-                                    <th data-field="entity" data-sortable="true" data-filter-control="select">实体</th>
-                                    <th data-field="server_ip" data-sortable="true" data-filter-control="input">IP</th>
-                                    <th data-field="server_hostname" data-sortable="true" data-filter-control="input">主机名</th>
-                                    <th data-field="sys" data-sortable="true" data-filter-control="input">系统类型</th>
-                                    <th data-field="env" data-sortable="true" data-filter-control="select">环境类型</th>
-                                    <th data-field="installed_agent" data-sortable="true" data-filter-control="select">是否可操作</th>
-                                    <th data-field="agent_name" data-sortable="true" data-filter-control="input">服务名</th>
+                                    <th data-field="entity_name" data-filter-control="select">实体</th>
+                                    <th data-field="ip" data-sortable="true">IP</th>
+                                    <th data-field="host" data-sortable="true">主机名</th>
+                                    <th data-field="sys" data-sortable="true">系统类型</th>
+                                    <th data-field="env" data-sortable="true">环境类型</th>
+                                    <th data-field="installed_agent" data-sortable="true">是否可操作</th>
+                                    <th data-field="agent_name" data-sortable="true">服务名</th>
                                 </tr>
                             </thead>
                         </table>
@@ -48,12 +62,7 @@
     </div>
 {% endblock %}
 {% block other_js %}
-    <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table.min.js' %}"></script>
-    <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table-mobile.min.js' %}"></script>
-    <script src="{% static 'om/js/plugins/bootstrap-table/locale/bootstrap-table-zh-CN.min.js' %}"></script>
-    <script src="{% static 'om/js/plugins/bootstrap-table/filter-control/bootstrap-table-filter-control.min.js' %}"></script>
-    <script src="{% static 'om/js/plugins/bootstrap-table/resizable/bootstrap-table-resizable.min.js' %}"></script>
-    <script src="{% static 'om/js/plugins/bootstrap-table/resizable/colResizable-1.5.source.js' %}"></script>
+    {% include 'om/table_load.html' %}
     <script type="text/javascript">
         var index = parent.layer.getFrameIndex(window.name); //获取窗口索引
         $('#save_layer').on('click', function(){

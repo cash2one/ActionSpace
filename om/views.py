@@ -18,7 +18,7 @@ from om.models import *
 from djcelery.models import PeriodicTask, IntervalSchedule, CrontabSchedule
 from datetime import datetime as dt
 from ActionSpace import settings
-from django.db import connection
+# from django.db import connection
 from om.ftputil import Ftp
 import json
 import time
@@ -100,7 +100,7 @@ def quick_exec_script(request):
             exec_user = request.POST['exec_user']
             script_content = request.POST['script_content']
             name = request.POST['name']
-            server_list = [x['server_ip'] for x in json.loads(request.POST['server_list'])]
+            server_list = [x['ip'] for x in json.loads(request.POST['server_list'])]
             job = Job.objects.create(
                 name=name, job_type='SCRIPT', script_type=code_type[code_mode],
                 script_content=script_content, script_param='',
@@ -128,7 +128,7 @@ def quick_upload_file(request):
         return no_permission(request)
     if request.method == 'POST':
         name = request.POST['name']
-        server_list = [x['server_ip'] for x in json.loads(request.POST['server_list'])]
+        server_list = [x['ip'] for x in json.loads(request.POST['server_list'])]
         file_select = request.POST.getlist('file_select')
         exec_user = request.POST['exec_user']
         server_path = request.POST['server_path']
@@ -190,7 +190,8 @@ def exec_task(request, task_id):
 
     try:
         task = Task.objects.get(pk=task_id)
-        if not any([request.user.has_perm('om.can_exec_approved_task'), request.user.has_perm('om.can_exec_approved_task', task)]):
+        if not any([request.user.has_perm('om.can_exec_approved_task'),
+                    request.user.has_perm('om.can_exec_approved_task', task)]):
             return JsonResponse({'result': 'N', 'desc': '没权限执行，请联系管理员！'})
         if task.status == 'running':
             return JsonResponse({'result': 'N', 'desc': '任务[{tid}]正在执行中，请刷新页面查看状态。'.format(tid=task.id)})
@@ -250,18 +251,20 @@ def task_status(request, task_id):
 def get_flow_list(request):
     settings.logger.info(request.user.username)
     fmt = '%Y-%m-%d %H:%M:%S'
-    return JsonResponse(
-        [{
-             'id': x.id,
-             'name': x.name,
-             'founder': x.founder,
-             'last_modified_by': x.last_modified_by,
-             'created_time': dt.strftime(timezone.localtime(x.created_time), fmt),
-             'last_modified_time': dt.strftime(timezone.localtime(x.last_modified_time), fmt),
-             'desc': x.desc
-         } for x in Flow.objects.order_by('-id') if not x.is_quick_flow
-         ],
-        safe=False)
+    search_fields = [
+        'pk__icontains', 'name__icontains', 'founder__icontains',
+        'last_modified_by__icontains', 'desc__icontains'
+    ]
+    flows, flow_count = get_paged_query(Flow.objects.all(), search_fields, request)
+    result = {'total': flow_count, 'rows': []}
+
+    [result['rows'].append({
+        'id': x.id, 'name': x.name, 'founder': x.founder, 'last_modified_by': x.last_modified_by,
+        'created_time': dt.strftime(timezone.localtime(x.created_time), fmt),
+        'last_modified_time': dt.strftime(timezone.localtime(x.last_modified_time), fmt),
+        'desc': x.desc
+    }) for x in flows]
+    return JsonResponse(result, safe=False)
 
 
 @login_required
@@ -706,65 +709,46 @@ def get_ip_host_list(request):
 @login_required
 def get_server_list(request):
     settings.logger.info(request.user.username)
-    server_list = []
-    use_raw_sql = True
-    if use_raw_sql:
-        cursor = connection.cursor()
-        # noinspection SqlDialectInspection
-        if settings.OM_ENV == 'UAT':
-            # noinspection SqlDialectInspection
-            sql = 'select s.name,c.env, e.name, c.ip, c.host,c.sys,c.agent_name,c.installed_agent from om_system s, om_computer c,om_entity e,' \
-                  ' om_computer_entity ce where e.system_id = s.id and e.id = ce.entity_id and c.id = ce.computer_id and ' \
-                  'c.env = \'{env}\''.format(env=settings.OM_ENV)
-        else:
-            # noinspection SqlDialectInspection
-            sql = 'select s.name,c.env, e.name, c.ip, c.host,c.sys,c.agent_name,c.installed_agent from om_system s, om_computer c,om_entity e,' \
-                  ' om_computer_entity ce where e.system_id = s.id and e.id = ce.entity_id and c.id = ce.computer_id'
-        cursor.execute(sql)
-
-        for system, env, entity, server_ip, server_hostname, sys, agent_name, installed_agent in cursor.fetchall():
-            server_list.append({
-                'system': system,
-                'env': env,
-                'entity': entity,
-                'sys': sys,
-                'installed_agent': '是' if installed_agent else '否',
-                'agent_name': agent_name,
-                'server_ip': server_ip,
-                'server_hostname': server_hostname
-            })
-    else:
-        info = Computer.objects.prefetch_related('entity__system').select_related()
-        for computer in info:
-            entity_set = computer.entity.all()
-            for entity in entity_set:
-                system = entity.system
-                server_list.append({
-                    'system': system.name,
-                    'env': computer.env,
-                    'entity': entity.name,
-                    'server_ip': computer.ip,
-                    'server_hostname': computer.host
-                })
-    return JsonResponse(server_list, safe=False)
+    search_fields = [
+        'pk__icontains', 'host__icontains', 'ip__icontains', 'env__icontains',
+        'sys__icontains', 'agent_name__icontains', 'entity__name__icontains'
+    ]
+    computers, computer_count = get_paged_query(Computer.objects.select_related(), search_fields, request)
+    result = {'total': computer_count, 'rows': []}
+    [result['rows'].append({
+        'env': c.env,
+        'entity_name': c.entity_name(),
+        'sys': c.sys,
+        'installed_agent': '是' if c.installed_agent else '否',
+        'agent_name': c.agent_name,
+        'ip': c.ip,
+        'host': c.host
+    }) for c in computers]
+    return JsonResponse(result, safe=False)
 
 
 @login_required
 def get_action_history_list(request):
     settings.logger.info(request.user.username)
-    result = []
+    search_fields = [
+        'pk__icontains', 'name__icontains', 'founder__icontains', 'exec_user__icontains',
+        'status__icontains', 'status__icontains', 'async_result__icontains',
+        'approval_status__icontains', 'approval_desc__icontains', 'approver__icontains'
+    ]
+    tasks, task_count = get_paged_query(Task.objects.all(), search_fields, request, '-start_time')
+    result = {'total': task_count, 'rows': []}
+
     fmt = '%Y-%m-%d %H:%M:%S'
-    for t in Task.objects.order_by('-start_time'):
-        result.append({
-            'task_id': t.id, 'task_name': t.name, 'approval_status': t.get_approval_status_display(),
-            'approver': t.approver, 'approval_desc': t.approval_desc, 'founder': t.founder,
-            'run_user': t.exec_user, 'task_status': t.get_status_display(),
-            'start_time': dt.strftime(timezone.localtime(t.start_time),
-                                      fmt) if t.status != 'no_run' else '未开始',
-            'end_time': dt.strftime(timezone.localtime(t.end_time),
-                                    fmt) if t.status == 'finish' else '未完成',
-            'cost_time': (t.end_time - t.start_time).total_seconds() if t.approval_status == 'Y' else '未完成',
-        })
+    [result['rows'].append({
+        'id': t.id, 'name': t.name, 'approval_status': t.get_approval_status_display(),
+        'approver': t.approver, 'approval_desc': t.approval_desc, 'founder': t.founder,
+        'exec_user': t.exec_user, 'status': t.get_status_display(),
+        'start_time': dt.strftime(timezone.localtime(t.start_time),
+                                  fmt) if t.status != 'no_run' else '未开始',
+        'end_time': dt.strftime(timezone.localtime(t.end_time),
+                                fmt) if t.status == 'finish' else '未完成',
+        'cost_time': (t.end_time - t.start_time).total_seconds() if t.approval_status == 'Y' else '未完成',
+    }) for t in tasks]
 
     return JsonResponse(result, safe=False)
 
@@ -806,7 +790,7 @@ def set_group_host(request, group_id):
         return no_permission(request)
 
     if request.method == 'POST':
-        server_list = [x['server_ip'] for x in json.loads(request.POST['server_list'])]
+        server_list = [x['ip'] for x in json.loads(request.POST['server_list'])]
         if len(server_list) > 0:
             for job in [Job.objects.get(pk=x) for x in str2arr(group.job_list)]:
                 job.server_list.clear()
@@ -889,13 +873,15 @@ def show_server(request):
 @login_required
 def salt_status_api(request):
     settings.logger.info(request.user.username)
-    result = []
-    env_map = {'PRD': '生产环境', 'UAT': '测试环境', 'FAT': '开发环境'}
+    search_fields = ['name__icontains', 'status__icontains', 'env__icontains']
+    minions, minion_count = get_paged_query(SaltMinion.objects.filter(status='up'), search_fields, request)
+    result = {'total': minion_count, 'rows': []}
+
     fmt = '%Y-%m-%d %H:%M:%S'
-    [result.append({
-        'name': x.name, 'status': x.status, 'env': env_map[x.env],
-        'update_time': dt.strftime(timezone.localtime(x.update_time), fmt)
-    }) for x in SaltMinion.objects.filter(env=settings.OM_ENV)]
+    [result['rows'].append({
+            'name': x.name, 'env': x.env,
+            'update_time': dt.strftime(timezone.localtime(x.update_time), fmt)
+    }) for x in minions]
     return JsonResponse(result, safe=False)
 
 
@@ -942,7 +928,8 @@ def add_auto_task(request):
         p.save()
         return render(request, 'om/close_this_layer.html', {'msg': '保存成功！'})
     else:
-        return render(request, 'om/add_auto_task.html', {'task_list': Task.objects.all().order_by('-start_time'), 'task_id': '-1'})
+        return render(request, 'om/add_auto_task.html',
+                      {'task_list': Task.objects.all().order_by('-start_time'), 'task_id': '-1'})
 
 
 @login_required
@@ -1067,7 +1054,8 @@ def upload_file(request):
             try:
                 ftp = Ftp()
                 ftp.upload_stream(file_upload.name, file_upload)
-                ServerFile.objects.create(name=file_upload.name, founder=request.user.username, upload_time=timezone.now())
+                ServerFile.objects.create(name=file_upload.name, founder=request.user.username,
+                                          upload_time=timezone.now())
                 ftp.quit()
                 context['result'] = 'Y'
                 context['msg'] = '{files}已上传成功！'.format(files=file_upload.name)

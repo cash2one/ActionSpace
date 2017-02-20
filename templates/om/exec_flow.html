@@ -12,21 +12,38 @@
                         <h5>执行作业流</h5>
                     </div>
                     <div class="ibox-content">
-                        <table data-toggle="table" id="table" data-toolbar="#toolbar" data-search="true" data-show-refresh="true"
-                               data-show-toggle="true" data-show-columns="true"  data-show-export="true"  data-minimum-count-columns="2"
-                               data-show-pagination-switch="true" data-pagination="true" data-id-field="id"
-                               data-page-list="[10, 25, 50, 100, ALL]" data-show-footer="false"
-                               data-url="{% url 'om:get_flow_list' %}">
+                        <table data-toggle="table" id="table"
+                               data-show-toggle="true" data-id-field="id"
+                               data-minimum-count-columns="2" data-show-columns="true"
+                               data-page-list="[10, 25, 50]" data-show-footer="false"
+                               data-show-refresh="true" data-icon-size="sm" data-search="true"
+                               data-pagination="true" data-side-pagination="server"
+                               data-show-export="true"
+                               data-export-types="['json', 'xml', 'png', 'csv', 'txt', 'sql', 'doc', 'excel', 'pdf']"
+                               data-export-options='{
+                                 "fileName": "作业流",
+                                 "worksheetName": "作业流",
+                                 "jspdf": {
+                                   "autotable": {
+                                     "styles": { "rowHeight": 20, "fontSize": 10 },
+                                     "headerStyles": { "fillColor": 255, "textColor": 0 },
+                                     "alternateRowStyles": { "fillColor": [60, 69, 79], "textColor": 255 }
+                                   }
+                                 }
+                               }'
+                               data-url="{% url 'om:get_flow_list' %}"
+                        >
                             <thead>
                                 <tr>
                                     {% for field in fields %}
                                         {% if field.verbose_name == '作业流名称' %}
-                                            <th data-field="{{ field.name }}" data-editable="true">{{ field.verbose_name }}</th>
+                                            <th data-field="{{ field.name }}" data-sortable="true" data-editable="true">{{ field.verbose_name }}</th>
                                         {% else %}
-                                            <th data-field="{{ field.name }}">{{ field.verbose_name }}</th>
+                                            <th data-field="{{ field.name }}" data-sortable="true">{{ field.verbose_name }}</th>
                                         {% endif %}
                                     {% endfor %}
-                                    <th data-field="flow_action" data-formatter="actionFormatter" data-events="actionEvents">操作</th>
+                                    <th data-field="flow_action" data-formatter="actionFormatter"
+                                        data-events="actionEvents" data-tableexport-display="none">操作</th>
                                 </tr>
                             </thead>
                         </table>
@@ -37,11 +54,7 @@
     </div>
 {% endblock %}
 {% block other_js %}
-    <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table.min.js' %}"></script>
-    <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table-mobile.min.js' %}"></script>
-    <script src="{% static 'om/js/plugins/bootstrap-table/locale/bootstrap-table-zh-CN.min.js' %}"></script>
-    <script src="{% static 'om/js/bootstrap-editable.js' %}"></script>
-    <script src="{% static 'om/js/plugins/bootstrap-table/editable/bootstrap-table-editable.min.js' %}"></script>
+    {% include 'om/table_load.html' %}
     <script src="{% static 'om/layer/layer.js' %}"></script>
     <script src="{% static 'om/js/plugins/toastr/toastr.min.js' %}"></script>
     <!--suppress JSUnresolvedVariable, JSUnusedLocalSymbols -->

@@ -58,17 +58,34 @@
             </div>
             <div class="ibox-content">
                 <div class="ibox-content">
-                    <table data-toggle="table" id="table" data-search="true" data-show-refresh="true" data-show-toggle="true"
-                           data-show-columns="true"  data-minimum-count-columns="2" data-show-pagination-switch="true"
-                           data-pagination="true" data-id-field="id" data-page-list="[5, 10, 25, 50, 100, ALL]"
+                    <table data-toggle="table" id="table" data-show-pagination-switch="true"
+                           data-id-field="id" data-page-list="[5, 10, 25, 50]"
                            data-show-header="true" data-show-footer="false" data-url="{% url 'om:get_action_history_list' %}"
-                           data-page-size="5">
+                           data-page-size="5"
+                           data-show-toggle="true" data-resizable="true"
+                           data-minimum-count-columns="2" data-show-columns="true"
+                           data-show-refresh="true" data-icon-size="sm" data-search="true"
+                           data-pagination="true" data-side-pagination="server"
+                           data-show-export="true"
+                           data-export-types="['json', 'xml', 'png', 'csv', 'txt', 'sql', 'doc', 'excel', 'pdf']"
+                           data-export-options='{
+                             "fileName": "任务",
+                             "worksheetName": "任务",
+                             "jspdf": {
+                               "autotable": {
+                                 "styles": { "rowHeight": 20, "fontSize": 10 },
+                                 "headerStyles": { "fillColor": 255, "textColor": 0 },
+                                 "alternateRowStyles": { "fillColor": [60, 69, 79], "textColor": 255 }
+                               }
+                             }
+                           }'
+                    >
                         <thead>
                             <tr>
-                                <th data-field="task_id">任务ID</th>
-                                <th data-field="task_name">任务名称</th>
+                                <th data-field="id">任务ID</th>
+                                <th data-field="name">任务名称</th>
                                 <th data-field="approval_status">审批状态</th>
-                                <th data-field="run_user">启动人</th>
+                                <th data-field="exec_user">启动人</th>
                                 <th data-field="founder">创建人</th>
                                 <th data-field="task_status">任务状态</th>
                                 <th data-field="start_time">开始时间</th>
@@ -83,9 +100,7 @@
 {% endblock %}
 {% block other_js %}
     <script src="{% static 'om/js/plugins/jquery-ui/jquery-ui.min.js' %}"></script>
-    <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table.min.js' %}"></script>
-    <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table-mobile.min.js' %}"></script>
-    <script src="{% static 'om/js/plugins/bootstrap-table/locale/bootstrap-table-zh-CN.min.js' %}"></script>
+    {% include 'om/table_load.html' %}
     <script src="{% static 'om/layer/layer.js' %}"></script>
     <!--suppress JSUnusedLocalSymbols -->
     <script type="text/javascript">

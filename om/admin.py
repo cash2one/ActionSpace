@@ -103,13 +103,48 @@ class ComputerGroupInline(admin.TabularInline):
     verbose_name_plural = '主机'
 
 
+class ComputerFilter(admin.SimpleListFilter):
+    title = '主机类型过滤'
+    parameter_name = 'computer_type'
+
+    def lookups(self, request, model_admin):
+        return (
+            (0, '生产环境'),
+            (1, '测试环境'),
+            (2, '开发环境'),
+        )
+
+    def queryset(self, request, queryset):
+        if self.value():
+            if int(self.value()) == 0:
+                return queryset.filter(env='PRD')
+            elif int(self.value()) == 1:
+                return queryset.filter(env='UAT')
+            elif int(self.value()) == 2:
+                return queryset.filter(env='FAT')
+
+
 @admin.register(Computer)
 class ComputerAdmin(GuardedModelAdmin):
-    list_display = ('id', 'env', 'sys', 'installed_agent', 'agent_name', 'entity_name')
+    list_display = ('id', 'env', 'sys', 'ip', 'installed_agent', 'agent_name', 'entity_name')
     filter_horizontal = ('entity',)
     inlines = [JobInline, ComputerGroupInline]
     list_display_links = ('id', 'agent_name')
     search_fields = ('id', 'entity__name', 'env', 'host', 'ip', 'sys', 'installed_agent')
+    actions = ['mark_logstash', 'mark_flume']
+    list_filter = (ComputerFilter,)
+
+    def mark_logstash(self, _, queryset):
+        ent = Entity.objects.filter(name='logstash')
+        if ent.exists():
+            [c.entity.add(ent.first()) for c in queryset]
+    mark_logstash.short_description = '添加到logstash实体'
+
+    def mark_flume(self, _, queryset):
+        ent = Entity.objects.filter(name='flume')
+        if ent.exists():
+            [c.entity.add(ent.first()) for c in queryset]
+    mark_flume.short_description = '添加到flume实体'
 
 
 @admin.register(MacAddr)

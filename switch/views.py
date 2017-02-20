@@ -3,10 +3,12 @@ from django.http import JsonResponse
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from switch.models import *
+from om.util import get_paged_query
 import datetime
 import logging
 import time
 import xlwt
+
 
 logger = logging.getLogger('switch')
 
@@ -15,18 +17,20 @@ logger = logging.getLogger('switch')
 @login_required
 def get_machine_list(request, search_id):
     logger.info(request.user.username)
-    result = []
-    start = time.clock()
-    for m in Machine.objects.select_related('minion').select_related('net_face').select_related('switch').filter(search__id=search_id):
-        result.append({
+    search_fields = [
+        'mac_hex__icontains', 'mac_decimal__icontains', 'switch__ip__icontains',
+        'net_face__name__icontains', 'minion__name__icontains', 'desc__icontains'
+    ]
+    q = Machine.objects.select_related('minion').select_related('net_face').select_related('switch').filter(search__id=search_id)
+    machines, machine_count = get_paged_query(q, search_fields, request)
+    result = {'total': machine_count, 'rows': []}
+    [result['rows'].append({
             'ip': 'NA' if m.minion is None else m.minion.name,
             'mac_hex': m.mac_hex,
             'entity_name': m.entity_name().split(','),
             'switch_ip': m.switch.ip,
             'net_face': 'NA' if m.net_face is None else m.net_face.name
-        })
-    end = time.clock()
-    print('get_machine_list time is:{t}'.format(t=end - start))
+        }) for m in machines]
     return JsonResponse(result, safe=False)
 
 
