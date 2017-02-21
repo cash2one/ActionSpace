@@ -634,9 +634,9 @@ def celery_auto_task(tid, sender):
 
 
 def get_paged_query(query, search_fields, request, force_order=None):
-    search = request.GET.get('search')
     settings.logger.info(repr(request.GET))
     try:
+        search = request.GET.get('search')
         if force_order is not None:
             query = query.order_by(force_order)
         offset = int(request.GET.get('offset'))
@@ -654,4 +654,7 @@ def get_paged_query(query, search_fields, request, force_order=None):
         return query[int(offset): min(offset + limit, query_count)], query_count
     except Exception as e:
         settings.logger.error(repr(e))
-        return query, query.count()
+        if request.user.is_superuser:
+            return query, query.count()
+        else:
+            return query[0:0], 0
