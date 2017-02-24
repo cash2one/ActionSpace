@@ -1,8 +1,12 @@
+from functools import reduce
 from django.shortcuts import render
 from django.http import JsonResponse
-
 from utils.models import Activity
 from utils.util import format_subnet, ip_in_subnet, NET_TABLE
+from utils.form import WallForm
+import json
+import re
+from ActionSpace.settings import logger
 
 
 # Create your views here.
@@ -28,7 +32,7 @@ def net(request):
 
 def activity_data(_):
     act = Activity.objects.filter(join=True).order_by('guess')
-    return JsonResponse({'names': [x.user.last_name+x.user.first_name for x in act], 'guess': [x.guess for x in act]})
+    return JsonResponse({'names': [x.user.last_name + x.user.first_name for x in act], 'guess': [x.guess for x in act]})
 
 
 def activity_vote(request):
@@ -49,7 +53,51 @@ def activity(request):
     context = {
         'all_voted': all_voted,
         'count': Activity.objects.count(),
-        'voted': Activity.objects.count()-not_voted.count(),
+        'voted': Activity.objects.count() - not_voted.count(),
         'i_voted': user.exists() and user.first().voted
     }
     return render(request, 'utils/activity.html', context)
+
+
+def make_firewall_table(request):
+    if request.method == 'POST':
+        form = WallForm(request.POST)
+        if form.is_valid():
+            try:
+                def ft(c, k):
+                    return "</br>".join(reduce(lambda x, y: x + y, [list(x.values_list(k, flat=True)) for x in c]))
+                env = form.cleaned_data['env']
+                data = json.loads(request.POST['exist_list'])
+                s_target = "</br>".join([x.name for x in form.cleaned_data['source_entity']])
+                s_computer = [e.computer_set.filter(env=env) for e in form.cleaned_data['source_entity']]
+                s_host = ft(s_computer, 'host')
+                s_ip = ft(s_computer, 'ip')
+                t_target = "</br>".join([x.name for x in form.cleaned_data['target_entity']])
+                t_computer = [e.computer_set.filter(env=env) for e in form.cleaned_data['target_entity']]
+                t_host = ft(t_computer, 'host')
+                t_ip = ft(t_computer, 'ip')
+                port = "</br>".join(re.split(r'\W+', form.cleaned_data['port']))
+                data.append({
+                    's_entity': f"{s_target}",
+                    's_host': f"{s_host}",
+                    's_ip': f"{s_ip}",
+                    't_entity': f"{t_target}",
+                    't_host': f"{t_host}",
+                    't_ip': f"{t_ip}",
+                    'port': f"{port}",
+                    'service': 'TCP',
+                    'idle_time': '无',
+                    'app_req': '无',
+                    'valid_time': '长期',
+                    'env': form.cleaned_data['env']
+                })
+                return render(request, 'utils/make_firewall.html', {
+                    'data': data,
+                    'form': form
+                })
+            except Exception as e:
+                logger.error(repr(e))
+                return render(request, 'utils/make_firewall.html', {'errors': form.errors, 'form': form})
+        else:
+            return render(request, 'utils/make_firewall.html', {'errors': form.errors, 'form': form})
+    return render(request, 'utils/make_firewall.html', {'form': WallForm()})

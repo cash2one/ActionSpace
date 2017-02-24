@@ -259,7 +259,7 @@ class TaskFlowInline(admin.StackedInline):
 
 
 @admin.register(Task)
-class TaskAdmin(ReadOnlyModelAdmin):
+class TaskAdmin(GuardedModelAdmin):
     list_display = ('id', 'name', 'approval_status', 'status')
     list_display_links = ('id', 'name')
     search_fields = ('id', 'name', 'exec_user')

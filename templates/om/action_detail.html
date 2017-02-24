@@ -46,7 +46,7 @@
                 $("#vertical-timeline").toggleClass("center-orientation")
             });
             inst.onmessage = function(msg) {
-                if (msg.data == 'Y') {
+                if (JSON.parse(msg.data).result == 'Y') {
                     $.get('/om/detail_content/'+'{{ task }}', function(result) {
                         $("#ibox-content").html(result);
                     });
@@ -56,7 +56,7 @@
                 }
             };
             inst.onopen = function() {
-                inst.send('');
+                inst.send(JSON.stringify('{}'));
             };
         });
     </script>

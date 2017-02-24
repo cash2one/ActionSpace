@@ -1,27 +1,124 @@
 # coding=utf-8
 from __future__ import print_function
-from channels import Group
-from channels.auth import channel_session_user, channel_session_user_from_http
+from channels.auth import channel_session_user_from_http
 from ActionSpace import settings
-from om.util import unlock_win, ActionDetail, update_salt_manage_status
-from om.models import CallLog
+from om.util import update_salt_manage_status, fmt_salt_out
+from om.models import CallLog, Computer
 from django.contrib.auth.models import User
+from om.proxy import Salt
+from channels.generic.websockets import JsonWebsocketConsumer
 import traceback
 import re
 
 
-def send_to_client(group, info):
-    Group(group).send({"text": info})
+class OmConsumer(JsonWebsocketConsumer):
+    http_user = True
+
+    def receive(self, content, **kwargs):
+        CallLog.objects.create(
+            user=User.objects.get(username=self.message.user.username),
+            type='message',
+            action=self.message['path'],
+            detail=self.message.content
+        )
+        settings.logger.info('recv_data:{data}'.format(data=content, path=self.message['path']))
+        super(OmConsumer, self).receive(content, **kwargs)
 
 
-def get_label(message, only_path=False):
-    session = re.search(r'session_key=(?P<session_key>\w+)', message['query_string']).group('session_key')
-    login_path = message['path'].replace('/', '-')
-    if only_path:
-        label = '{path}'.format(path=login_path)
-    else:
-        label = '{path}-{user}-{session}'.format(path=login_path, user=message.user.username, session=session)
-    return label
+class SaltConsumer(OmConsumer):
+    def receive(self, content, **kwargs):
+        super(SaltConsumer, self).receive(content, **kwargs)
+        if not self.message.user.is_authenticated:
+            self.send({'result': '未授权，请联系管理员！'})
+            return
+        if not self.message.user.is_superuser:
+            self.send({'result': '仅管理员有权限执行该操作！'})
+            return
+        if content.get('info', None) != 'refresh-server':
+            self.send({'result': '未知操作！'})
+            return
+        update_salt_manage_status()
+        self.send({'result': 'Y'})
+
+
+class ActionDetailConsumer(OmConsumer):
+    group_prefix = 'action_detail-'
+    yes = {"result": 'Y'}
+    no = {"result": 'N'}
+
+    def label(self):
+        reg = r'^/om/action_detail/(?P<task_id>[0-9]+)/$'
+        task_id = re.search(reg, self.message['path']).group('task_id')
+        return f'{self.group_prefix}{task_id}'
+
+    def connection_groups(self, **kwargs):
+        return self.groups or [self.label()]
+
+    def receive(self, content, **kwargs):
+        super(ActionDetailConsumer, self).receive(content, **kwargs)
+        if not self.message.user.is_authenticated:
+            self.send({'result': '未授权，请联系管理员！'})
+            return
+        self.group_send(self.label(), self.yes)
+
+    @classmethod
+    def task_change(cls, task_id):
+        settings.logger.info(f'{cls.group_prefix}{task_id}')
+        ActionDetailConsumer.group_send(f'{cls.group_prefix}{task_id}', cls.yes)
+
+
+class UnlockWinConsumer(OmConsumer):
+    def receive(self, content, **kwargs):
+        super(UnlockWinConsumer, self).receive(content, **kwargs)
+        if not self.message.user.is_authenticated:
+            self.send({'result': '未授权，请联系管理员！'})
+            return
+        user = content.get('user', None)
+        server_info = content.get('server_info', None)
+        if not all([user, server_info]) or not all([user.strip(), server_info]):
+            self.send({'result': '参数选择错误，请检查！'})
+
+        ips = [x['ip'] for x in server_info]
+
+        if Computer.objects.filter(sys='linux', ip__in=ips).exists():
+            settings.logger.warn('the system is linux, can not unlock!')
+            self.send({"result": '仅支持windows系统解锁！'})
+            return
+
+        if settings.OM_ENV == 'PRD':  # 只有生产环境可以双通
+            prd_agents = list(Computer.objects.filter(ip__in=ips, env='PRD').values_list('agent_name', flat=True))
+            settings.logger.info('prd_agents:{ag}'.format(ag=repr(prd_agents)))
+            uat_agents = list(Computer.objects.exclude(env='PRD').filter(ip__in=ips).values_list('agent_name', flat=True))
+            settings.logger.info('uat_agents:{ag}'.format(ag=repr(uat_agents)))
+            if len(prd_agents) > 0:
+                prd_result, prd_output = Salt('PRD').shell(prd_agents, f'net user {user} /active:yes')
+            else:
+                prd_result, prd_output = True, ''
+
+            if len(uat_agents) > 0:
+                uat_result, uat_output = Salt('UAT').shell(uat_agents, f'net user {user} /active:yes')
+            else:
+                uat_result, uat_output = True, ''
+
+            salt_result = prd_result and uat_result
+            salt_output = fmt_salt_out('{prd}\n{uat}'.format(prd=fmt_salt_out(prd_output), uat=fmt_salt_out(uat_output)))
+        else:
+            agents = list(Computer.objects.exclude(env='PRD').filter(ip__in=ips).values_list('agent_name', flat=True))
+            settings.logger.info('agents:{ag}'.format(ag=repr(agents)))
+            if len(agents) > 0:
+                salt_result, salt_output = Salt('UAT').shell(agents, 'net user {user} /active:yes'.format(user=user))
+            else:
+                salt_result, salt_output = True, ''
+            salt_output = fmt_salt_out(salt_output)
+
+        if salt_result:
+            settings.logger.info('unlock success!')
+            result = salt_output.replace('The command completed successfully', '解锁成功')
+            result = result.replace('[{}]', '选中的机器不支持解锁，请联系基础架构同事解锁！')
+            self.send({"result": result})
+        else:
+            settings.logger.info('unlock false for salt return false')
+            self.send({"result": '解锁失败！'})
 
 
 @channel_session_user_from_http
@@ -33,54 +130,6 @@ def ws_connect(message):
             path=message['path'],
             query=message['query_string']
         ))
-        if message['path'].startswith('/om/action_detail/'):
-            ActionDetail(message).connect()
-    except Exception as e:
-        settings.logger.error(repr(e))
-        settings.logger.error(repr(traceback.format_exc()))
-
-
-@channel_session_user
-def ws_receive(message):
-    try:
-        settings.logger.info('{user}, {path}'.format(
-            user=message.user.username,
-            path=message['path']
-        ))
-        if message.user.is_authenticated:
-            CallLog.objects.create(
-                user=User.objects.get(username=message.user.username),
-                type='message',
-                action=message['path'],
-                detail=message.content
-            )
-            if message['path'] == '/om/unlock_win/':
-                unlock_win(message)
-            elif message['path'].startswith('/om/action_detail/'):
-                ad = ActionDetail(message)
-                ad.send_change(ad.get_label())
-            elif message['path'].startswith('/om/salt_status/'):
-                if message.user.is_superuser:
-                    update_salt_manage_status()
-                    message.reply_channel.send({"text": 'Y'})
-                else:
-                    message.reply_channel.send({"text": '仅管理员有权限执行该操作！'})
-        else:
-            message.reply_channel.send({"text": '用户未授权'})
-    except Exception as e:
-        settings.logger.error(repr(e))
-        settings.logger.error(repr(traceback.format_exc()))
-
-
-@channel_session_user
-def ws_disconnect(message):
-    try:
-        settings.logger.info('{user}, {path}'.format(
-            user=message.user.username,
-            path=message['path']
-        ))
-        if message['path'].startswith('/om/action_detail/'):
-            ActionDetail(message).disconnect()
     except Exception as e:
         settings.logger.error(repr(e))
         settings.logger.error(repr(traceback.format_exc()))

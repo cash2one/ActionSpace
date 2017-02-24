@@ -241,12 +241,12 @@
                             });
                         {% endfor %}
                     {% endfor %}
-                    $('#get_back').on('click', function(){
-                        var index = parent.layer.getFrameIndex(window.name);
-                        parent.layer.close(index);
-                    });
                     $(".i-checks").iCheck({checkboxClass:"icheckbox_square-green",radioClass:"iradio_square-green",})
                 {% endif %}
+                $('#get_back').on('click', function(){
+                    var index = parent.layer.getFrameIndex(window.name);
+                    parent.layer.close(index);
+                });
                 $("#add_group_edit_flow").on("click", function(){
                     var add_group_edit_flow_layer = layer.open({
                         type: 2,

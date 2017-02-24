@@ -36,6 +36,10 @@ class ServerSerializer(serializers.ModelSerializer):
 
 
 class MachineSerializer(serializers.ModelSerializer):
+    switch = serializers.StringRelatedField()
+    net_face = serializers.StringRelatedField()
+
     class Meta:
         model = Machine
-        fields = ('ip', 'mac_hex', 'entity_name', 'switch_ip', 'if_name')
+        fields = ('mac_hex', 'entity_name', 'switch', 'net_face')
+

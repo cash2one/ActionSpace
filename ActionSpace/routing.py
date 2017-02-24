@@ -1,10 +1,9 @@
 # coding=utf-8
-from channels.routing import route
 from om import worker
 
 
 channel_routing = [
-    route('websocket.connect', worker.ws_connect),
-    route('websocket.receive', worker.ws_receive),
-    route('websocket.disconnect', worker.ws_disconnect)
+    worker.SaltConsumer.as_route(path=r"^/om/salt_status/"),
+    worker.ActionDetailConsumer.as_route(path=r"^/om/action_detail/", attrs={'group_prefix': 'action_detail-'}),
+    worker.UnlockWinConsumer.as_route(path=r"/om/unlock_win/")
 ]

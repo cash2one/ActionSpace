@@ -346,7 +346,7 @@ if USE_DEBUG_TOOLBAR:
     INTERNAL_IPS = ('127.0.0.1',)
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'prd_mail_gw' if OM_ENV == 'PRD' else 'uat_mail_gw'
+EMAIL_HOST = 'mailgw2.paic.com.cn' if OM_ENV == 'PRD' else 'stgsmtprelay.paic.com.cn'
 EMAIL_PORT = 25
 EMAIL_HOST_USER = None
 EMAIL_HOST_PASSWORD = None
@@ -359,4 +359,4 @@ STATICFILES_FINDERS = [
     'django.contrib.staticfiles.finders.FileSystemFinder',
 ]
 SESSION_SAVE_EVERY_REQUEST = True
-SESSION_COOKIE_AGE = 60 * 10
+SESSION_COOKIE_AGE = 60 * 30

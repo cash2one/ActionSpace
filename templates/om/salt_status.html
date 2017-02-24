@@ -38,9 +38,9 @@
                         >
                             <thead>
                                 <tr>
-                                    <th data-field="name" data-filter-control="input">主机</th>
-                                    <th data-field="env" data-filter-control="select">环境类型</th>
-                                    <th data-field="update_time">更新时间</th>
+                                    <th data-field="name" data-sortable="true">主机</th>
+                                    <th data-field="env" data-sortable="true">环境类型</th>
+                                    <th data-field="update_time" data-sortable="true">更新时间</th>
                                     <th data-field="action" data-formatter="formatter" data-events="events">操作</th>
                                 </tr>
                             </thead>
@@ -65,7 +65,7 @@
             //noinspection JSUnresolvedFunction
             var inst = new ReconnectingWebSocket(url);
             inst.onmessage = function(msg) {
-                if (msg.data == 'Y') {
+                if (JSON.parse(msg.data).result == 'Y') {
                     toastr.success('刷新成功！');
                     $('#table').bootstrapTable("refresh")
                 }

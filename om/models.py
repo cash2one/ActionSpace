@@ -205,7 +205,7 @@ class Task(models.Model):
     end_time = models.DateTimeField(verbose_name='结束时间', auto_now=True)
     STATUS = (('finish', '已执行'), ('running', '正在执行'), ('no_run', '未执行'), ('run_fail', '执行失败'))
     status = models.CharField(max_length=50, choices=STATUS, default='no_run', verbose_name='当前状态')
-    async_result = models.CharField(max_length=80, default='', verbose_name='Celery的task id')
+    async_result = models.CharField(max_length=80, blank=True, default='', verbose_name='Celery的task id')
     APPROVAL_STATUS = (('Y', '通过'), ('N', '未审'), ('R', '拒绝'))
     approval_status = models.CharField(max_length=5, choices=APPROVAL_STATUS, default='N', verbose_name='审批状态')
     approval_desc = models.CharField(max_length=100, default='', verbose_name='审批描述')

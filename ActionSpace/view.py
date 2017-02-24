@@ -83,9 +83,9 @@ def login(request):
                 return render(request, 'om/login.html', {'errmsg': '请输入正确的账号和密码！'})
     else:
         msg = {}
-        user = getattr(request, 'user', None)
-        if user and not user.is_active:
-            msg['errmsg'] = '用户已被锁定，请联系管理员！'
+        #  user = getattr(request, 'user', None)
+        #  if user and not user.is_active:
+        #      msg['errmsg'] = '用户已被锁定，请联系管理员！'
         return render(request, 'om/login.html', msg)
 
 

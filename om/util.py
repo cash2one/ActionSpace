@@ -7,7 +7,6 @@ from celery.result import AsyncResult
 from django.utils import timezone
 from ActionSpace import settings
 from om.proxy import Salt
-from channels import Group
 from django.shortcuts import get_object_or_404, render
 from django.core.mail import send_mail
 from django.contrib.auth.models import User, Group as UG
@@ -15,7 +14,6 @@ from django.template import loader
 from ast import literal_eval
 import pika
 import os
-import json
 import re
 import traceback
 import uuid
@@ -58,35 +56,6 @@ class TaskConfirm(object):
         self.chan.exchange_declare(exchange=self.exchange_name, type=self.exchange_type, auto_delete=True)
         self.chan.basic_publish(exchange=self.exchange_name, routing_key='', body=self.confirm_key)
         self.__close()
-
-
-class ActionDetail(object):
-    def __init__(self, message):
-        self.message = message
-        self.reg = r'^/om/action_detail/(?P<task_id>[0-9]+)/$'
-        self.task_id = re.search(self.reg, self.message['path']).group('task_id')
-        self.label = 'action_detail-{task_id}'.format(task_id=self.task_id)
-        message.channel_session[self.label] = self.label
-
-    def get_label(self):
-        return self.label
-
-    def connect(self):
-        settings.logger.info('task_connect:{label}'.format(label=self.label))
-        Group(self.label).add(self.message.reply_channel)
-
-    def disconnect(self):
-        settings.logger.info('task_disconnect:{label}'.format(label=self.label))
-        Group(self.label).discard(self.message.reply_channel)
-
-    @staticmethod
-    def send_change(label, content='Y'):
-        Group(label).send({"text": content}, immediately=True)
-
-    @staticmethod
-    def task_change(task_id, content='Y'):
-        settings.logger.info('action_detail-{task_id}'.format(task_id=task_id))
-        ActionDetail.send_change('action_detail-{task_id}'.format(task_id=task_id), content)
 
 
 def no_permission(request):
@@ -225,61 +194,6 @@ def get_salt_status():
     return Salt(settings.OM_ENV).manage_status()
 
 
-def unlock_win(message):
-    from om.models import Computer
-    recv_data = json.loads(message['text'])
-    settings.logger.info('recv_data:{data}'.format(data=recv_data, path=message['path']))
-    user = recv_data['user']
-    if user.strip() == '':
-        settings.logger.warn('the user is empty!')
-        message.reply_channel.send({"text": '用户名不能为空！'})
-        return
-    server_info = recv_data['server_info']
-    if len(server_info) == 0:
-        settings.logger.warn('no server to unlock!')
-        message.reply_channel.send({"text": '至少选择一台机器！'})
-        return
-
-    ips = [x['ip'] for x in server_info]
-
-    if Computer.objects.filter(sys='linux', ip__in=ips).exists():
-        settings.logger.warn('the system is linux, can not unlock!')
-        message.reply_channel.send({"text": '仅支持windows系统解锁！'})
-        return
-
-    if settings.OM_ENV == 'PRD':  # 只有生产环境可以双通
-        prd_agents = list(Computer.objects.filter(ip__in=ips, env='PRD').values_list('agent_name', flat=True))
-        settings.logger.info('prd_agents:{ag}'.format(ag=repr(prd_agents)))
-        uat_agents = list(Computer.objects.exclude(env='PRD').filter(ip__in=ips).values_list('agent_name', flat=True))
-        settings.logger.info('uat_agents:{ag}'.format(ag=repr(uat_agents)))
-        if len(prd_agents) > 0:
-            prd_result, prd_output = Salt('PRD').shell(prd_agents, 'net user {user} /active:yes'.format(user=user))
-        else:
-            prd_result, prd_output = True, ''
-
-        if len(uat_agents) > 0:
-            uat_result, uat_output = Salt('UAT').shell(uat_agents, 'net user {user} /active:yes'.format(user=user))
-        else:
-            uat_result, uat_output = True, ''
-
-        salt_result = prd_result and uat_result
-        salt_output = fmt_salt_out('{prd}\n{uat}'.format(prd=fmt_salt_out(prd_output), uat=fmt_salt_out(uat_output)))
-    else:
-        agents = list(Computer.objects.exclude(env='PRD').filter(ip__in=ips).values_list('agent_name', flat=True))
-        settings.logger.info('agents:{ag}'.format(ag=repr(agents)))
-        salt_result, salt_output = Salt('UAT').shell(agents, 'net user {user} /active:yes'.format(user=user))
-        salt_output = fmt_salt_out(salt_output)
-
-    if salt_result:
-        settings.logger.info('unlock success!')
-        result = salt_output.replace('The command completed successfully', '解锁成功')
-        result = result.replace('[{}]', '选中的机器不支持解锁，请联系基础架构同事解锁！')
-        message.reply_channel.send({"text": result})
-    else:
-        settings.logger.info('unlock false for salt return false')
-        message.reply_channel.send({"text": '解锁失败！'})
-
-
 def expand_server_list(post_form):
     from om.models import ComputerGroup
     server_list = set([])
@@ -403,6 +317,8 @@ def exec_task_job(t_job, ips, env):
     ora_output = {}
     if len(ips) == 0:
         settings.logger.warn('ips is empty for {env}'.format(env=env))
+        # t_job.exec_output = '指定的IP无效！'
+        # t_job.status = 'run_fail'
         return
     if env == 'PRD':
         agents = list(Computer.objects.filter(env='PRD', ip__in=ips).values_list('agent_name', flat=True))
@@ -410,6 +326,8 @@ def exec_task_job(t_job, ips, env):
         agents = list(Computer.objects.exclude(env='PRD').filter(ip__in=ips).values_list('agent_name', flat=True))
     if len(agents) == 0:
         settings.logger.warn('agents is empty for {env}'.format(env=env))
+        # t_job.status = 'run_fail'
+        # t_job.exec_output = '指定的IP不符合当前环境！'
         return
     is_windows = Computer.objects.get(agent_name=agents[0]).sys == 'windows'
     settings.logger.info('{env} agents:{ag}'.format(env=env, ag=agents))
@@ -497,6 +415,7 @@ class JobCallback(object):
                 settings.logger.error(traceback.format_exc())
 
     def run(self, job):
+        from om.worker import ActionDetailConsumer
         for action, content in self.groups.items():
             if action == 'mail':  # mail:发邮件
                 to = content.get('to')
@@ -516,7 +435,7 @@ class JobCallback(object):
                         job.pause_finish_tip = message
                     job.pause_need_confirm = True
                     job.save()
-                    ActionDetail.task_change(self.info.split('-')[0])
+                    ActionDetailConsumer.task_change(self.info.split('-')[0])
                     TaskConfirm(self.info).wait_confirm()
                     job.pause_need_confirm = False
                     job.pause_finish_tip = ora_message
@@ -529,6 +448,7 @@ class JobCallback(object):
 
 def exec_task(tid, sender):
     from om.models import Task
+    from om.worker import ActionDetailConsumer
     task_logger.info('user=[%s], task_id=[%d]' % (sender, tid))
     settings.logger.info('celery_exec_task: user=[%s], task_id=[%d]' % (sender, tid))
     task = Task.objects.get(pk=tid)
@@ -552,7 +472,7 @@ def exec_task(tid, sender):
             t_job.begin_time = timezone.now()
             t_job.status = 'running'
             t_job.save()
-            ActionDetail.task_change(task.id)
+            ActionDetailConsumer.task_change(task.id)
             job_info = 'task_id[{tid}]:flow {f_id}], group {g_id}, {g_step}], job {j_id}, {j_step}]'.format(
                 tid=task.id, f_id=t_flow.flow_id, g_id=t_group.group_id, g_step=t_group.step,
                 j_id=t_job.job_id, j_step=t_job.step
@@ -583,18 +503,18 @@ def exec_task(tid, sender):
                 settings.logger.info('{job} need confirm'.format(job=job_info))
                 t_job.pause_need_confirm = True
                 t_job.save()
-                ActionDetail.task_change(task.id)
+                ActionDetailConsumer.task_change(task.id)
                 TaskConfirm(job_id_info).wait_confirm()
                 t_job.pause_need_confirm = False
                 t_job.save()
             else:
                 t_job.save()
-                ActionDetail.task_change(task.id)
+                ActionDetailConsumer.task_change(task.id)
             if email is not None:
                 show_info.append({'name': t_job.name, 'output': t_job.exec_output})
     task.finish()
     task.save()
-    ActionDetail.task_change(task.id)
+    ActionDetailConsumer.task_change(task.id)
     settings.logger.info('email:{email}'.format(email=email))
     if email is not None:
         email_msg = loader.render_to_string('om/email.html', {'tid': task.id, 'name': t_flow.name, 'info': show_info})
@@ -619,9 +539,49 @@ def task_from_args(arg):
     return task
 
 
+def reset_task(tid):
+    from om.models import Task
+    task = Task.objects.get(pk=tid)
+    t_flow = task.taskflow_set.first()
+    for t_group in t_flow.taskjobgroup_set.all().order_by('step'):
+        for t_job in t_group.taskjob_set.all().order_by('step'):
+            t_job.status = 'no_run'
+            t_job.save()
+    task.status = 'no_run'
+    task.async_result = ''
+    task.save()
+
+
+def monkey_exec_task(tid, sender):
+    from om.worker import ActionDetailConsumer
+    from om.models import Task
+    import time
+    reset_task(tid)
+    task = Task.objects.get(pk=tid)
+    task.exec_user = sender
+    t_flow = task.taskflow_set.first()
+    task.run()
+    for t_group in t_flow.taskjobgroup_set.all().order_by('step'):
+        for t_job in t_group.taskjob_set.all().order_by('step'):
+            t_job.begin_time = timezone.now()
+            t_job.status = 'running'
+            t_job.save()
+            time.sleep(5)
+            ActionDetailConsumer.task_change(task.id)
+            t_job.status = 'finish'
+            t_job.end_time = timezone.now()
+            t_job.save()
+            ActionDetailConsumer.task_change(task.id)
+        time.sleep(5)
+    task.finish()
+    task.save()
+    ActionDetailConsumer.task_change(task.id)
+    return u'[{id}]执行完成'.format(id=tid)
+
+
 @shared_task
 def celery_exec_task(tid, sender):
-    return exec_task(tid, sender)
+    return exec_task(tid, sender) if True else monkey_exec_task(tid, sender)
 
 
 @shared_task
