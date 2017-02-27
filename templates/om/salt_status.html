@@ -85,26 +85,42 @@
             var actions = new Array()
             actions.push('<div class="btn-group">');
             actions.push('<button class="btn btn-xs btn-success show_info" title="查看"><i class="fa fa-edit">查看</i></button>');
-            actions.push('<div class="btn-group">');
+            {% if user.is_superuser %}
+            actions.push('<button class="btn btn-xs btn-danger admin_action" title="操作"><i class="fa fa-certificate">操作</i></button>');
+            {% endif %}
             actions.push('</div>');
             return actions.join('&nbsp;&nbsp;');
         }
         window.events = {
-        'click .show_info': function (e, value, row, _) {
-            $.post("{% url 'om:get_grains' %}", {
-                'csrfmiddlewaretoken': '{{ csrf_token }}',
-                'agent_name': row.name
-            },function(result) {
-                var json_layer = layer.open({
-                  type: 1,
-                  skin: 'layui-layer-demo', //样式类名
-                  closeBtn: 0, //不显示关闭按钮
-                  anim: 2, area: ['90%', '90%'],
-                  shadeClose: true, //开启遮罩关闭
-                  content: '<pre>' + JSON.stringify(result.return[0][row.name], null, 4) + '</pre>'
+            'click .show_info': function (e, value, row, _) {
+                $.post("{% url 'om:get_grains' %}", {
+                    'csrfmiddlewaretoken': '{{ csrf_token }}',
+                    'agent_name': row.name
+                },function(result) {
+                    var json_layer = layer.open({
+                      type: 1,
+                      skin: 'layui-layer-demo', //样式类名
+                      closeBtn: 0, //不显示关闭按钮
+                      anim: 2, area: ['90%', '90%'],
+                      shadeClose: true, //开启遮罩关闭
+                      content: '<pre>' + JSON.stringify(result.return[0][row.name], null, 4) + '</pre>'
+                    });
+                    //layer.full(json_layer);
                 });
-                //layer.full(json_layer);
-            });
-        }};
+            },
+            {% if user.is_superuser %}
+            'click .admin_action': function (e, value, row, _) {
+                var admin_action_layer = layer.open({
+                  type: 2,
+                  title: '编辑作业流[' + row.name + ']',
+                  area: ['700px', '530px'],
+                  fix: false, //不固定
+                  maxmin: true,
+                  content:"/om/admin_action/"+row.name+"/"
+                });
+                layer.full(admin_action_layer);
+            }
+            {% endif %}
+        };
     </script>
 {% endblock %}

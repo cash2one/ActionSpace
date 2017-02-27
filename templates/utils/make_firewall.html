@@ -1,0 +1,143 @@
+{% extends 'om/base.html' %}
+{% load form_extra_tag %}
+{% load staticfiles %}
+{% block other_css %}
+    {{ form.media.css }}
+    <style type="text/css">
+    pre {
+        border-style: none;
+        padding: 0;
+        margin: 0
+    }
+    </style>
+{% endblock %}
+{% block body_begin %}
+<body class="gray-bg">
+{% endblock %}
+{% block body_content %}
+    {% if user.is_superuser %}
+    <p>{{ errors }}</p>
+    {% endif %}
+    <div class="row">
+        <div class="col-sm-12">
+            <div class="ibox ">
+                <div class="ibox-title">
+                    <h5>选项</h5>
+                </div>
+                <div class="ibox-content">
+                    <form class="form-horizontal" method='post' onsubmit="return before_submit()">
+                        {% csrf_token %}
+                        {% for field in form %}
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label">{{ field.label_tag }}</label>
+                                <div class="col-sm-8" style='display:block;'>
+                                    {{ field | set_attr:'class=form-control' | set_attr:'style=width:100%' }}
+                                    {% if field.errors %}
+                                        <div class="alert alert-warning">{{ field.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                        <div class="form-group">
+                            <input id="id_exist_list" name="exist_list" type="hidden" class="form-control">
+                            <div class="col-sm-10 col-sm-offset-5">
+                                <button class="btn btn-primary" type="submit" value="save">添加</button>
+                            </div>
+                        </div>
+                </form>
+
+                <table id="table" data-toggle="table"
+                       data-striped="true" data-click-to-select="true"
+                       data-page-list="[10, 20, 50 ,ALL]"
+                       data-resizable="true" data-show-export="true"
+                       data-minimum-count-columns="2" data-show-columns="true"
+                       data-icon-size="sm" data-search="false"
+                       data-pagination="true" data-side-pagination="server"
+                       data-export-types="['json', 'xml', 'png', 'csv', 'txt', 'sql', 'doc', 'excel', 'pdf']"
+                       data-export-options='{
+                         "escape": true,
+                         "fileName": "防火墙",
+                         "worksheetName": "防火墙",
+                         "ignoreColumn": ["action"],
+                         "jspdf": {
+                           "autotable": {
+                             "styles": { "rowHeight": 20, "fontSize": 10 },
+                             "headerStyles": { "fillColor": 255, "textColor": 0 },
+                             "alternateRowStyles": { "fillColor": [60, 69, 79], "textColor": 255 }
+                           }
+                         }
+                       }'
+                >
+                    <thead>
+                        <tr>
+                            <th data-field="s_entity" data-width="60">逻辑实体(请求方)</th>
+                            <th data-field="s_host" data-width="60">服务器名称</th>
+                            <th data-field="s_ip" data-width="60">IP</th>
+                            <th data-field="t_entity" data-width="60">逻辑实体(响应方)</th>
+                            <th data-field="t_host" data-width="60">服务器名称</th>
+                            <th data-field="t_ip" data-width="40">IP</th>
+                            <th data-field="port" data-width="5">端口</th>
+                            <th data-field="service" data-width="5">服务类型</th>
+                            <th data-field="idle_time" data-width="5">空闲<br>超时值<br>(分钟)</th>
+                            <th data-field="app_req" data-width="5">应用<br>层检<br>测要求</th>
+                            <th data-field="valid_time" data-width="5">有效期</th>
+                            <th data-field="env" data-width="5">环境</th>
+                            <th data-field="action" data-formatter="action_formatter"
+                                data-events="action_events" data-width="5">操作</th>
+                        </tr>
+                    </thead>
+                    {% if data %}
+                    <tbody>
+                        {% for d in data %}
+                        <tr>
+                            <td><pre>{{ d.s_entity|safe }}</pre></td>
+                            <td><pre>{{ d.s_host|safe }}</pre></td>
+                            <td><pre>{{ d.s_ip|safe }}</pre></td>
+                            <td><pre>{{ d.t_entity|safe }}</pre></td>
+                            <td><pre>{{ d.t_host|safe }}</pre></td>
+                            <td><pre>{{ d.t_ip|safe }}</pre></td>
+                            <td><pre>{{ d.port|safe }}</pre></td>
+                            <td>{{ d.service }}</td>
+                            <td>{{ d.idle_time }}</td>
+                            <td>{{ d.app_req }}</td>
+                            <td>{{ d.valid_time }}</td>
+                            <td>{{ d.env }}</td>
+                            <td></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block other_js %}
+    <script src="{% static 'om/js/plugins/peity/jquery.peity.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/prettyfile/bootstrap-prettyfile.js' %}"></script>
+    <script src="{% static 'om/layer/layer.js' %}"></script>
+    <script src="{% static 'om/plugins/multi-select/js/jquery.quicksearch.min.js' %}"></script>
+    <script src="{% static 'om/plugins/multi-select/js/jquery.multi-select.min.js' %}"></script>
+    {{ form.media.js }}
+    {% include 'om/table_load.html' %}
+    <!--suppress JSUnusedLocalSymbols -->
+    <script type="text/javascript">
+        function before_submit() {
+            var data = JSON.stringify($('#table').bootstrapTable("getData"));
+            $('#id_exist_list').val(data);
+            return true;
+        }
+        function action_formatter(value, row, index) {
+            return [
+                '<a class="delete_server" href="javascript:void(0)" title="删除">',
+                '<button type="button" class="btn btn-xs btn-info">删除</button>',
+                '</a>'
+            ].join('');
+        }
+        window.action_events = {
+            'click .delete_server': function (e, value, row, _) {
+                $('#table').bootstrapTable('remove', {field: 's_entity', values: [row.s_entity]});
+            }
+        };
+    </script>
+{% endblock %}

@@ -1,0 +1,137 @@
+{% extends 'om/base.html' %}
+{% load form_extra_tag %}
+{% load staticfiles %}
+{% block body_begin %}
+<body class="gray-bg">
+{% endblock %}
+{% block other_css %}
+    <style type="text/css">
+        .window {
+            color: white;
+            font: "微软雅黑";
+            border:4px #ccc outset;
+            background-color:white;
+            overflow:hidden
+        }
+        .title {
+            background-color:#08246B;
+            margin-bottom:2px;
+        }
+        .text {
+            outline:none;
+            color: white;
+            margin: 0;
+            padding: 0;
+            font: "Courier New";
+            background-color:#000;
+            border: 0;
+            display: block;
+            max-height: 420px;
+            overflow-y:scroll;
+        }
+    </style>
+{% endblock %}
+{% block body_content %}
+        <div class="wrapper wrapper-content  animated fadeInRight">
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="ibox ">
+                    <div class="ibox-title">
+                        <h5>{{ name }}主机操作</h5>
+                    </div>
+                    <div class="ibox-content">
+                        <form class="form-horizontal">
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label">用户</label>
+                                <div class="col-sm-8">
+                                    <div class="input-group">
+                                        <select id="id_user" name="user" data-placeholder="系统用户名，windows系统请填写NA" class="chosen-select"  style="width:650px;">
+                                            {% for user in users %}
+                                                {% if user.name == 'NA' %}
+                                                    <option value="{{ user.name }}" selected>{{ user.name }}</option>
+                                                {% else %}
+                                                    <option value="{{ user.name }}">{{ user.name }}</option>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label">命令</label>
+                                <div class="col-sm-8">
+                                    <input id="id_cmd" name="cmd" type="text" maxlength="1000" placeholder="注意，命令不能阻塞" class="form-control" required="">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="col-sm-10 col-sm-offset-5">
+                                    <button id="cmd_send" class="btn btn-primary" type="button">发送</button>
+                                    <button id="get_back" class="btn btn-info" type="button">返回</button>
+                                </div>
+                                <div class="col-sm-8 col-sm-offset-2">
+                                    <div class="window">
+                                        <div class="title"><span>{{ name }}</span></div>
+                                        <div class="text">
+                                            <pre class="text" id="result"></pre>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-sm-8 col-sm-offset-2">
+                                    <button class="btn btn-xs btn-info" onClick='copyToClipboard("result");' type="button">复制结果到剪切板</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block other_js %}
+    <script src="{% static 'om/js/plugins/chosen/chosen.jquery.js' %}"></script>
+	<script src="{% static 'om/js/reconnecting-websocket.min.js' %}"></script>
+    <script src="{% static 'om/layer/layer.js' %}"></script>
+
+    <script type="text/javascript">
+        $(document).ready(function (){
+            var ws_scheme = window.location.protocol == "https:" ? "wss" : "ws";
+            var url = ws_scheme + '://' + window.location.host + window.location.pathname;
+            url += '?session_key={{ request.session.session_key }}';
+            //noinspection JSUnresolvedFunction
+            var inst = new ReconnectingWebSocket(url);
+            inst.onmessage = function(msg) {
+                $('#result').text(JSON.parse(msg.data).result);
+                layer.closeAll('loading');
+            };
+            $("#id_user").chosen();
+            function send_cmd(){
+                var send_data = {
+                    'name': '{{ name }}',
+                    'cmd': $('#id_cmd').val(),
+                    'user': $('#id_user').val()
+                };
+                inst.send(JSON.stringify(send_data));
+                $('#result').text('请稍后……');
+                layer.load();
+            }
+            $('#cmd_send').on('click', function (){
+                send_cmd();
+            });
+            function keyDownSearch(e) {
+                // 兼容FF和IE和Opera
+                var theEvent = e || window.event;
+                var code = theEvent.keyCode || theEvent.which || theEvent.charCode;
+                if (code == 13) {
+                    send_cmd();//具体处理函数
+                    return false;
+                }
+                return true;
+            }
+            document.onkeydown=keyDownSearch;
+            $('#get_back').on('click', function(){
+                var index = parent.layer.getFrameIndex(window.name);
+                parent.layer.close(index);
+            });
+        });
+    </script>
+{% endblock %}
