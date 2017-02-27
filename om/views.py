@@ -251,7 +251,7 @@ def get_flow_list(request):
         'pk__icontains', 'name__icontains', 'founder__icontains',
         'last_modified_by__icontains', 'desc__icontains'
     ]
-    flows, flow_count = get_paged_query(Flow.objects.all(), search_fields, request)
+    flows, flow_count = get_paged_query(Flow.objects.filter(is_quick_flow=False), search_fields, request)
     result = {'total': flow_count, 'rows': []}
 
     [result['rows'].append({
@@ -1094,3 +1094,14 @@ def get_server_file_list(request):
 def get_grains(request):
     settings.logger.info(request.user.username)
     return JsonResponse(get_agent_info(request.POST['agent_name']), safe=False)
+
+
+@login_required
+def admin_action(request, name):
+    settings.logger.info('%s %s' % (request.user.username, name))
+    if not request.user.is_superuser:
+        return no_permission(request)
+    return render(request, 'om/admin_action.html', {
+        'name': name,
+        'users': list(ExecUser.objects.exclude(name='root').values('name')) + [{'name': 'NA'}]
+    })

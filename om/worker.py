@@ -1,13 +1,12 @@
 # coding=utf-8
 from __future__ import print_function
-from channels.auth import channel_session_user_from_http
 from ActionSpace import settings
 from om.util import update_salt_manage_status, fmt_salt_out
 from om.models import CallLog, Computer
 from django.contrib.auth.models import User
 from om.proxy import Salt
 from channels.generic.websockets import JsonWebsocketConsumer
-import traceback
+from om.models import SaltMinion
 import re
 
 
@@ -121,15 +120,36 @@ class UnlockWinConsumer(OmConsumer):
             self.send({"result": '解锁失败！'})
 
 
-@channel_session_user_from_http
-def ws_connect(message):
-    try:
-        message.reply_channel.send({"accept": True})
-        settings.logger.info('{user}, {path}, {query}'.format(
-            user=message.user.username,
-            path=message['path'],
-            query=message['query_string']
-        ))
-    except Exception as e:
-        settings.logger.error(repr(e))
-        settings.logger.error(repr(traceback.format_exc()))
+class CmdConsumer(OmConsumer):
+    # noinspection PyBroadException
+    def receive(self, content, **kwargs):
+        super(CmdConsumer, self).receive(content, **kwargs)
+        if not self.message.user.is_authenticated:
+            self.send({'result': '未授权，请联系管理员！'})
+            return
+        if not self.message.user.is_superuser:
+            self.send({'result': '仅管理员有权限执行该操作！'})
+            return
+        name = content.get('name', '').strip()
+        cmd = content.get('cmd', '').strip()
+        user = content.get('user', '').strip()
+        if not all([name, cmd, user]):
+            self.send({'result': '参数错误！'})
+            return
+        try:
+            pc = SaltMinion.objects.get(name=name)
+            if pc.status == 'up':
+                _, back = Salt(pc.env).shell(pc.name, cmd, None if user=='NA' else user)
+                self.send({'result': back['return'][0].get(name, '未知结果！')})
+            else:
+                self.send({'result': '该主机agent异常，不能操作！'})
+        except Exception as e:
+            self.send({'result': f'{e}\n{content}'})
+
+
+om_routing = [
+    SaltConsumer.as_route(path=r"^/om/salt_status/"),
+    ActionDetailConsumer.as_route(path=r"^/om/action_detail/", attrs={'group_prefix': 'action_detail-'}),
+    UnlockWinConsumer.as_route(path=r"^/om/unlock_win/"),
+    CmdConsumer.as_route(path=r'^/om/admin_action/')
+]

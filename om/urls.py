@@ -55,6 +55,7 @@ urlpatterns = [
     url(r'^add_auto_task/$', views.add_auto_task, name='add_auto_task'),
     url(r'^job_quick_task/(?P<task_id>[0-9]+)/$', views.job_quick_task, name='job_quick_task'),
     url(r'^upload_file/$', views.upload_file, name='upload_file'),
-    url(r'get_server_file_list', views.get_server_file_list, name='get_server_file_list'),
-    url(r'get_grains', views.get_grains, name='get_grains'),
+    url(r'^get_server_file_list', views.get_server_file_list, name='get_server_file_list'),
+    url(r'^get_grains', views.get_grains, name='get_grains'),
+    url(r'^admin_action/(?P<name>.+)/$', views.admin_action, name='admin_action'),
 ]
