@@ -81,6 +81,7 @@
 
     <script type="text/javascript">
         $(document).ready(function (){
+            $("#id_cmd").focus();
             var ws_scheme = window.location.protocol == "https:" ? "wss" : "ws";
             var url = ws_scheme + '://' + window.location.host + window.location.pathname;
             url += '?session_key={{ request.session.session_key }}';
