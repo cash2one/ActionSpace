@@ -51,15 +51,17 @@
                                 {% for job in group.job_list %}
                                     <li class="warning-element" id="task_{{group.group.id}}_{{job.id}}">
                                          <i class="fa fa-arrows-alt">{{ job.name }}</i>
-                                        <a href="#" class="pull-right btn btn-xs btn-danger" id="del_task_{{group.group.id}}_{{job.id}}">
-                                             <i class="fa fa-remove">删除</i>
-                                         </a>
-                                         <a href="#" class="pull-right btn btn-xs btn-primary" id="edit_task_{{group.group.id}}_{{job.id}}">
-                                             <i class="fa fa-edit">编辑</i>
-                                         </a>
-                                        <a href="#" class="pull-right btn btn-xs btn-primary" id="create_quick_task_{{group.group.id}}_{{job.id}}">
-                                             <i class="fa fa-edit">创建快速任务</i>
-                                         </a>
+                                        <div class="pull-right btn-group">
+                                            <button type="button" class="btn btn-xs btn-success" id="create_quick_task_{{group.group.id}}_{{job.id}}">
+                                                 <i class="fa fa-edit">创建快速任务</i>
+                                             </button>
+                                             <button type="button" class="btn btn-xs btn-primary" id="edit_task_{{group.group.id}}_{{job.id}}">
+                                                 <i class="fa fa-edit">编辑</i>
+                                             </button>
+                                            <button type="button" class="btn btn-xs btn-danger" id="del_task_{{group.group.id}}_{{job.id}}">
+                                                 <i class="fa fa-remove">删除</i>
+                                             </button>
+                                        </div>
                                     </li>
                                 {% endfor %}
                             </ul>

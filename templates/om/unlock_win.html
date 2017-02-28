@@ -29,17 +29,14 @@
                                            data-pagination="true" data-search="true"
                                            data-page-list="[5, 10, 20, 50{% if user.is_superuser %},ALL{% endif %}]"
                                            data-show-refresh="true" data-show-toggle="true"
-                                           data-filter-control="true" data-filter-show-clear="true"
+                                           data-filter-control="false" data-filter-show-clear="false"
                                            data-resizable="true"
                                     >
                                         <thead>
                                             <tr>
                                                 <th data-field="state" data-checkbox="true"></th>
-                                                <th data-field="ip" data-sortable="true" data-filter-control="input">IP</th>
-                                                <th data-field="host" data-sortable="true" data-filter-control="input">主机名</th>
-                                                <th data-field="sys" data-sortable="true" data-filter-control="select">系统类型</th>
-                                                <th data-field="env" data-sortable="true" data-filter-control="select">环境类型</th>
-                                                <th data-field="installed_agent" data-sortable="true" data-filter-control="select">是否可解锁</th>
+                                                <th data-field="name" data-sortable="true">主机-IP</th>
+                                                <th data-field="env" data-sortable="true">环境</th>
                                             </tr>
                                         </thead>
                                     </table>

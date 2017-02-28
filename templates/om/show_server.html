@@ -15,7 +15,7 @@
                         <table id="table" data-toggle="table" data-url="{% url 'om:get_server_list' %}"
                                data-striped="true" data-click-to-select="true"
                                data-page-list="[10, 20, 50{% if user.is_superuser %},ALL{% endif %}]"
-
+                               data-escape="true"
                                data-show-toggle="true" data-resizable="true"
                                data-minimum-count-columns="2" data-show-columns="true"
                                data-show-refresh="true" data-icon-size="sm" data-search="true"
@@ -38,7 +38,7 @@
                                 <tr>
                                     <th data-field="ip" data-sortable="true" data-width="90">IP</th>
                                     <th data-field="host" data-sortable="true" data-width="90">主机名</th>
-                                    <th data-field="entity_name" >实体</th>
+                                    <th data-field="entity_name" data-formatter="entityFormatter">实体</th>
                                     <th data-field="env" data-sortable="true" data-width="60">环境</th>
                                     <th data-field="sys" data-sortable="true" data-width="60">系统类型</th>
                                 </tr>
@@ -52,4 +52,10 @@
 {% endblock %}
 {% block other_js %}
     {% include 'om/table_load.html' %}
+    <script>
+        function entityFormatter(value, row, index) {
+            var content_arr = value.split(',');
+            return content_arr.length > 1 ? "<pre style='background-color: rgba(255,255,255,.15);border-style: none;padding: 0;margin: 0;'>" + content_arr.join('</br>') + '</pre>' : value;
+        }
+    </script>
 {% endblock %}

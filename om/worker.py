@@ -2,7 +2,7 @@
 from __future__ import print_function
 from ActionSpace import settings
 from om.util import update_salt_manage_status, fmt_salt_out
-from om.models import CallLog, Computer
+from om.models import CallLog
 from django.contrib.auth.models import User
 from om.proxy import Salt
 from channels.generic.websockets import JsonWebsocketConsumer
@@ -12,6 +12,16 @@ import re
 
 class OmConsumer(JsonWebsocketConsumer):
     http_user = True
+
+    def raw_connect(self, message, **kwargs):
+        CallLog.objects.create(
+            user=User.objects.get(username=message.user.username),
+            type='message',
+            action=message['path'],
+            detail=message.content
+        )
+        settings.logger.info('recv_data:{data}'.format(data=message.content, path=message['path']))
+        super(OmConsumer, self).raw_connect(message, **kwargs)
 
     def receive(self, content, **kwargs):
         CallLog.objects.create(
@@ -77,17 +87,12 @@ class UnlockWinConsumer(OmConsumer):
         if not all([user, server_info]) or not all([user.strip(), server_info]):
             self.send({'result': '参数选择错误，请检查！'})
 
-        ips = [x['ip'] for x in server_info]
-
-        if Computer.objects.filter(sys='linux', ip__in=ips).exists():
-            settings.logger.warn('the system is linux, can not unlock!')
-            self.send({"result": '仅支持windows系统解锁！'})
-            return
+        agents = [x['name'] for x in server_info]
 
         if settings.OM_ENV == 'PRD':  # 只有生产环境可以双通
-            prd_agents = list(Computer.objects.filter(ip__in=ips, env='PRD').values_list('agent_name', flat=True))
+            prd_agents = list(SaltMinion.objects.filter(name__in=agents, env='PRD').values_list('name', flat=True))
             settings.logger.info('prd_agents:{ag}'.format(ag=repr(prd_agents)))
-            uat_agents = list(Computer.objects.exclude(env='PRD').filter(ip__in=ips).values_list('agent_name', flat=True))
+            uat_agents = list(SaltMinion.objects.exclude(env='PRD').filter(name__in=agents).values_list('name', flat=True))
             settings.logger.info('uat_agents:{ag}'.format(ag=repr(uat_agents)))
             if len(prd_agents) > 0:
                 prd_result, prd_output = Salt('PRD').shell(prd_agents, f'net user {user} /active:yes')
@@ -102,7 +107,7 @@ class UnlockWinConsumer(OmConsumer):
             salt_result = prd_result and uat_result
             salt_output = fmt_salt_out('{prd}\n{uat}'.format(prd=fmt_salt_out(prd_output), uat=fmt_salt_out(uat_output)))
         else:
-            agents = list(Computer.objects.exclude(env='PRD').filter(ip__in=ips).values_list('agent_name', flat=True))
+            agents = list(SaltMinion.objects.exclude(env='PRD').filter(name__in=agents).values_list('name', flat=True))
             settings.logger.info('agents:{ag}'.format(ag=repr(agents)))
             if len(agents) > 0:
                 salt_result, salt_output = Salt('UAT').shell(agents, 'net user {user} /active:yes'.format(user=user))

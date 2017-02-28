@@ -691,13 +691,10 @@ def choose_server_result(request):
 def get_ip_host_list(request):
     settings.logger.info(request.user.username)
     server_list = []
-    for c in Computer.objects.exclude(sys='linux'):
+    for s in SaltMinion.objects.filter(os='Windows', status='up'):
         server_list.append({
-            'ip': c.ip,
-            'host': c.host,
-            'sys': c.sys,
-            'env': c.env,
-            'installed_agent': '是' if c.installed_agent else '否'
+            'name': s.name,
+            'env': s.env
         })
     return JsonResponse(server_list, safe=False)
 
@@ -869,13 +866,13 @@ def show_server(request):
 @login_required
 def salt_status_api(request):
     settings.logger.info(request.user.username)
-    search_fields = ['name__icontains', 'status__icontains', 'env__icontains']
+    search_fields = ['name__icontains', 'status__icontains', 'env__icontains', 'os__icontains']
     minions, minion_count = get_paged_query(SaltMinion.objects.filter(status='up'), search_fields, request)
     result = {'total': minion_count, 'rows': []}
 
     fmt = '%Y-%m-%d %H:%M:%S'
     [result['rows'].append({
-            'name': x.name, 'env': x.env,
+            'name': x.name, 'env': x.env, 'os': x.os,
             'update_time': dt.strftime(timezone.localtime(x.update_time), fmt)
     }) for x in minions]
     return JsonResponse(result, safe=False)
@@ -1102,6 +1099,6 @@ def admin_action(request, name):
     if not request.user.is_superuser:
         return no_permission(request)
     return render(request, 'om/admin_action.html', {
-        'name': name,
+        'minion': SaltMinion.objects.get(name=name, status='up'),
         'users': list(ExecUser.objects.exclude(name='root').values('name')) + [{'name': 'NA'}]
     })

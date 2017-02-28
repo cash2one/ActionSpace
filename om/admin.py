@@ -38,7 +38,6 @@ class FlatPageCustom(FlatPageAdmin):
 
 
 class EntityInline(admin.StackedInline):
-# class EntityInline(CompactInline):
     model = Entity
     show_change_link = True
     extra = 0
@@ -103,27 +102,6 @@ class ComputerGroupInline(admin.TabularInline):
     verbose_name_plural = '主机'
 
 
-class ComputerFilter(admin.SimpleListFilter):
-    title = '主机类型过滤'
-    parameter_name = 'computer_type'
-
-    def lookups(self, request, model_admin):
-        return (
-            (0, '生产环境'),
-            (1, '测试环境'),
-            (2, '开发环境'),
-        )
-
-    def queryset(self, request, queryset):
-        if self.value():
-            if int(self.value()) == 0:
-                return queryset.filter(env='PRD')
-            elif int(self.value()) == 1:
-                return queryset.filter(env='UAT')
-            elif int(self.value()) == 2:
-                return queryset.filter(env='FAT')
-
-
 @admin.register(Computer)
 class ComputerAdmin(GuardedModelAdmin):
     list_display = ('id', 'env', 'sys', 'ip', 'installed_agent', 'agent_name', 'entity_name')
@@ -132,7 +110,7 @@ class ComputerAdmin(GuardedModelAdmin):
     list_display_links = ('id', 'agent_name')
     search_fields = ('id', 'entity__name', 'env', 'host', 'ip', 'sys', 'installed_agent')
     actions = ['mark_logstash', 'mark_flume']
-    list_filter = (ComputerFilter,)
+    list_filter = ('env', 'sys', 'installed_agent')
 
     def mark_logstash(self, _, queryset):
         ent = Entity.objects.filter(name='logstash')
@@ -189,6 +167,7 @@ class JobAdmin(GuardedModelAdmin):
     list_display = (
         'id', 'name', 'founder', 'exec_user', 'pause_when_finish', 'last_modified_by'
     )
+    list_filter = ('founder', 'exec_user', 'last_modified_by')
 
     fieldsets = (
         (None, {
@@ -219,36 +198,6 @@ class JobAdmin(GuardedModelAdmin):
     }
 
 
-class TaskFilter(admin.SimpleListFilter):
-    title = '任务过滤'
-    parameter_name = 'task_state'
-
-    def lookups(self, request, model_admin):
-        return (
-            (0, '已审核'),
-            (1, '未审核'),
-            (2, '审核被拒'),
-            (3, '已执行'),
-            (4, '未执行'),
-            (5, '执行失败'),
-        )
-
-    def queryset(self, request, queryset):
-        if self.value():
-            if int(self.value()) == 0:
-                return queryset.filter(approval_status='Y')
-            elif int(self.value()) == 1:
-                return queryset.filter(approval_status='N')
-            elif int(self.value()) == 2:
-                return queryset.filter(approval_status='R')
-            elif int(self.value()) == 3:
-                return queryset.filter(status='finish')
-            elif int(self.value()) == 4:
-                return queryset.filter(status='no_run')
-            elif int(self.value()) == 5:
-                return queryset.filter(status='run_fail')
-
-
 class TaskFlowInline(admin.StackedInline):
     model = TaskFlow
     show_change_link = True
@@ -264,7 +213,10 @@ class TaskAdmin(GuardedModelAdmin):
     list_display_links = ('id', 'name')
     search_fields = ('id', 'name', 'exec_user')
     inlines = [TaskFlowInline]
-    list_filter = (TaskFilter,)
+    list_filter = (
+        'start_time', 'end_time', 'status', 'approval_status', 'approval_time',
+        'founder', 'exec_user', 'approver'
+    )
 
 
 class TaskJobGroupInline(admin.StackedInline):
@@ -340,42 +292,15 @@ class MacAddrInline(admin.StackedInline):
 
 @admin.register(SaltMinion)
 class SaltMinionAdmin(GuardedModelAdmin):
-    list_display = ('name', 'status', 'env')
-    search_fields = ('name', 'status', 'env')
+    list_display = ('name', 'status', 'env', 'os')
+    search_fields = ('name', 'status', 'env', 'os')
     inlines = [MacAddrInline]
-
-
-class CallLogUserNameFilter(admin.SimpleListFilter):
-    title = '用户名'
-    parameter_name = 'user_name'
-
-    def lookups(self, request, model_admin):
-        log_search = ()
-        for username in CallLog.objects.all().values_list('user__username', flat=True).distinct():
-            log_search += ((len(log_search), username),)
-        return log_search
-
-    def queryset(self, request, queryset):
-        if self.value():
-            name = [x[1] for x in self.lookup_choices if x[0] == int(self.value())][0]
-            return queryset.filter(user__username=name)
-
-
-class CallLogTypeFilter(admin.SimpleListFilter):
-    title = '日志类型'
-    parameter_name = 'type'
-
-    def lookups(self, request, model_admin):
-        return [('message', 'websocket消息'), ('request', '请求'), ('other', '其他')]
-
-    def queryset(self, request, queryset):
-        if self.value():
-            return queryset.filter(type=self.value())
+    list_filter = ('status', 'env', 'os')
 
 
 @admin.register(CallLog)
 class CallLogAdmin(GuardedModelAdmin):
     list_display = ('id', 'type', 'user', 'action', 'date_time')
     search_fields = ('id', 'type', 'user__username', 'action')
-    list_filter = (CallLogUserNameFilter, ('date_time', DateRangeFilter), CallLogTypeFilter)
+    list_filter = (('date_time', DateRangeFilter), 'type', 'user')
 

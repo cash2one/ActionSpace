@@ -93,6 +93,14 @@ def update_salt_manage_status(env_input=None):
             settings.logger.info('{env} OK'.format(env=env))
         else:
             settings.logger.error('fail')
+        result, back = Salt(env).os_type()
+        if result:
+            total = back['return'][0]
+            for agent, os_type in total.items():
+                minions = SaltMinion.objects.filter(name=agent, env=env)
+                for minion in minions:
+                    minion.os = os_type['os']
+                    minion.save()
 
 
 def sync_computer_agent_name():
@@ -618,3 +626,36 @@ def get_paged_query(query, search_fields, request, force_order=None):
             return query, query.count()
         else:
             return query[0:0], 0
+
+
+def add_cpt(system_name, entity_name, ip, host, env_type, sys_type, installed_agent=False, desc=''):
+    from om.models import System, Entity, Computer
+    if env_type not in [x[0] for x in Computer.ENV_TYPE]:
+        return 'invalid env'
+    if sys_type not in [x[0] for x in Computer.SYS_TYPE]:
+        return 'invalid sys_type'
+    system_obj, system_created = System.objects.get_or_create(name=system_name)
+    entity_obj, entity_created = Entity.objects.get_or_create(name=entity_name, system=system_obj)
+    computer_obj, computer_created = Computer.objects.get_or_create(
+        ip=ip, env=env_type
+    )
+    if computer_created:
+        computer_obj.host = host
+        computer_obj.sys = sys_type
+        computer_obj.installed_agent = installed_agent
+        computer_obj.desc = desc
+    computer_obj.entity.add(entity_obj)
+    return ''
+
+
+def import_detector():
+    import requests
+    result = requests.get(url='http://10.17.162.158:8080/cmdb/get_all_server_api')
+    for ele in result.json():
+        system_name = ele['site']
+        entity_name = ele['pool']
+        ip = ele['ip']
+        host = ele['hostname']
+        env_type = 'PRD' if ele['env'] == 'Production' else ele['env']
+        sys_type = ele['system'].lower()
+        add_cpt(system_name, entity_name, ip, host, env_type, sys_type)

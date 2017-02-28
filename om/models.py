@@ -337,6 +337,7 @@ class SaltMinion(models.Model):
     status = models.CharField(max_length=5, default='', verbose_name='状态')
     ENV_TYPE = (('PRD', '生产环境'), ('UAT', '测试环境'), ('FAT', '开发环境'))
     env = models.CharField(max_length=20, choices=ENV_TYPE, verbose_name='环境类型', default='UAT')
+    os = models.CharField(max_length=100, default='', verbose_name='系统类型')
     update_time = models.DateTimeField(auto_now_add=True, verbose_name='更新时间')
 
     def __str__(self):
