@@ -90,9 +90,9 @@ class UnlockWinConsumer(OmConsumer):
         agents = [x['name'] for x in server_info]
 
         if settings.OM_ENV == 'PRD':  # 只有生产环境可以双通
-            prd_agents = list(SaltMinion.objects.filter(name__in=agents, env='PRD').values_list('name', flat=True))
+            prd_agents = list(SaltMinion.objects.filter(name__in=agents, env='PRD', os='Windows').values_list('name', flat=True))
             settings.logger.info('prd_agents:{ag}'.format(ag=repr(prd_agents)))
-            uat_agents = list(SaltMinion.objects.exclude(env='PRD').filter(name__in=agents).values_list('name', flat=True))
+            uat_agents = list(SaltMinion.objects.exclude(env='PRD').filter(name__in=agents, os='Windows').values_list('name', flat=True))
             settings.logger.info('uat_agents:{ag}'.format(ag=repr(uat_agents)))
             if len(prd_agents) > 0:
                 prd_result, prd_output = Salt('PRD').shell(prd_agents, f'net user {user} /active:yes')
@@ -107,7 +107,7 @@ class UnlockWinConsumer(OmConsumer):
             salt_result = prd_result and uat_result
             salt_output = fmt_salt_out('{prd}\n{uat}'.format(prd=fmt_salt_out(prd_output), uat=fmt_salt_out(uat_output)))
         else:
-            agents = list(SaltMinion.objects.exclude(env='PRD').filter(name__in=agents).values_list('name', flat=True))
+            agents = list(SaltMinion.objects.exclude(env='PRD').filter(name__in=agents, os='Windows').values_list('name', flat=True))
             settings.logger.info('agents:{ag}'.format(ag=repr(agents)))
             if len(agents) > 0:
                 salt_result, salt_output = Salt('UAT').shell(agents, 'net user {user} /active:yes'.format(user=user))
