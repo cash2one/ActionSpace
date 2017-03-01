@@ -1096,9 +1096,14 @@ def get_grains(request):
 @login_required
 def admin_action(request, name):
     settings.logger.info('%s %s' % (request.user.username, name))
-    if not request.user.is_superuser:
+    minion = SaltMinion.objects.get(name=name, status='up')
+    if not any([request.user.has_perm('om.can_exec_cmd'), request.user.has_perm('om.can_exec_cmd', minion)]):
         return no_permission(request)
+    users = ExecUser.objects.all()
+    if not any([request.user.has_perm('om.can_root'), request.user.has_perm('om.can_root', minion)]):
+        users = users.exclude(name='root')
     return render(request, 'om/admin_action.html', {
-        'minion': SaltMinion.objects.get(name=name, status='up'),
-        'users': list(ExecUser.objects.exclude(name='root').values('name')) + [{'name': 'NA'}]
+        'minion': minion,
+        'users': ['NA'] if minion.os == 'Windows' else list(users.values_list('name', flat=True)),
+        'default_user': 'NA' if minion.os == 'Windows' else 'logarchive'
     })

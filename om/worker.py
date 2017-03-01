@@ -132,9 +132,6 @@ class CmdConsumer(OmConsumer):
         if not self.message.user.is_authenticated:
             self.send({'result': '未授权，请联系管理员！'})
             return
-        if not self.message.user.is_superuser:
-            self.send({'result': '仅管理员有权限执行该操作！'})
-            return
         name = content.get('name', '').strip()
         cmd = content.get('cmd', '').strip()
         user = content.get('user', '').strip()
@@ -142,12 +139,19 @@ class CmdConsumer(OmConsumer):
             self.send({'result': '参数错误！'})
             return
         try:
-            pc = SaltMinion.objects.get(name=name)
-            if pc.status == 'up':
-                _, back = Salt(pc.env).shell(pc.name, cmd, None if user=='NA' else user)
-                self.send({'result': back['return'][0].get(name, '未知结果！')})
-            else:
-                self.send({'result': '该主机agent异常，不能操作！'})
+            pc = SaltMinion.objects.get(name=name, status='up')
+            if not any(
+                    [self.message.user.has_perm('om.can_exec_cmd'),
+                     self.message.user.has_perm('om.can_exec_cmd', pc)]
+            ):
+                self.send({'result': '没有执行命令权限，请联系管理员！'})
+                return
+            if not any([self.message.user.has_perm('om.can_root'), self.message.user.has_perm('om.can_root', pc)]):
+                if user == 'root':
+                    self.send({'result': '没有root权限，请联系管理员！'})
+                    return
+            _, back = Salt(pc.env).shell(pc.name, cmd, None if user == 'NA' else user)
+            self.send({'result': back['return'][0].get(name, '未知结果！')})
         except Exception as e:
             self.send({'result': f'{e}\n{content}'})
 

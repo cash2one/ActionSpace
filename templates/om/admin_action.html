@@ -45,19 +45,7 @@
                     <span class="input-group-btn">
                         <select title="执行用户，windows系统请选NA" id="id_user" name="user" class="chosen-select" style="width:115px;">
                             {% for user in users %}
-                                {% if minion.os == 'Windows' %}
-                                    {% if user.name == 'NA' %}
-                                        <option value="{{ user.name }}" selected>{{ user.name }}</option>
-                                    {% else %}
-                                        <option value="{{ user.name }}">{{ user.name }}</option>
-                                    {% endif %}
-                                {% else %}
-                                    {% if user.name == 'logarchive' %}
-                                        <option value="{{ user.name }}" selected>{{ user.name }}</option>
-                                    {% else %}
-                                        <option value="{{ user.name }}">{{ user.name }}</option>
-                                    {% endif %}
-                                {% endif %}
+                                <option value="{{ user }}" {% if user == default_user %}selected{% endif %}>{{ user }}</option>
                             {% endfor %}
                         </select>
                     </span>

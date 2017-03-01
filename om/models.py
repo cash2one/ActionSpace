@@ -346,6 +346,10 @@ class SaltMinion(models.Model):
     class Meta:
         verbose_name = 'SALT主机'
         verbose_name_plural = 'SALT主机'
+        permissions = (
+            ('can_exec_cmd', '可以执行命令'),
+            ('can_root', '可使用root权限'),
+        )
 
 
 class MacAddr(models.Model):

@@ -615,8 +615,24 @@ def get_paged_query(query, search_fields, request, force_order=None):
             query = query.order_by('-'+sort_val if order == 'desc' else sort_val)
         if search is not None:
             select = Q()
-            for t in [t for t in search.replace('\t', ' ').replace('\n', ' ').split(' ') if not t == '']:
-                select &= reduce(lambda x, y: x | Q(**{y: t}), search_fields, Q(**{search_fields[0]: t}))
+            multi = len(search_fields) > 1
+            s_1st = search_fields[0]
+            s_other = search_fields[1:]
+            search_mode = 'and'
+            if ':' in search:
+                search_info = search.split(':')
+                search_mode = search_info[0]
+                search_keys = ' '.join(search_info[1:]).split()
+            else:
+                search_keys = search.split()
+            for t in search_keys:
+                q_1st = Q(**{s_1st: t})
+                this_run = reduce(lambda x, y: x | Q(**{y: t}), s_other, q_1st) if multi else q_1st
+                if search_mode.lower() == 'or':
+                    select |= this_run
+                else:
+                    select &= this_run
+            settings.logger.info(repr(select))
             query = query.filter(select).distinct()
         query_count = query.count()
         return query[int(offset): min(offset + limit, query_count)], query_count
@@ -650,7 +666,7 @@ def add_cpt(system_name, entity_name, ip, host, env_type, sys_type, installed_ag
 
 def import_detector():
     import requests
-    result = requests.get(url='http://10.17.162.158:8080/cmdb/get_all_server_api')
+    result = requests.get(url='http://detectorip:port/detector_api')
     for ele in result.json():
         system_name = ele['site']
         entity_name = ele['pool']

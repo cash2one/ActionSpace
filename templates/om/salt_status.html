@@ -86,9 +86,7 @@
             var actions = new Array()
             actions.push('<div class="btn-group">');
             actions.push('<button class="btn btn-xs btn-success show_info" title="查看"><i class="fa fa-edit">查看</i></button>');
-            {% if user.is_superuser %}
             actions.push('<button class="btn btn-xs btn-danger admin_action" title="操作"><i class="fa fa-certificate">操作</i></button>');
-            {% endif %}
             actions.push('</div>');
             return actions.join('&nbsp;&nbsp;');
         }
@@ -109,11 +107,10 @@
                     //layer.full(json_layer);
                 });
             },
-            {% if user.is_superuser %}
             'click .admin_action': function (e, value, row, _) {
                 var admin_action_layer = layer.open({
                   type: 2,
-                  title: '编辑作业流[' + row.name + ']',
+                  title: '操作[' + row.name + ']',
                   area: ['700px', '530px'],
                   fix: false, //不固定
                   maxmin: true,
@@ -121,7 +118,6 @@
                 });
                 layer.full(admin_action_layer);
             }
-            {% endif %}
         };
     </script>
 {% endblock %}
