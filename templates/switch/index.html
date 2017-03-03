@@ -33,12 +33,11 @@
                                            data-url="{% url 'switch:get_machine_list' current_select %}"
                                            data-striped="true" data-click-to-select="true"
                                            data-page-list="[10, 20, 50{% if user.is_superuser %},ALL{% endif %}]"
-
                                            data-show-toggle="true" data-resizable="true"
                                            data-minimum-count-columns="2" data-show-columns="true"
                                            data-show-refresh="true" data-icon-size="sm" data-search="true"
                                            data-pagination="true" data-side-pagination="server"
-                                           data-show-export="true"
+                                           data-show-export="true" data-pagination-v-align="both"
                                            data-export-types="['json', 'xml', 'png', 'csv', 'txt', 'sql', 'doc', 'excel', 'pdf']"
                                            data-export-options='{
                                              "fileName": "交换机主机",

@@ -57,42 +57,41 @@
                 </div>
             </div>
             <div class="ibox-content">
-                <div class="ibox-content">
-                    <table data-toggle="table" id="table" data-page-size="5"
-                           data-id-field="id" data-page-list="[5, 10, 25, 50{% if user.is_superuser %},ALL{% endif %}]"
-                           data-show-header="true" data-show-footer="false" data-url="{% url 'om:get_action_history_list' %}"
-                           data-show-toggle="true" data-resizable="true"
-                           data-minimum-count-columns="2" data-show-columns="true"
-                           data-show-refresh="true" data-icon-size="sm" data-search="true"
-                           data-pagination="true" data-side-pagination="server"
-                           data-show-export="true"
-                           data-export-types="['json', 'xml', 'png', 'csv', 'txt', 'sql', 'doc', 'excel', 'pdf']"
-                           data-export-options='{
-                             "fileName": "任务",
-                             "worksheetName": "任务",
-                             "jspdf": {
-                               "autotable": {
-                                 "styles": { "rowHeight": 20, "fontSize": 10 },
-                                 "headerStyles": { "fillColor": 255, "textColor": 0 },
-                                 "alternateRowStyles": { "fillColor": [60, 69, 79], "textColor": 255 }
-                               }
-                             }
-                           }'
-                    >
-                        <thead>
-                            <tr>
-                                <th data-field="id">任务ID</th>
-                                <th data-field="name">任务名称</th>
-                                <th data-field="approval_status">审批状态</th>
-                                <th data-field="exec_user">启动人</th>
-                                <th data-field="founder">创建人</th>
-                                <th data-field="status">任务状态</th>
-                                <th data-field="start_time">开始时间</th>
-                                <th data-field="end_time">结束时间</th>
-                                <th data-field="cost_time">耗时（秒）</th>
-                            </tr>
-                        </thead>
-                    </table>
+                <table data-toggle="table" id="table" data-page-size="5"
+                       data-id-field="id" data-page-list="[5, 10, 25, 50{% if user.is_superuser %},ALL{% endif %}]"
+                       data-show-header="true" data-show-footer="false" data-url="{% url 'om:get_action_history_list' %}"
+                       data-show-toggle="true" data-resizable="true"
+                       data-minimum-count-columns="2" data-show-columns="true"
+                       data-show-refresh="true" data-icon-size="sm" data-search="true"
+                       data-pagination="true" data-side-pagination="server"
+                       data-show-export="true" data-pagination-v-align="both"
+                       data-export-types="['json', 'xml', 'png', 'csv', 'txt', 'sql', 'doc', 'excel', 'pdf']"
+                       data-export-options='{
+                         "fileName": "任务",
+                         "worksheetName": "任务",
+                         "jspdf": {
+                           "autotable": {
+                             "styles": { "rowHeight": 20, "fontSize": 10 },
+                             "headerStyles": { "fillColor": 255, "textColor": 0 },
+                             "alternateRowStyles": { "fillColor": [60, 69, 79], "textColor": 255 }
+                           }
+                         }
+                       }'
+                >
+                    <thead>
+                        <tr>
+                            <th data-field="id">任务ID</th>
+                            <th data-field="name">任务名称</th>
+                            <th data-field="approval_status">审批状态</th>
+                            <th data-field="exec_user">启动人</th>
+                            <th data-field="founder">创建人</th>
+                            <th data-field="status">任务状态</th>
+                            <th data-field="start_time">开始时间</th>
+                            <th data-field="end_time">结束时间</th>
+                            <th data-field="cost_time">耗时（秒）</th>
+                        </tr>
+                    </thead>
+                </table>
             </div>
         </div>
     </div>

@@ -22,7 +22,7 @@
                                data-minimum-count-columns="2" data-show-columns="true"
                                data-show-refresh="true" data-icon-size="sm" data-search="true"
                                data-pagination="true" data-side-pagination="server"
-                               data-show-export="true"
+                               data-show-export="true" data-pagination-v-align="both"
                                data-export-types="['json', 'xml', 'png', 'csv', 'txt', 'sql', 'doc', 'excel', 'pdf']"
                                data-export-options='{
                                  "fileName": "salt-minion",
@@ -96,6 +96,7 @@
                     'csrfmiddlewaretoken': '{{ csrf_token }}',
                     'agent_name': row.name
                 },function(result) {
+                    layer.load();
                     var json_layer = layer.open({
                       type: 1,
                       skin: 'layui-layer-demo', //样式类名
@@ -104,7 +105,7 @@
                       shadeClose: true, //开启遮罩关闭
                       content: '<pre>' + JSON.stringify(result.return[0][row.name], null, 4) + '</pre>'
                     });
-                    //layer.full(json_layer);
+                    layer.closeAll('loading');
                 });
             },
             'click .admin_action': function (e, value, row, _) {
