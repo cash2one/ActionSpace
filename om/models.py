@@ -84,6 +84,18 @@ class ComputerGroup(models.Model):
         verbose_name_plural = '主机组'
 
 
+class MailGroup(models.Model):
+    name = models.CharField(max_length=100, verbose_name='邮件组名称', default='')
+    user_list = models.ManyToManyField(User, verbose_name='用户列表')
+
+    def __str__(self):
+        return get_name(self.name)
+
+    class Meta:
+        verbose_name = '邮件组'
+        verbose_name_plural = '邮件组'
+
+
 class Flow(models.Model):
     name = models.CharField(max_length=100, verbose_name='作业流名称')
     founder = models.CharField(max_length=50, verbose_name='创建人', default='NA')
@@ -93,6 +105,7 @@ class Flow(models.Model):
     is_quick_flow = models.BooleanField(default=False, verbose_name='是否为快速执行作业流')
     # job_group顺序内容，id用逗号分隔
     job_group_list = models.CharField(max_length=500, default='', validators=[validate_comma_separated_integer_list], verbose_name='作业组列表')
+    recipient = models.ForeignKey(MailGroup, null=True, blank=True, verbose_name='收件人')  # 如果收件人为空，则发送给执行者
     desc = models.CharField(max_length=400, verbose_name='备注', default='NA')
 
     def __str__(self):
@@ -211,6 +224,7 @@ class Task(models.Model):
     approval_desc = models.CharField(max_length=100, default='', verbose_name='审批描述')
     approver = models.CharField(max_length=100, default='', verbose_name='审批人')
     approval_time = models.DateTimeField(verbose_name='审批时间')
+    recipient = models.ForeignKey(MailGroup, null=True, blank=True, verbose_name='收件人')  # 如果收件人为空，则发送给执行者
 
     def approval(self, approver, approval_status, approval_desc, auto_save=True):
         self.approval_status = approval_status

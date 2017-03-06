@@ -65,8 +65,13 @@ def no_permission(request):
 
 @shared_task
 def celery_send_mail(subject, msg, to):
-    send_mail(subject=subject, message=msg, from_email=None, recipient_list=to, html_message=msg)
-    return 'send mail to {to}'.format(to=to)
+    settings.logger.info(f'{subject}:{to}')
+    if len(to) > 0:
+        send_mail(subject=subject, message=msg, from_email=None, recipient_list=list(to), html_message=msg)
+        return f'send mail to {to}'
+    else:
+        settings.logger.error('email list is None')
+        return 'send mail to fail cause recipient is None'
 
 
 def update_salt_manage_status(env_input=None):
@@ -239,7 +244,7 @@ def clone_task(task, username, auto=False):
     t_flow = task.taskflow_set.first()
     new_t_task = Task.objects.create(
         name=task.name, founder=username, approval_time=timezone.now(),
-        async_result='auto' if auto else ''
+        async_result='auto' if auto else '', recipient=task.recipient
     )
     new_t_flow = TaskFlow.objects.create(name=t_flow.name, flow_id=t_flow.flow_id, task=new_t_task)
     group_list_array = t_flow.taskjobgroup_set.all()
@@ -278,7 +283,7 @@ def make_task(username, flow_id, job_id):
     else:
         flow = get_object_or_404(Flow, pk=flow_id)
 
-    task = Task.objects.create(name=flow.name, founder=username, approval_time=timezone.now())
+    task = Task.objects.create(name=flow.name, founder=username, approval_time=timezone.now(), recipient=flow.recipient)
     t_flow = TaskFlow.objects.create(name=flow.name, flow_id=flow.pk, task=task)
     group_list_array = str2arr(flow.job_group_list)
     settings.logger.info('group_list:[{ora_gl}]->[{end_gl}], flow_id:{flow_id}'.format(
@@ -454,6 +459,25 @@ class JobCallback(object):
                 settings.logger.warn('unknown action:{ac}'.format(ac=action))
 
 
+def get_recipient(task, sender):
+    email = None
+    try:
+        if task.recipient is not None and task.recipient.user_list.exists():
+            email = task.recipient.user_list.values_list('email', flat=True)
+        else:
+            email = [User.objects.get(username=sender).email]
+    except User.DoesNotExist as e:
+        try:
+            email = [x.email for x in UG.objects.get(name='应用服务二组').user_set.all()]
+        except UG.DoesNotExist as ge:
+            settings.logger.error(repr(ge))
+        settings.logger.error(repr(e))
+    except Exception as e:
+        settings.logger.error(repr(e))
+    settings.logger.info(repr(email))
+    return email
+
+
 def exec_task(tid, sender):
     from om.models import Task
     from om.worker import ActionDetailConsumer
@@ -463,17 +487,6 @@ def exec_task(tid, sender):
     task.exec_user = sender
     t_flow = task.taskflow_set.first()
     task.run()
-    email = None
-    try:
-        email = [User.objects.get(username=sender).email]
-    except User.DoesNotExist as e:
-        try:
-            email = [x.email for x in UG.objects.get(name='应用服务二组').user_set.all()]
-        except UG.DoesNotExist as ge:
-            settings.logger.error(repr(ge))
-        settings.logger.error(repr(e))
-    except Exception as e:
-        settings.logger.error(repr(e))
     show_info = []
     for t_group in t_flow.taskjobgroup_set.all().order_by('step'):
         for t_job in t_group.taskjob_set.all().order_by('step'):
@@ -518,21 +531,14 @@ def exec_task(tid, sender):
             else:
                 t_job.save()
                 ActionDetailConsumer.task_change(task.id)
-            if email is not None:
-                show_info.append({'name': t_job.name, 'output': t_job.exec_output})
+            show_info.append({'name': t_job.name, 'output': t_job.exec_output})
     task.finish()
-    task.save()
     ActionDetailConsumer.task_change(task.id)
-    settings.logger.info('email:{email}'.format(email=email))
-    if email is not None:
-        email_msg = loader.render_to_string('om/email.html', {'tid': task.id, 'name': t_flow.name, 'info': show_info})
-        settings.logger.info('celery_send_mail to email={mail}'.format(mail=email))
-        # celery_send_mail('OM 运维工作平台 消息通知', email_msg, email)
-        subject = 'OM 运维工作平台 消息通知'
-        if t_flow and t_flow.name:
-            subject = t_flow.name
-        celery_send_mail(subject, email_msg, email)
-    return u'[{id}]执行完成'.format(id=tid)
+    email = get_recipient(task, sender)
+    email_msg = loader.render_to_string('om/email.html', {'tid': task.id, 'name': t_flow.name, 'info': show_info})
+    settings.logger.info('celery_send_mail to email={mail}'.format(mail=email))
+    celery_send_mail(t_flow.name if t_flow and t_flow.name else 'OM 运维工作平台 消息通知', email_msg, email)
+    return f'[{tid}]执行完成'
 
 
 def task_from_args(arg):

@@ -258,6 +258,7 @@ def get_flow_list(request):
         'id': x.id, 'name': x.name, 'founder': x.founder, 'last_modified_by': x.last_modified_by,
         'created_time': dt.strftime(timezone.localtime(x.created_time), fmt),
         'last_modified_time': dt.strftime(timezone.localtime(x.last_modified_time), fmt),
+        'recipient': x.recipient.name if x.recipient is not None else '启动人',
         'desc': x.desc
     }) for x in flows]
     return JsonResponse(result, safe=False)
@@ -279,6 +280,7 @@ def flow_clone(request, flow_id):
     cloned_flow.created_time = now_time
     cloned_flow.last_modified_time = now_time
     cloned_flow.is_quick_flow = False
+    cloned_flow.recipient = flow.recipient
     cloned_flow.desc = flow.desc
     cloned_flow.job_group_list = ''
     new_group_id_list = []
@@ -741,6 +743,7 @@ def get_action_history_list(request):
         'end_time': dt.strftime(timezone.localtime(t.end_time),
                                 fmt) if t.status == 'finish' else '未完成',
         'cost_time': (t.end_time - t.start_time).total_seconds() if t.approval_status == 'Y' else '未完成',
+        'recipient': t.recipient.name if t.recipient is not None else '启动人',
     }) for t in tasks]
 
     return JsonResponse(result, safe=False)
@@ -1107,3 +1110,20 @@ def admin_action(request, name):
         'users': ['NA'] if minion.os == 'Windows' else list(users.values_list('name', flat=True)),
         'default_user': 'NA' if minion.os == 'Windows' else 'logarchive'
     })
+
+
+@login_required
+def set_flow_recipient(request, flow_id, mail_group_id):
+    try:
+        flow = Flow.objects.get(pk=flow_id)
+        if not any([request.user.has_perm('om.change_flow'), request.user.has_perm('om.change_flow', flow)]):
+            return JsonResponse({'result': 'N', 'msg': '没有删除权限'})
+        flow.recipient = MailGroup.objects.get(pk=mail_group_id) if mail_group_id != '-1' else None
+        flow.save()
+    except Flow.DoesNotExist as e:
+        settings.logger.error(repr(e))
+        return JsonResponse({'result': '作业流不存在！'})
+    except MailGroup.DoesNotExist as e:
+        settings.logger.error(repr(e))
+        return JsonResponse({'result': '邮件组不存在！'})
+    return JsonResponse({'result': 'Y'})

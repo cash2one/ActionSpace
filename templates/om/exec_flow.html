@@ -12,8 +12,16 @@
                         <h5>执行作业流</h5>
                     </div>
                     <div class="ibox-content">
-                        <table data-toggle="table" id="table"
-                               data-show-toggle="true" data-id-field="id"
+                        <div id="toolbar" class="btn-group">
+                            <button id="add" class="btn btn-xs btn-success" title="新建作业流"><i class="fa fa-plus">新建</i></button>
+                            <button id="to_task" class="btn btn-xs btn-info" title="创建任务" disabled><i class="fa fa-check">创建任务</i></button>
+                            <button id="edit" class="btn btn-xs btn-success" title="编辑" disabled><i class="fa fa-edit">编辑</i></button>
+                            <button id="clone" class="btn btn-xs btn-primary" title="克隆" disabled><i class="fa fa-clone">克隆</i></button>
+                            <button id="delete" class="btn btn-xs btn-info" title="删除" disabled><i class="fa fa-remove">删除</i></button>
+                            <!-- <button id="recipient" class="btn btn-xs btn-success" title="收件人" disabled><i class="fa fa-at">收件人</i></button> -->
+                        </div>
+                        <table data-toggle="table" id="table" data-toolbar="#toolbar"
+                               data-show-toggle="true" data-id-field="id" data-click-to-select="true"
                                data-minimum-count-columns="2" data-show-columns="true"
                                data-page-list="[10, 25, 50{% if user.is_superuser %},ALL{% endif %}]" data-show-footer="false"
                                data-show-refresh="true" data-icon-size="sm" data-search="true"
@@ -35,6 +43,7 @@
                         >
                             <thead>
                                 <tr>
+                                    <th data-field="state" data-checkbox="true"></th>
                                     {% for field in fields %}
                                         {% if field.verbose_name == '作业流名称' %}
                                             <th data-field="{{ field.name }}" data-sortable="true" data-editable="true">{{ field.verbose_name }}</th>
@@ -42,8 +51,6 @@
                                             <th data-field="{{ field.name }}" data-sortable="true">{{ field.verbose_name }}</th>
                                         {% endif %}
                                     {% endfor %}
-                                    <th data-field="flow_action" data-formatter="actionFormatter"
-                                        data-events="actionEvents" data-tableexport-display="none">操作</th>
                                 </tr>
                             </thead>
                         </table>
@@ -62,8 +69,13 @@
         $(document).ready(function() {
             var $table = $('#table');
             $table.bootstrapTable('hideColumn', 'desc');
+            $table.bootstrapTable('hideColumn', 'founder');
+            $table.bootstrapTable('hideColumn', 'created_time');
         });
-        $("#table").on('editable-save.bs.table', function(e, field, row, oldValue, $el) {
+        var $table=$("#table"), $add=$("#add"), $to_task=$("#to_task"), $recipient = $("recipient"),
+            $edit=$("#edit"), $clone=$("#clone"), $delete=$("#delete"), selections = [];
+        var need_single = [$to_task, $edit, $clone, $delete, $recipient];
+        $table.on('editable-save.bs.table', function(e, field, row, oldValue, $el) {
             $.get('/om/update_flow_name/'+row.founder+"/"+row.id+"/" + row.name, function(result) {
                 if (result.result == 'Y') {
                     toastr.success('修改成功！');
@@ -74,62 +86,95 @@
                 }
             });
         });
-        function actionFormatter(value, row, index) {
-            var actions = new Array()
-            actions.push('<div class="btn-group">')
-            actions.push('<button class="btn btn-xs btn-info flow_exec_now" href="javascript:void(0)" title="创建任务"><i class="fa fa-check">创建任务</i></button>');
-            actions.push('<button class="btn btn-xs btn-success flow_edit" title="编辑"><i class="fa fa-edit">编辑</i></button>');
-            actions.push('<button class="btn btn-xs btn-primary flow_clone" title="克隆"><i class="fa fa-clone">克隆</i></button>');
-            actions.push('<button class="btn btn-xs btn-info flow_delete" title="删除"><i class="fa fa-remove">删除</i></button>');;
-            actions.push('</div>');
-            return actions.join('&nbsp;&nbsp;');
+
+        $table.on('check.bs.table uncheck.bs.table ' + 'check-all.bs.table uncheck-all.bs.table', function () {
+            selections = $table.bootstrapTable('getSelections');
+            need_single.forEach(function(btn) {
+                btn.prop('disabled', selections.length != 1);
+            });
+        });
+
+        $add.click(function () {
+            var new_flow_layer = layer.open({
+              type: 2,
+              title: '新建作业流',
+              area: ['700px', '530px'],
+              fix: false, //不固定
+              maxmin: true,
+              content:"{%url 'om:new_flow' %}"
+            });
+            layer.full(new_flow_layer);
+        });
+
+        function single_bind(btn, func) {
+            btn.click(function () {
+                if (selections.length == 1) {
+                    func(selections[0])
+                }
+                else {
+                    layer.msg('需要仅选中一个！',{time: 2000, icon: 1});
+                }
+            })
         }
-        window.actionEvents = {
-            'click .flow_exec_now': function (e, value, row, _) {
-                $.get('/om/create_task/'+row.id+"/-1", function(result) {
-                    layer.msg(result.desc,{time: 2000});
-                });
-            },
-            'click .flow_edit': function (e, value, row, _) {
-                var flow_edit_layer = layer.open({
-                  type: 2,
-                  title: '编辑作业流[' + row.name + ']',
-                  area: ['700px', '530px'],
-                  fix: false, //不固定
-                  maxmin: true,
-                  content:"/om/edit_flow/"+row.id+"/"
-                  //content: "{%url 'om:edit_flow' 1 %}"
-                });
-                layer.full(flow_edit_layer);
-            },
-            'click .flow_clone': function (e, value, row, index) {
-                $.get('/om/flow_clone/'+row.id+"/", function(result) {
-                    if (result.result == 'Y') {
-                        layer.msg('克隆后的ID为：'+result.id,{time: 2000, icon: 1});
-                        $('#table').bootstrapTable('refresh', {url: "{% url 'om:get_flow_list' %}"});
+
+        single_bind($to_task,function (row){
+            $.get('/om/create_task/'+row.id+"/-1", function(result) {
+                layer.msg(result.desc,{time: 2000});
+            });
+        });
+
+        single_bind($edit,function (row){
+            var flow_edit_layer = layer.open({
+              type: 2,
+              title: '编辑作业流[' + row.name + ']',
+              area: ['700px', '530px'],
+              fix: false, //不固定
+              maxmin: true,
+              content:"/om/edit_flow/"+row.id+"/"
+              //content: "{%url 'om:edit_flow' 1 %}"
+            });
+            layer.full(flow_edit_layer);
+        });
+        single_bind($clone,function (row){
+            $.get('/om/flow_clone/'+row.id+"/", function(result) {
+                if (result.result == 'Y') {
+                    layer.msg('克隆后的ID为：'+result.id,{time: 2000, icon: 1});
+                    $('#table').bootstrapTable('refresh', {url: "{% url 'om:get_flow_list' %}"});
+                }
+                else {
+                    layer.msg(result.desc, {time: 2000, icon: 1});
+                }
+            });
+        });
+        single_bind($delete,function (row){
+            layer.confirm('删除是不可逆的操作，是否确认删除？', {
+                title: '删除确认',
+                btn: ['确认删除','取消删除']
+            }, function(){
+                $.get('/om/flow_delete/'+row.id+"/"+row.founder,function(result) {
+                    if (result.result == 'Y')
+                    {
+                        $('#table').bootstrapTable('refresh');
+                        layer.msg('删除成功',{time: 2000, icon: 1});
                     }
                     else {
-                        layer.msg(result.desc, {time: 2000, icon: 1});
+                        layer.msg(result.desc,{time: 2000, icon: 1});
                     }
                 });
-            },
-            'click .flow_delete': function (e, value, row, index) {
-                layer.confirm('删除是不可逆的操作，是否确认删除？', {
-                    title: '删除确认',
-                    btn: ['确认删除','取消删除']
-                }, function(){
-                    $.get('/om/flow_delete/'+row.id+"/"+row.founder,function(result) {
-                        if (result.result == 'Y')
-                        {
-                            $('#table').bootstrapTable('refresh');
-                            layer.msg('删除成功',{time: 2000, icon: 1});
-                        }
-                        else {
-                            layer.msg(result.desc,{time: 2000, icon: 1});
-                        }
-                    });
+            });
+        });
+
+        single_bind($recipient,function (row){
+                $.get('/om/set_flow_recipient/'+row.id+"/"+row.founder,function(result) {
+                    if (result.result == 'Y')
+                    {
+                        $('#table').bootstrapTable('refresh');
+                        layer.msg('删除成功',{time: 2000, icon: 1});
+                    }
+                    else {
+                        layer.msg(result.desc,{time: 2000, icon: 1});
+                    }
                 });
-            }
-        };
+        });
     </script>
 {% endblock %}

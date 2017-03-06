@@ -45,6 +45,7 @@
                                     <th data-field="start_time" data-sortable="true" data-width="160">开始时间</th>
                                     <th data-field="end_time" data-sortable="true" data-width="160">结束时间</th>
                                     <th data-field="cost_time" data-width="15">耗时（秒）</th>
+                                    <th data-field="recipient" data-sortable="true" data-width="160">收件人</th>
                                     <th data-field="action" data-formatter="actionFormatter" data-events="actionEvents" data-width="180">操作</th>
                                 </tr>
                             </thead>
@@ -63,8 +64,9 @@
     <script type="text/javascript">
         $(document).ready(function() {
             var $table = $('#table');
-            //$table.bootstrapTable('hideColumn', 'approval_status');
+            $table.bootstrapTable('hideColumn', 'founder');
             $table.bootstrapTable('hideColumn', 'approver');
+            $table.bootstrapTable('hideColumn', 'approval_desc');
             $table.bootstrapTable('hideColumn', 'start_time');
             $table.bootstrapTable('hideColumn', 'end_time');
         });

@@ -142,6 +142,7 @@ class ComputerGroupAdmin(GuardedModelAdmin):
 @admin.register(Flow)
 class FlowAdmin(GuardedModelAdmin):
     list_display_links = ('id', 'name')
+    search_fields = ('id', 'name')
     readonly_fields = ('created_time', 'last_modified_time',)
     list_display = (
         'id', 'name', 'founder', 'is_quick_flow', 'last_modified_by', 'job_group_list', 'desc'
@@ -304,3 +305,8 @@ class CallLogAdmin(GuardedModelAdmin):
     search_fields = ('id', 'type', 'user__username', 'action')
     list_filter = (('date_time', DateRangeFilter), 'type', 'user')
 
+
+@admin.register(MailGroup)
+class MailGroupAdmin(GuardedModelAdmin):
+    list_display = ('id', 'name')
+    search_fields = ('id', 'name')
