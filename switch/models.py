@@ -109,10 +109,10 @@ class BridgePort(models.Model):
 
 
 class Machine(models.Model):
-    mac_hex = models.CharField(max_length=100, verbose_name='MAC地址（十六进制）')  # 80.86.191.29.20
-    mac_decimal = models.CharField(max_length=100, verbose_name='MAC地址（十进制）')  # 00 50 56 BF 1D 14
-    switch = models.ForeignKey(Switch, verbose_name='交换机', null=True)  # 10.25.154.231
-    vlan = models.IntegerField(verbose_name='VLAN编号', null=True)  # 154
+    mac_hex = models.CharField(max_length=100, verbose_name='MAC地址（十六进制）')
+    mac_decimal = models.CharField(max_length=100, verbose_name='MAC地址（十进制）')
+    switch = models.ForeignKey(Switch, verbose_name='交换机', null=True)
+    vlan = models.IntegerField(verbose_name='VLAN编号', null=True)
     net_face = models.ForeignKey(NetworkInterface, verbose_name='网口', null=True)
     minion = models.ForeignKey(SaltMinion, verbose_name='主机', null=True)
     search = models.ForeignKey(Search, verbose_name='查询批次', null=True)

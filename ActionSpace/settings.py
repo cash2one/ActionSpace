@@ -304,7 +304,7 @@ CHANNEL_LAYERS = {
         # 'BACKEND': 'asgi_redis.RedisChannelLayer',
         'BACKEND': 'asgiref.inmemory.ChannelLayer',
         # 'CONFIG': {
-        #     'hosts': [os.environ.get('REDIS_URL', 'redis://10.25.161.126:6382')],
+        #     'hosts': [os.environ.get('REDIS_URL', 'redis://redis_ip:6382')],
         # },
         'ROUTING': 'ActionSpace.routing.channel_routing'
     }

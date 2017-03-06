@@ -24,7 +24,7 @@ function main()
         ps -ef|grep redis-server|grep 6379|grep -v grep|awk '{print $2}'|xargs -i kill -9 {}
         nohup redis-server > ./logs/redis.log 2>&1 &
         ps -ef|grep redmon|grep -v grep|awk '{print $2}'|xargs -i kill -9 {}
-        #nohup redmon -r redis://10.25.167.89:7001 -a 0.0.0.0 -p 8083 -b /redis/ > ./logs/redmon.log 2>&1 &
+        #nohup redmon -r redis://redis_ip:7001 -a 0.0.0.0 -p 8083 -b /redis/ > ./logs/redmon.log 2>&1 &
         nohup redmon -a 0.0.0.0 -p 8083 -b /redis/ > ./logs/redmon.log 2>&1 &
     fi
     cd -

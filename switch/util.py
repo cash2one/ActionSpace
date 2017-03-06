@@ -244,7 +244,7 @@ class Scan(object):
         for switch in Switch.objects.exclude(is_group=True):
             print('begin({ip})'.format(ip=switch.ip))
             uplink_count = len(switch.uplink_switch.split(','))
-            if uplink_count < 2 and (switch.ip not in ['10.25.154.231']):
+            if uplink_count < 2 and (switch.ip not in ['ip_spec']):
                 print('skip[{ip}],[{uplink_count}]'.format(ip=switch.ip, uplink_count=uplink_count))
                 continue
             kargs = {'ip': switch.ip, 'communication': switch.communication}
