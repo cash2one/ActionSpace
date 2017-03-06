@@ -8,8 +8,17 @@
         <div class="col-sm-12">
             <div class="ibox">
                 <div class="ibox-content text-center">
-                    <button class="btn btn-info" id="toggle_group_edit_flow"><i class="fa fa-exchange">切换视图</i></button>
-                    <button class="btn btn-info" id="add_group_edit_flow"><i class="fa fa-plus">增加作业组</i></button>
+                    <div class="btn-group">
+                        <button class="btn btn-info" id="toggle_group_edit_flow"><i class="fa fa-exchange">切换视图</i></button>
+                        <button class="btn btn-success" id="add_group_edit_flow"><i class="fa fa-plus">增加作业组</i></button>
+                    </div>
+                    <label title="收件人">收件人</label>
+                    <select title="收件人组" id="id_recipient" class="chosen-select" style="width:115px;">
+                        {% for mail_group in mail_group_list %}
+                            <option value="-1" {% if not flow.recipient %}selected{% endif %}>---</option>
+                            <option value="{{ mail_group.id }}" {% if flow.recipient and flow.recipient == mail_group%}selected{% endif %}>{{ mail_group.name }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
             </div>
         </div>
@@ -95,6 +104,7 @@
     <script src="{% static 'om/js/plugins/validate/jquery.validate.min.js' %}"></script>
     <script src="{% static 'om/js/plugins/validate/messages_zh.min.js' %}"></script>
     <script src="{% static 'om/js/plugins/toastr/toastr.min.js' %}"></script>
+    <script src="{% static 'om/js/plugins/chosen/chosen.jquery.js' %}"></script>
     <script type="text/javascript">
         $.ajaxSetup({
             beforeSend: function(x) {
@@ -103,9 +113,22 @@
         });
         $(document).ready(
             function(){
+                $(".chosen-select").chosen();
                 $("#exec_edit_flow").on("click", function(){
                     $.get('/om/create_task/'+'{{ flow.id }}'+'/-1', function(result) {
                         layer.msg(result.desc,{time: 5000});
+                    });
+                });
+                $('#id_recipient').change(function(){
+                    $(this).find('option:selected').each(function() {
+                        $.get('/om/set_flow_recipient/' + {{ flow.id }} + '/' + $(this)[0].value + '/', function(result) {
+                            if (result.result == 'Y') {
+                                toastr.success(result.desc);
+                            }
+                            else {
+                                toastr.error(result.desc);
+                            }
+                        });
                     });
                 });
                 function save() {

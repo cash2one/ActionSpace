@@ -563,7 +563,7 @@ def edit_flow(request, flow_id):
         return no_permission(request)
 
     flow.validate_job_group_list()
-    context = {'flow': flow, 'groups': []}
+    context = {'mail_group_list': MailGroup.objects.all(),'flow': flow, 'groups': []}
     group_list = str2arr(flow.job_group_list)
     if group_list:
         groups = [get_object_or_404(JobGroup, pk=x) for x in group_list]
@@ -1122,8 +1122,8 @@ def set_flow_recipient(request, flow_id, mail_group_id):
         flow.save()
     except Flow.DoesNotExist as e:
         settings.logger.error(repr(e))
-        return JsonResponse({'result': '作业流不存在！'})
+        return JsonResponse({'result': 'N', 'desc': '作业流不存在！'})
     except MailGroup.DoesNotExist as e:
         settings.logger.error(repr(e))
-        return JsonResponse({'result': '邮件组不存在！'})
-    return JsonResponse({'result': 'Y'})
+        return JsonResponse({'result': 'N', 'desc': '邮件组不存在！'})
+    return JsonResponse({'result': 'Y', 'desc': '设置成功！'})

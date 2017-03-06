@@ -58,4 +58,5 @@ urlpatterns = [
     url(r'^get_server_file_list', views.get_server_file_list, name='get_server_file_list'),
     url(r'^get_grains', views.get_grains, name='get_grains'),
     url(r'^admin_action/(?P<name>.+)/$', views.admin_action, name='admin_action'),
+    url(r'^set_flow_recipient/(?P<flow_id>[0-9]+)/(?P<mail_group_id>[\-0-9]+)/$', views.set_flow_recipient, name='set_flow_recipient'),
 ]
