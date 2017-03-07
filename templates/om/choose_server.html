@@ -39,13 +39,13 @@
                             <thead>
                                 <tr>
                                     <th data-field="state" data-checkbox="true"></th>
-                                    <th data-field="entity_name" data-filter-control="select">实体</th>
+                                    <th data-field="entity_name" data-formatter="entityFormatter">实体</th>
                                     <th data-field="ip" data-sortable="true">IP</th>
                                     <th data-field="host" data-sortable="true">主机名</th>
+                                    <th data-field="agent_name" data-sortable="true">服务名</th>
                                     <th data-field="sys" data-sortable="true">系统类型</th>
                                     <th data-field="env" data-sortable="true">环境类型</th>
                                     <th data-field="installed_agent" data-sortable="true">是否可操作</th>
-                                    <th data-field="agent_name" data-sortable="true">服务名</th>
                                 </tr>
                             </thead>
                         </table>
@@ -64,6 +64,12 @@
 {% block other_js %}
     {% include 'om/table_load.html' %}
     <script type="text/javascript">
+        $(document).ready(function() {
+            var $table = $('#table');
+            $table.bootstrapTable('hideColumn', 'ip');
+            $table.bootstrapTable('hideColumn', 'host');
+        });
+
         var index = parent.layer.getFrameIndex(window.name); //获取窗口索引
         $('#save_layer').on('click', function(){
             parent.$('#table').bootstrapTable("load", $('#table').bootstrapTable("getSelections"));
@@ -72,5 +78,9 @@
         $('#cancel_layer').on('click', function(){
             parent.layer.close(index);
         });
+        function entityFormatter(value, row, index) {
+            var content_arr = value.split(',');
+            return content_arr.length > 1 ? "<pre style='background-color: rgba(255,255,255,.15);border-style: none;padding: 0;margin: 0;'>" + content_arr.join('</br>') + '</pre>' : value;
+        }
     </script>
 {% endblock %}

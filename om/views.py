@@ -251,7 +251,9 @@ def get_flow_list(request):
         'pk__icontains', 'name__icontains', 'founder__icontains',
         'last_modified_by__icontains', 'desc__icontains'
     ]
-    flows, flow_count = get_paged_query(Flow.objects.filter(is_quick_flow=False), search_fields, request)
+    flows, flow_count = get_paged_query(
+        Flow.objects.filter(is_quick_flow=False), search_fields, request, '-last_modified_time'
+    )
     result = {'total': flow_count, 'rows': []}
 
     [result['rows'].append({

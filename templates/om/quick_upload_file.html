@@ -33,7 +33,7 @@
                                                 <tr>
                                                     <th data-field="ip">IP</th>
                                                     <th data-field="host">主机名</th>
-                                                    <th data-field="entity_name" data-sortable="true">实体</th>
+                                                    <th data-field="entity_name" data-sortable="true" data-formatter="entityFormatter">实体</th>
                                                     <th data-field="env" data-sortable="true">环境</th>
                                                     <th data-field="sys" data-sortable="true">系统</th>
                                                     <th data-field="agent_name" data-sortable="true">服务名</th>
@@ -108,17 +108,22 @@
             layer.full(choose_server_layer);
         });
 
-       function actionFormatter(value, row, index) {
-            return [
-                '<a class="delete_server" href="javascript:void(0)" title="删除">',
-                '<button type="button" class="btn btn-xs btn-info">删除</button>',
-                '</a>'
-            ].join('');
-       };
+        function entityFormatter(value, row, index) {
+            var content_arr = value.split(',');
+            return content_arr.length > 1 ? "<pre style='background-color: rgba(255,255,255,.15);border-style: none;padding: 0;margin: 0;'>" + content_arr.join('</br>') + '</pre>' : value;
+        }
 
-       setTimeout(function () {$('#table').bootstrapTable('resetView');}, 200);
+        function actionFormatter(value, row, index) {
+             return [
+                 '<a class="delete_server" href="javascript:void(0)" title="删除">',
+                 '<button type="button" class="btn btn-xs btn-info">删除</button>',
+                 '</a>'
+             ].join('');
+        }
 
-       function before_submit() {
+        setTimeout(function () {$('#table').bootstrapTable('resetView');}, 200);
+
+        function before_submit() {
                 $('#id_server_list').val(JSON.stringify($('#table').bootstrapTable("getData")));
                 return true;
             }
