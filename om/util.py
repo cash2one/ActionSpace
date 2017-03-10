@@ -657,17 +657,21 @@ def add_cpt(system_name, entity_name, ip, host, env_type, sys_type, installed_ag
     if sys_type not in [x[0] for x in Computer.SYS_TYPE]:
         return 'invalid sys_type'
     system_obj, system_created = System.objects.get_or_create(name=system_name)
+    if system_created:
+        settings.logger.info(f'system created:{system_name},{desc}')
     entity_obj, entity_created = Entity.objects.get_or_create(name=entity_name, system=system_obj)
+    if entity_created:
+        settings.logger.info(f'entity created:{entity_name},system:{system_obj.name},{desc}')
     computer_obj, computer_created = Computer.objects.get_or_create(
         ip=ip, env=env_type
     )
     if computer_created:
+        settings.logger.info(f'computer created:{ip}, {host}, {sys_type}, {env_type},{desc}')
         computer_obj.host = host
         computer_obj.sys = sys_type
         computer_obj.installed_agent = installed_agent
         computer_obj.desc = desc
     computer_obj.entity.add(entity_obj)
-    return ''
 
 
 def import_detector(url='detector_url'):
@@ -680,7 +684,8 @@ def import_detector(url='detector_url'):
         host = ele['hostname']
         env_type = 'PRD' if ele['env'] == 'Production' else ele['env']
         sys_type = ele['system'].lower()
-        add_cpt(system_name, entity_name, ip, host, env_type, sys_type)
+        # print(f'async from detector:{system_name}, {entity_name}, {ip}, {host}, {env_type}, {sys_type}')
+        add_cpt(system_name, entity_name, ip, host, env_type, sys_type, desc='from detector')
 
 
 def import_prism(url='prism_url'):
@@ -718,8 +723,15 @@ def import_prism(url='prism_url'):
             if 'name' not in system_json:
                 continue
             system_name = system_json['name']
-            add_cpt(system_name, entity_name, ip, host, env_type, sys_type)
+            # print(f'async from prism:{system_name}, {entity_name}, {ip}, {host}, {env_type}, {sys_type}')
+            add_cpt(system_name, entity_name, ip, host, env_type, sys_type, True, desc='from prism')
 
     next_url = r_json['next']
     if next_url is not None:
         import_prism(next_url)
+
+
+def syn_data_outside():
+    import_detector()
+    import_prism()
+    sync_computer_agent_name()
