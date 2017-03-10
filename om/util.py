@@ -670,9 +670,9 @@ def add_cpt(system_name, entity_name, ip, host, env_type, sys_type, installed_ag
     return ''
 
 
-def import_detector():
+def import_detector(url='detector_url'):
     import requests
-    result = requests.get(url='http://detectorip:port/detector_api')
+    result = requests.get(url=url)
     for ele in result.json():
         system_name = ele['site']
         entity_name = ele['pool']
@@ -681,3 +681,45 @@ def import_detector():
         env_type = 'PRD' if ele['env'] == 'Production' else ele['env']
         sys_type = ele['system'].lower()
         add_cpt(system_name, entity_name, ip, host, env_type, sys_type)
+
+
+def import_prism(url='prism_url'):
+    import requests
+    result = requests.get(url=url)
+    r_json = result.json()
+    if 'results' not in r_json:
+        return
+    for ele in r_json['results']:
+        arr = ele['name'].split('-')
+        ip = arr[-1]
+        host = '-'.join(arr[0:-1])
+        env_type = ele['server_env']
+        if 'server_sys' not in ele:
+            continue
+        sys_type = ele['server_sys'].lower()
+        for entity_url in ele['ip_subserver']:
+            subserver_result = requests.get(url=entity_url)
+            sub_json = subserver_result.json()
+            if 'app_name' not in sub_json:
+                continue
+            app_result = requests.get(url=sub_json['app_name'])
+            app_json = app_result.json()
+            if 'name' not in app_json:
+                continue
+            entity_name = app_json['name']
+            if 'site_app' not in app_json:
+                continue
+            site_app_url = app_json['site_app']
+            if len(site_app_url) != 1:
+                print(arr, site_app_url)
+                continue
+            system_result = requests.get(url=site_app_url[0])
+            system_json = system_result.json()
+            if 'name' not in system_json:
+                continue
+            system_name = system_json['name']
+            add_cpt(system_name, entity_name, ip, host, env_type, sys_type)
+
+    next_url = r_json['next']
+    if next_url is not None:
+        import_prism(next_url)

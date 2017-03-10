@@ -1,6 +1,8 @@
 import socket
 import struct
 from collections import OrderedDict
+from om.proxy import Salt
+from om.models import SaltMinion
 
 # noinspection PyCompatibility
 NET_TABLE = OrderedDict([
@@ -115,3 +117,43 @@ def ip_in_subnet(ip, subnet):
     subnet_array = subnet.split("/")
     ip = format_subnet(ip + "/" + subnet_array[1])
     return ip == subnet
+
+
+def check_by_script(salt, agent_list, target_ip, target_port, py_path, tmp_path):
+    result, _ = salt.file_trans(agent_list, 'check_connect.py', f'{tmp_path}/check_connect.py')
+    assert result, 'Can not be checked'
+    result, back = salt.shell(agent_list, f'{py_path} %tmp%/check_connect.py {target_ip} {target_port}')
+    assert result, 'Unable to execute command to check'
+    test_result = list(set(back['return'][0].values()))
+    return test_result == ['True'], test_result
+
+
+def check_firewall(
+        agent_name, target_ip, target_port,
+        win_py='C:/salt/bin/python.exe',
+        win_tmp='C:/Windows/TEMP',
+        linux_py='python',
+        linux_tmp='/tmp',
+        linux_nc=True
+):
+    try:
+        agent_list = agent_name if isinstance(agent_name, list) else [agent_name]
+        assert len(agent_list) == len(set(agent_list)), 'There is an invalid agent name'
+        pc_list = list(set(SaltMinion.objects.filter(name__in=agent_list).values_list('env', 'os')))
+        assert len(pc_list) == 1, 'The same batch of os and env must be the same'
+        env, os = pc_list[0]
+        salt = Salt(env)
+        if os == 'Windows':
+            return check_by_script(salt, agent_list, target_ip, target_port, win_py, win_tmp)
+        else:
+            if linux_nc:
+                result, back = salt.shell(agent_list, f'[ -n "$(nc -z -w 1 {target_ip} {target_port}|grep succeeded)" ] && echo True || echo False')
+                assert result, 'Can not be checked'
+                test_result = list(set(back['return'][0].values()))
+                return test_result == ['True'], test_result
+            else:
+                return check_by_script(salt, agent_list, target_ip, target_port, linux_py, linux_tmp)
+    except AssertionError as e:
+        return False, str(e)
+    except Exception as e:
+        return False, repr(e)
