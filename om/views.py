@@ -22,10 +22,10 @@ from ActionSpace import settings
 from om.ftputil import Ftp
 import json
 import time
+from django_select2.views import AutoResponseView
 
 
-# Create your views here.
-@login_required
+# @login_required
 def index(request):
     settings.logger.info(request.user.username)
     host_nginx = {
@@ -49,7 +49,7 @@ def index(request):
     })
 
 
-@login_required
+# @login_required
 def default_content(request):
     settings.logger.info(request.user.username)
     utc_date = timezone.datetime.utcnow().replace(tzinfo=timezone.utc)
@@ -69,12 +69,6 @@ def default_content(request):
         'config_file_count': ServerFile.objects.count()
     }
     return render(request, 'om/home.html', context)
-
-
-@login_required
-def index_content(request):
-    settings.logger.info(request.user.username)
-    return default_content(request)
 
 
 @login_required
@@ -565,7 +559,7 @@ def edit_flow(request, flow_id):
         return no_permission(request)
 
     flow.validate_job_group_list()
-    context = {'mail_group_list': MailGroup.objects.all(),'flow': flow, 'groups': []}
+    context = {'mail_group_list': MailGroup.objects.all(), 'flow': flow, 'groups': []}
     group_list = str2arr(flow.job_group_list)
     if group_list:
         groups = [get_object_or_404(JobGroup, pk=x) for x in group_list]
@@ -706,25 +700,18 @@ def get_ip_host_list(request):
 @login_required
 def get_server_list(request):
     settings.logger.info(request.user.username)
-    search_fields = [
-        'pk__icontains', 'host__icontains', 'ip__icontains', 'env__icontains',
-        'sys__icontains', 'agent_name__icontains', 'entity__name__icontains'
-    ]
-    computers, computer_count = get_paged_query(Computer.objects.select_related(), search_fields, request)
-    result = {'total': computer_count, 'rows': []}
-    [result['rows'].append({
-        'env': c.env,
-        'entity_name': c.entity_name(),
-        'sys': c.sys,
-        'installed_agent': '是' if c.installed_agent else '否',
-        'agent_name': c.agent_name,
-        'ip': c.ip,
-        'host': c.host
-    }) for c in computers]
-    return JsonResponse(result, safe=False)
+    return JsonResponse(api_server_list(request), safe=False)
 
 
 @login_required
+def get_task_server_list(request):
+    settings.logger.info(request.user.username)
+    only_task_allow = False
+    # 当启用任务权限控制，开启only_task_allow即可
+    return JsonResponse(api_server_list(request, only_task_allow), safe=False)
+
+
+# @login_required
 def get_action_history_list(request):
     settings.logger.info(request.user.username)
     search_fields = [
@@ -1129,3 +1116,28 @@ def set_flow_recipient(request, flow_id, mail_group_id):
         settings.logger.error(repr(e))
         return JsonResponse({'result': 'N', 'desc': '邮件组不存在！'})
     return JsonResponse({'result': 'Y', 'desc': '设置成功！'})
+
+
+# noinspection PyAttributeOutsideInit
+class ComputerTaskView(AutoResponseView):
+    def get(self, request, *args, **kwargs):
+        self.widget = self.get_widget_or_404()
+        self.term = kwargs.get('term', request.GET.get('term', ''))
+        self.object_list = self.get_queryset()
+        context = self.get_context_data()
+        return JsonResponse({
+            'results': [
+                {
+                    'text': self.widget.label_from_instance(obj),
+                    'id': obj.pk,
+                }
+                for obj in context['object_list']
+                ],
+            'more': context['page_obj'].has_next()
+        })
+
+    def get_queryset(self):
+        from om.util import get_task_computers_list
+        """Get QuerySet from cached widget."""
+        self.queryset = get_task_computers_list(self.request.user)
+        return self.widget.filter_queryset(self.term, self.queryset)

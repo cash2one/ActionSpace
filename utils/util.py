@@ -119,41 +119,185 @@ def ip_in_subnet(ip, subnet):
     return ip == subnet
 
 
-def check_by_script(salt, agent_list, target_ip, target_port, py_path, tmp_path):
-    result, _ = salt.file_trans(agent_list, 'check_connect.py', f'{tmp_path}/check_connect.py')
-    assert result, 'Can not be checked'
-    result, back = salt.shell(agent_list, f'{py_path} %tmp%/check_connect.py {target_ip} {target_port}')
-    assert result, 'Unable to execute command to check'
-    test_result = list(set(back['return'][0].values()))
-    return test_result == ['True'], test_result
+class CheckFireWall(object):
+    CODE = {
+        0: 'OK',
+        1: 'Invalid port',
+        2: 'Invalid source',
+        3: 'Invalid target',
+        4: 'All env of computer must be the same in one batch',
+        5: 'Trans test script to windows fail',
+        6: 'No nc in linux',
+        7: 'Trans test script to linux fail',
+        8: 'Check peer port fail',
+        9: 'Peer port is not listening',
+        10: 'The port is unreachable[linux]',
+        11: 'The port is unreachable[windows]'
+    }
 
+    def __init__(
+            self, source, target, port, use_nc=True,
+            win_py='C:/salt/bin/python.exe',
+            win_tmp='C:/Windows/TEMP',
+            linux_py='python',
+            linux_tmp='/tmp',
+            check_script='check_connect.py'
+    ):
+        self.win_py = win_py
+        self.win_tmp = win_tmp
+        self.linux_py = linux_py
+        self.linux_tmp = linux_tmp
+        self.check_script = check_script
+        self.source = source
+        self.target = target
+        self.port = port
+        self.use_nc = use_nc
+        self.code = 0
+        self.salt = None
+        self.env = None
+        self.source_win = None
+        self.source_linux = None
+        self.target_win = None
+        self.target_linux = None
+        self.valid_nc = False
+        self.check_result = {}
+        self.check_port()
+        self.check_agent_name()
+        self.check_env()
 
-def check_firewall(
-        agent_name, target_ip, target_port,
-        win_py='C:/salt/bin/python.exe',
-        win_tmp='C:/Windows/TEMP',
-        linux_py='python',
-        linux_tmp='/tmp',
-        linux_nc=True
-):
-    try:
-        agent_list = agent_name if isinstance(agent_name, list) else [agent_name]
-        assert len(agent_list) == len(set(agent_list)), 'There is an invalid agent name'
-        pc_list = list(set(SaltMinion.objects.filter(name__in=agent_list).values_list('env', 'os')))
-        assert len(pc_list) == 1, 'The same batch of os and env must be the same'
-        env, os = pc_list[0]
-        salt = Salt(env)
-        if os == 'Windows':
-            return check_by_script(salt, agent_list, target_ip, target_port, win_py, win_tmp)
+    def status(self, code=None):
+        return self.CODE[self.code if code is None else code]
+
+    @classmethod
+    def _valid_agent(cls, name):
+        if isinstance(name, list):
+            ag_list = SaltMinion.objects.filter(name__in=name)
+            return len(name) == ag_list.count(), ag_list
         else:
-            if linux_nc:
-                result, back = salt.shell(agent_list, f'[ -n "$(nc -z -w 1 {target_ip} {target_port}|grep succeeded)" ] && echo True || echo False')
-                assert result, 'Can not be checked'
-                test_result = list(set(back['return'][0].values()))
-                return test_result == ['True'], test_result
+            ag_list = SaltMinion.objects.filter(name=name)
+            return ag_list.exists(), ag_list
+
+    def check_port(self):
+        if self.code != 0:
+            return
+        if not all([isinstance(self.port, (str, int)), str(self.port).isdigit(), 1 <= int(self.port) <= 65535]):
+            self.code = 1
+
+    def check_agent_name(self):
+        if self.code != 0:
+            return
+        result = self._valid_agent(self.source)
+        if not result[0]:
+            self.code = 2
+        else:
+            self.source = result[1]
+        result = self._valid_agent(self.target)
+        if not result[0]:
+            self.code = 3
+        else:
+            self.target = result[1]
+        if self.code == 0:
+            self.source_win = self.source.filter(os='Windows')
+            self.source_linux = self.source.exclude(os='Windows')
+            self.target_win = self.target.filter(os='Windows')
+            self.target_linux = self.target.exclude(os='Windows')
+
+    def check_env(self):
+        if self.code != 0:
+            return
+        all_env = set(list(self.source.values_list('env', flat=True)) + list(self.target.values_list('env', flat=True)))
+        if len(all_env) != 1:
+            self.code = 4
+        if self.code == 0:
+            self.env = list(all_env)[0]
+            self.salt = Salt(self.env)
+
+    def _trans(self, ag_list, is_win):
+        return self.salt.file_trans(ag_list, self.check_script, f'{self.win_tmp if is_win else self.linux_tmp}/check_connect.py')
+
+    def _nc_valid(self, ag_list, fail_code):
+        r = self.salt.shell(ag_list, 'which nc > /dev/null 2>&1;echo $?')
+        if not r[0]:
+            self.code = fail_code
+            return False
+        r_list = list(set(r[1]['return'][0].values()))
+        return any([len(r_list) == 0, r_list[0] == '0'])
+
+    def trans_script(self):
+        if self.code != 0:
+            return
+        # 将探测脚本传到windows
+        ag_list = self._names(self.source_win) + self._names(self.target_win)
+        if len(ag_list) > 0:
+            r = self._trans(ag_list, True)
+            if not r[0]:
+                self.code = 5
+                return
+
+        # 检查nc是否有效，无效则传探测脚本到linux
+        ag_list = self._names(self.source_linux) + self._names(self.target_linux)
+        if not any([
+            not self.use_nc,  # 关闭nc检查
+            not all([self.use_nc, self._nc_valid(ag_list, 6)])]  # nc开启但无效
+        ):
+            if len(ag_list) > 0:
+                r = self._trans(ag_list, False)
+                if not r[0]:
+                    self.code = 7
+        else:
+            self.valid_nc = True
+
+    @classmethod
+    def _names(cls, ins):
+        return list(ins.values_list('name', flat=True))
+
+    def _check_peer_listen(self, target):
+        py = self.win_py if target.env == 'Windows' else self.linux_py
+        tmp_path = self.win_tmp if target.env == 'Windows' else self.linux_tmp
+        r = self.salt.shell(target.name, f'{py} {tmp_path}/{self.check_script} {target.ip()} {self.port}')
+        if not all([r[0], list(set(r[1]['return'][0].values())) == ['True']]):
+            self.check_result[target.name]['peer_listen'] = 9
+        return self.check_result[target.name]['peer_listen'] == 0
+
+    def _check_peer_connect(self, target, linux=True):
+        ag_list = self._names(self.source_linux) if linux else self._names(self.source_win)
+        if len(ag_list) > 0:
+            if linux:
+                if self.valid_nc:
+                    cmd = f'[ -n "$(nc -z -w 1 {target.ip()} {self.port}|grep succeeded)" ] && echo True || echo False'
+                else:
+                    cmd = f'{self.linux_py} {self.linux_tmp}/{self.check_script} {target.ip()} {self.port}'
+                r = self.salt.shell(ag_list, cmd)
+                self.check_result[target.name]['linux']['result'] = r[1]['return'][0]
+                if not any([not r[0], list(set(r[1]['return'][0].values())) == ['True']]):
+                    self.check_result[target.name]['linux']['code'] = 10
             else:
-                return check_by_script(salt, agent_list, target_ip, target_port, linux_py, linux_tmp)
-    except AssertionError as e:
-        return False, str(e)
-    except Exception as e:
-        return False, repr(e)
+                cmd = f'{self.win_py} {self.win_tmp}/{self.check_script} {target.ip()} {self.port}'
+                r = self.salt.shell(ag_list, cmd)
+                print(r)
+                self.check_result[target.name]['windows']['result'] = r[1]['return'][0]
+                if not any([not r[0], list(set(r[1]['return'][0].values())) == ['True']]):
+                    self.check_result[target.name]['windows']['code'] = 11
+
+    def check(self):
+        self.trans_script()
+        for target in self.target:
+            # 1、检测对端端口是否已开通
+            self.check_result[target.name] = {
+                'peer_listen': 0,
+                'windows': {
+                    'code': 0,
+                    'result': None
+                },
+                'linux': {
+                    'code': 0,
+                    'result': None
+                }
+            }
+            if not self._check_peer_listen(target):
+                continue
+
+            # 2、从源端探测对端端口
+            self._check_peer_connect(target, True)
+            self._check_peer_connect(target, False)
+        return self.check_result

@@ -11,4 +11,5 @@ urlpatterns = [
     url(r'^activity_data/$', views.activity_data, name='activity_data'),
     url(r'^activity_vote/$', views.activity_vote, name='activity_vote'),
     url(r'^make_firewall_table/$', views.make_firewall_table, name='make_firewall_table'),
+    url(r'^common_address/$', views.common_address, name='common_address'),
 ]

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="Cache-Control" content="no-siteapp" />
+    <title>运维工作平台 - 主页</title>
+    {% load staticfiles %}
+    <meta name="keywords" content="OM">
+    <meta name="description" content="OM">
+    <link rel="shortcut icon" href="{% static 'om/favicon.ico' %}">
+    <link href="{% static 'om/css/bootstrap.min14ed.css' %}" rel="stylesheet">
+    <link href="{% static 'om/css/font-awesome.min93e3.css' %}" rel="stylesheet">
+    <link href="{% static 'om/css/animate.min.css' %}" rel="stylesheet">
+    <link href="{% static 'om/css/style.min862f.css' %}" rel="stylesheet">
+    <style>
+        ul.om_notes li,
+        ul.tag-list li {
+            list-style: none
+        }
+
+        ul.om_notes li h4 {
+            margin-top: 20px;
+            font-size: 16px
+        }
+
+        ul.om_notes li div {
+            position: relative
+        }
+
+        ul.om_notes li div small {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            font-size: 10px
+        }
+
+        /*
+        ul.om_notes li div a {
+            position: absolute;
+            right: 10px;
+            bottom: 10px;
+            color: inherit
+        }
+        */
+
+        ul.om_notes li {
+            margin: 5px 20px 25px 0;
+            float: left
+        }
+
+        ul.om_notes li div p {
+            font-size: 12px
+        }
+        /*
+        ul.om_notes li div {
+            -webkit-transform: rotate(-6deg);
+            -o-transform: rotate(-6deg);
+            -moz-transform: rotate(-6deg)
+        }
+
+
+        ul.om_notes li:nth-child(even) div {
+            -o-transform: rotate(4deg);
+            -webkit-transform: rotate(4deg);
+            -moz-transform: rotate(4deg);
+            position: relative;
+            top: 5px
+        }
+
+        ul.om_notes li:nth-child(3n) div {
+            -o-transform: rotate(-3deg);
+            -webkit-transform: rotate(-3deg);
+            -moz-transform: rotate(-3deg);
+            position: relative;
+            top: -5px
+        }
+
+        ul.om_notes li:nth-child(5n) div {
+            -o-transform: rotate(5deg);
+            -webkit-transform: rotate(5deg);
+            -moz-transform: rotate(5deg);
+            position: relative;
+            top: -10px
+        }
+        */
+
+        ul.om_notes li div:focus,
+        ul.om_notes li div:hover {
+            -webkit-transform: scale(1.1);
+            -moz-transform: scale(1.1);
+            -o-transform: scale(1.1);
+            position: relative;
+            z-index: 5
+        }
+
+        ul.om_notes li div {
+            text-decoration: none;
+            color: #000;
+            background: #ffc;
+            display: block;
+            height: 150px;
+            width: 150px;
+            padding: 1em;
+            box-shadow: 5px 5px 7px rgba(33, 33, 33, .7);
+            -webkit-transition: -webkit-transform .15s linear
+        }
+    </style>
+</head>
+
+<body class="gray-bg">
+    <div class="row">
+        <div class="col-sm-12">
+            <div class="wrapper wrapper-content animated fadeInUp">
+                <ul class="om_notes">
+                    {% for ca in objects%}
+                    <li>
+                        <div>
+                            <h4><a href="{{ ca.url }}" target="_blank">{{ ca.name }}</a></h4>
+                            <p>{{ ca.desc }}</p>
+                            {% if ca.icon_url %}
+                            <img alt="image" src="{{ ca.icon_url }}" style="height: 50px;max-width: 120px">
+                            {% endif %}
+                        </div>
+
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

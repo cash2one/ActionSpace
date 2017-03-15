@@ -1,10 +1,8 @@
 # coding=utf-8
 from django import forms
-from django.forms import model_to_dict, BaseModelForm
-from django.forms.utils import ErrorList
 from django.utils.encoding import force_text
 from django.utils.html import format_html
-from om.models import Job, JobGroup, Computer, Flow, TaskJob, ComputerGroup
+from om.models import Job, JobGroup, Computer, Flow, TaskJob
 from django_select2.forms import ModelSelect2MultipleWidget
 from ActionSpace.settings import OM_ENV
 
@@ -45,50 +43,53 @@ class OrderedMultiSelect(forms.SelectMultiple):
 
 
 class JobForm(forms.ModelForm):
-    def __init__(self, data=None, files=None, auto_id='id_%s', prefix=None,
-                 initial=None, error_class=ErrorList, label_suffix=None,
-                 empty_permitted=False, instance=None, use_required_attribute=None):
-        opts = self._meta
-        if opts.model is None:
-            raise ValueError('ModelForm has no model class specified.')
-        if instance is None:
-            self.instance = opts.model()
-            object_data = {}
-        else:
-            self.instance = instance
-            object_data = model_to_dict(instance, opts.fields, opts.exclude)
-        if initial is not None:
-            object_data.update(initial)
-        self._validate_unique = False
-
-        # diy begin
-        if instance is not None:
-            server_list = set(list(instance.server_list.values_list('id', flat=True)))
-            cg_list = []
-            for cg in ComputerGroup.objects.all():
-                cg_cp_list = set(list(cg.computer_list.values_list('id', flat=True)))
-                if server_list.issuperset(cg_cp_list):
-                    cg_list.append(cg.id)
-            object_data['server_group_list'] = ComputerGroup.objects.filter(id__in=cg_list)
-        # diy end
-
-        self._validate_unique = False
-        super(BaseModelForm, self).__init__(
-            data, files, auto_id, prefix, object_data, error_class,
-            label_suffix, empty_permitted, use_required_attribute=use_required_attribute,
-        )
-
-        for field_name in self.fields:
-            formfield = self.fields[field_name]
-            if hasattr(formfield, 'queryset') and hasattr(formfield, 'get_limit_choices_to'):
-                limit_choices_to = formfield.get_limit_choices_to()
-                if limit_choices_to is not None:
-                    formfield.queryset = formfield.queryset.complex_filter(limit_choices_to)
-
-    server_group_list = forms.ModelMultipleChoiceField(
-        queryset=ComputerGroup.objects.all(),
-        required=False, label='服务器组（列表）'
-    )
+    #  def __init__(self, data=None, files=None, auto_id='id_%s', prefix=None,
+    #               initial=None, error_class=ErrorList, label_suffix=None,
+    #               empty_permitted=False, instance=None, use_required_attribute=None):
+    #      from django.forms import model_to_dict, BaseModelForm
+    #      from django.forms.utils import ErrorList
+    #      from om.models import ComputerGroup
+    #      opts = self._meta
+    #      if opts.model is None:
+    #          raise ValueError('ModelForm has no model class specified.')
+    #      if instance is None:
+    #          self.instance = opts.model()
+    #          object_data = {}
+    #      else:
+    #          self.instance = instance
+    #          object_data = model_to_dict(instance, opts.fields, opts.exclude)
+    #      if initial is not None:
+    #          object_data.update(initial)
+    #      self._validate_unique = False
+    #  
+    #      # diy begin
+    #      if instance is not None:
+    #          server_list = set(list(instance.server_list.values_list('id', flat=True)))
+    #          cg_list = []
+    #          for cg in ComputerGroup.objects.all():
+    #              cg_cp_list = set(list(cg.computer_list.values_list('id', flat=True)))
+    #              if server_list.issuperset(cg_cp_list):
+    #                  cg_list.append(cg.id)
+    #          object_data['server_group_list'] = ComputerGroup.objects.filter(id__in=cg_list)
+    #      # diy end
+    #  
+    #      self._validate_unique = False
+    #      super(BaseModelForm, self).__init__(
+    #          data, files, auto_id, prefix, object_data, error_class,
+    #          label_suffix, empty_permitted, use_required_attribute=use_required_attribute,
+    #      )
+    #  
+    #      for field_name in self.fields:
+    #          formfield = self.fields[field_name]
+    #          if hasattr(formfield, 'queryset') and hasattr(formfield, 'get_limit_choices_to'):
+    #              limit_choices_to = formfield.get_limit_choices_to()
+    #              if limit_choices_to is not None:
+    #                  formfield.queryset = formfield.queryset.complex_filter(limit_choices_to)
+    #  
+    #  server_group_list = forms.ModelMultipleChoiceField(
+    #      queryset=ComputerGroup.objects.all(),
+    #      required=False, label='服务器组（列表）'
+    #  )
 
     server_list = forms.ModelMultipleChoiceField(
         widget=ModelSelect2MultipleWidget(
@@ -96,7 +97,8 @@ class JobForm(forms.ModelForm):
                 'agent_name__icontains',
                 'ip__icontains',
                 'host__icontains'
-            ]
+            ],
+            data_view='om:ComputerTaskView'
         ),
         queryset=Computer.objects.filter(env=OM_ENV) if OM_ENV == 'UAT' else Computer.objects.all(),
         required=False, label='服务器（列表）'

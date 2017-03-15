@@ -19,6 +19,9 @@ class System(models.Model):
         verbose_name = '系统'
         verbose_name_plural = '系统'
         ordering = ['name']
+        permissions = (
+            ('can_task_system', '可选择系统执行任务'),
+        )
 
 
 class Entity(models.Model):
@@ -33,6 +36,9 @@ class Entity(models.Model):
         verbose_name = '实体'
         verbose_name_plural = '实体'
         ordering = ['name']
+        permissions = (
+            ('can_task_entity', '可选择逻辑实体执行任务'),
+        )
 
 
 class Computer(models.Model):
@@ -59,6 +65,9 @@ class Computer(models.Model):
         verbose_name = '主机'
         verbose_name_plural = '主机'
         ordering = ['ip']
+        permissions = (
+            ('can_task_computer', '可选择主机执行任务'),
+        )
 
 
 class ComputerGroup(models.Model):
@@ -356,6 +365,12 @@ class SaltMinion(models.Model):
 
     def __str__(self):
         return get_name(self.name)
+
+    def host(self):
+        return self.name.split('-')[-1]
+
+    def ip(self):
+        return '-'.join(self.name.split('-')[0:-1])
 
     class Meta:
         verbose_name = 'SALT主机'

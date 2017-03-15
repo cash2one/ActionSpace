@@ -58,25 +58,13 @@
             </div>
             <div class="ibox-content">
                 <table data-toggle="table" id="table" data-page-size="5"
-                       data-id-field="id" data-page-list="[5, 10, 25, 50{% if user.is_superuser %},ALL{% endif %}]"
+                       data-id-field="id"
                        data-show-header="true" data-show-footer="false" data-url="{% url 'om:get_action_history_list' %}"
-                       data-show-toggle="true" data-resizable="true"
+                       data-resizable="true"
                        data-minimum-count-columns="2" data-show-columns="true"
-                       data-show-refresh="true" data-icon-size="sm" data-search="true"
-                       data-pagination="true" data-side-pagination="server"
-                       data-show-export="true" data-pagination-v-align="both"
-                       data-export-types="['json', 'xml', 'png', 'csv', 'txt', 'sql', 'doc', 'excel', 'pdf']"
-                       data-export-options='{
-                         "fileName": "任务",
-                         "worksheetName": "任务",
-                         "jspdf": {
-                           "autotable": {
-                             "styles": { "rowHeight": 20, "fontSize": 10 },
-                             "headerStyles": { "fillColor": 255, "textColor": 0 },
-                             "alternateRowStyles": { "fillColor": [60, 69, 79], "textColor": 255 }
-                           }
-                         }
-                       }'
+                       data-show-refresh="true" data-icon-size="sm" data-search="false"
+                       data-pagination="false" data-side-pagination="server"
+                       data-show-export="false"
                 >
                     <thead>
                         <tr>

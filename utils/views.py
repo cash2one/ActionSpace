@@ -1,7 +1,9 @@
 from functools import reduce
+
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.http import JsonResponse
-from utils.models import Activity
+from utils.models import Activity, CommonAddress
 from utils.util import format_subnet, ip_in_subnet, NET_TABLE
 from utils.form import WallForm
 import json
@@ -10,10 +12,12 @@ from ActionSpace.settings import logger
 
 
 # Create your views here.
+@login_required
 def picutil(request):
     return render(request, 'utils/picutil.html')
 
 
+@login_required
 def query_net_area(request):
     ip = request.POST['ip']
     for net_group in NET_TABLE.values():
@@ -26,15 +30,18 @@ def query_net_area(request):
     return JsonResponse({'result': '未知网段'})
 
 
+@login_required
 def net(request):
     return render(request, 'utils/net.html', {'net': NET_TABLE})
 
 
+@login_required
 def activity_data(_):
     act = Activity.objects.filter(join=True).order_by('guess')
     return JsonResponse({'names': [x.user.last_name + x.user.first_name for x in act], 'guess': [x.guess for x in act]})
 
 
+@login_required
 def activity_vote(request):
     try:
         user = Activity.objects.get(user=request.user)
@@ -44,6 +51,7 @@ def activity_vote(request):
     return JsonResponse({'result': 'Y'})
 
 
+@login_required
 def activity(request):
     user = Activity.objects.filter(user=request.user)
     not_voted = Activity.objects.filter(voted=False, join=True)
@@ -59,6 +67,7 @@ def activity(request):
     return render(request, 'utils/activity.html', context)
 
 
+@login_required
 def make_firewall_table(request):
     if request.method == 'POST':
         form = WallForm(request.POST)
@@ -101,3 +110,7 @@ def make_firewall_table(request):
         else:
             return render(request, 'utils/make_firewall.html', {'errors': form.errors, 'form': form})
     return render(request, 'utils/make_firewall.html', {'form': WallForm()})
+
+
+def common_address(request):
+    return render(request, 'utils/common_address.html', {'objects': CommonAddress.objects.all()})

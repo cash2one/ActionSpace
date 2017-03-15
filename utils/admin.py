@@ -2,7 +2,6 @@ from django.contrib import admin
 from utils.models import *
 
 
-# Register your models here.
 @admin.register(Activity)
 class ActivityAdmin(admin.ModelAdmin):
     list_display = ('id', 'user', 'voted', 'join', 'guess')
@@ -25,3 +24,9 @@ class ActivityAdmin(admin.ModelAdmin):
     def mark_not_join(self, _, queryset):
         queryset.update(join=False)
     mark_not_join.short_description = '设置为不参赛'
+
+
+@admin.register(CommonAddress)
+class CommonAddressAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name', 'url')
+    search_fields = ('id', 'name', 'url')

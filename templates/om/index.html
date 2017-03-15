@@ -17,12 +17,14 @@
                                 <span class="text-muted text-xs block">
                                     {% if user.is_superuser %}
                                         管理员
-                                    {% else %}
+                                    {% elif user.is_authenticated %}
                                         {% if user.username == 'guest' %}
                                             游客
                                         {% else %}
                                             普通用户
                                         {% endif %}
+                                    {% else %}
+                                        未登陆
                                     {% endif %}
                                     <b class="caret"></b></span>
                                 </span>
@@ -38,7 +40,11 @@
                                     {% endfor %}
                                     <li><a href="/admin/" target="_blank">后台管理</a></li>
                                 {% endif %}
-                                <li><a href="{% url 'rest_framework:logout' %}?next={% url 'om:index' %}">退出</a></li>
+                                {% if not user.is_authenticated %}
+                                    <li><a href="{% url 'login' %}?next={% url 'om:index' %}">登陆</a></li>
+                                {% else %}
+                                    <li><a href="{% url 'rest_framework:logout' %}?next={% url 'om:index' %}">退出</a></li>
+                                {% endif %}
                             </ul>
                         </div>
                         <div class="logo-element">OM
@@ -47,93 +53,98 @@
                     <li>
                         <a href="{%url 'index' %}"><i class="fa fa-home"></i> <span class="nav-label">首页</span></a>
                     </li>
-                    {% if user.username != 'guest' %}
+                    <li>
+                        <a class="J_menuItem" href="{%url 'utils:common_address' %}"><i class="fa fa-sticky-note"></i> <span class="nav-label">常用地址</span></a>
+                    </li>
+                    {% if user.is_authenticated %}
+                        {% if user.username != 'guest' %}
+                            <li>
+                                <a href="#">
+                                    <i class="fa fa-calendar-o"></i>
+                                    <span class="nav-label">作业管理</span>
+                                    <span class="fa arrow"></span>
+                                </a>
+                                <ul class="nav nav-second-level">
+                                    <li>
+                                        <a class="J_menuItem" href="{% url 'om:quick_exec_script'%}"><i class="fa fa-code">快速执行脚本</i></a>
+                                    </li>
+                                    <li>
+                                        <a class="J_menuItem" href="{% url 'om:quick_upload_file'%}"><i class="fa fa-file-zip-o">快速分发文件</i></a>
+                                    </li>
+                                    <li>
+                                        <a class="J_menuItem" href="{% url 'om:exec_flow'%}"><i class="fa fa-edit">作业流管理</i></a>
+                                    </li>
+                                    <li>
+                                        <a class="J_menuItem" href="{%url 'om:upload_file'%}"><i class="fa fa-file">配置文件管理</i></a>
+                                    </li>
+                                </ul>
+                            </li>
+                            <li>
+                                <a href="#">
+                                    <i class="fa fa-tasks"></i>
+                                    <span class="nav-label">任务管理</span>
+                                    <span class="fa arrow"></span>
+                                </a>
+                                <ul class="nav nav-second-level">
+                                    <li>
+                                        <a class="J_menuItem" href="{% url 'om:action_history'%}"><i class="fa fa-list-alt">查看历史任务</i></a>
+                                    </li>
+                                    <li>
+                                        <a class="J_menuItem" href="{% url 'om:auto_task' %}"><i class="fa fa-clock-o">设置定时任务</i></a>
+                                    </li>
+                                </ul>
+                            </li>
+                        {% endif %}
                         <li>
                             <a href="#">
-                                <i class="fa fa-calendar-o"></i>
-                                <span class="nav-label">作业管理</span>
+                                <i class="fa fa-cutlery"></i>
+                                <span class="nav-label">快捷工具</span>
                                 <span class="fa arrow"></span>
                             </a>
                             <ul class="nav nav-second-level">
                                 <li>
-                                    <a class="J_menuItem" href="{% url 'om:quick_exec_script'%}"><i class="fa fa-code">快速执行脚本</i></a>
-                                </li>
-                                <li>
-                                    <a class="J_menuItem" href="{% url 'om:quick_upload_file'%}"><i class="fa fa-file-zip-o">快速分发文件</i></a>
-                                </li>
-                                <li>
-                                    <a class="J_menuItem" href="{% url 'om:exec_flow'%}"><i class="fa fa-edit">作业流管理</i></a>
-                                </li>
-                                <li>
-                                    <a class="J_menuItem" href="{%url 'om:upload_file'%}"><i class="fa fa-file">配置文件管理</i></a>
+                                    <a class="J_menuItem" href="{%url 'om:unlock_win'%}"><i class="fa fa-unlock">解锁windows</i></a>
                                 </li>
                             </ul>
-                        </li>
-                        <li>
-                            <a href="#">
-                                <i class="fa fa-tasks"></i>
-                                <span class="nav-label">任务管理</span>
-                                <span class="fa arrow"></span>
-                            </a>
                             <ul class="nav nav-second-level">
                                 <li>
-                                    <a class="J_menuItem" href="{% url 'om:action_history'%}"><i class="fa fa-list-alt">查看历史任务</i></a>
+                                    <a class="J_menuItem" href="{%url 'switch:index'%}"><i class="fa fa-tv">查看交换机</i></a>
                                 </li>
+                            </ul>
+                            <ul class="nav nav-second-level">
                                 <li>
-                                    <a class="J_menuItem" href="{% url 'om:auto_task' %}"><i class="fa fa-clock-o">设置定时任务</i></a>
+                                    <a class="J_menuItem" href="{%url 'om:show_server'%}"><i class="fa fa-search">系统信息</i></a>
+                                </li>
+                            </ul>
+                            <ul class="nav nav-second-level">
+                                <li>
+                                    <a class="J_menuItem" href="{%url 'om:salt_status'%}"><i class="fa fa-search-plus">主机详情</i></a>
+                                </li>
+                            </ul>
+                            <ul class="nav nav-second-level">
+                                <li>
+                                    <a class="J_menuItem" href="{%url 'utils:picutil'%}"><i class="fa fa-picture-o">图片工具</i></a>
+                                </li>
+                            </ul>
+                            <ul class="nav nav-second-level">
+                                <li>
+                                    <a class="J_menuItem" href="{%url 'utils:net'%}"><i class="fa fa-wifi">网络信息</i></a>
+                                </li>
+                            </ul>
+                            {% if is_internal %}
+                            <ul class="nav nav-second-level">
+                                <li>
+                                    <a class="J_menuItem" href="{%url 'utils:activity'%}"><i class="fa fa-recycle">竞猜活动</i></a>
+                                </li>
+                            </ul>
+                            {% endif %}
+                            <ul class="nav nav-second-level">
+                                <li>
+                                    <a class="J_menuItem" href="{%url 'utils:make_firewall_table'%}"><i class="fa fa-wifi">提墙辅助</i></a>
                                 </li>
                             </ul>
                         </li>
                     {% endif %}
-                    <li>
-                        <a href="#">
-                            <i class="fa fa-cutlery"></i>
-                            <span class="nav-label">快捷工具</span>
-                            <span class="fa arrow"></span>
-                        </a>
-                        <ul class="nav nav-second-level">
-                            <li>
-                                <a class="J_menuItem" href="{%url 'om:unlock_win'%}"><i class="fa fa-unlock">解锁windows</i></a>
-                            </li>
-                        </ul>
-                        <ul class="nav nav-second-level">
-                            <li>
-                                <a class="J_menuItem" href="{%url 'switch:index'%}"><i class="fa fa-tv">查看交换机</i></a>
-                            </li>
-                        </ul>
-                        <ul class="nav nav-second-level">
-                            <li>
-                                <a class="J_menuItem" href="{%url 'om:show_server'%}"><i class="fa fa-search">系统信息</i></a>
-                            </li>
-                        </ul>
-                        <ul class="nav nav-second-level">
-                            <li>
-                                <a class="J_menuItem" href="{%url 'om:salt_status'%}"><i class="fa fa-search-plus">主机详情</i></a>
-                            </li>
-                        </ul>
-                        <ul class="nav nav-second-level">
-                            <li>
-                                <a class="J_menuItem" href="{%url 'utils:picutil'%}"><i class="fa fa-picture-o">图片工具</i></a>
-                            </li>
-                        </ul>
-                        <ul class="nav nav-second-level">
-                            <li>
-                                <a class="J_menuItem" href="{%url 'utils:net'%}"><i class="fa fa-wifi">网络信息</i></a>
-                            </li>
-                        </ul>
-                        {% if is_internal %}
-                        <ul class="nav nav-second-level">
-                            <li>
-                                <a class="J_menuItem" href="{%url 'utils:activity'%}"><i class="fa fa-recycle">竞猜活动</i></a>
-                            </li>
-                        </ul>
-                        {% endif %}
-                        <ul class="nav nav-second-level">
-                            <li>
-                                <a class="J_menuItem" href="{%url 'utils:make_firewall_table'%}"><i class="fa fa-wifi">提墙辅助</i></a>
-                            </li>
-                        </ul>
-                    </li>
                 </ul>
             </div>
         </nav>
@@ -159,9 +170,15 @@
                         <li class="J_tabCloseOther"><a>关闭其他选项卡</a></li>
                     </ul>
                 </div>
-                <a href="{% url 'rest_framework:logout' %}?next={% url 'om:index' %}" class="roll-nav roll-right J_tabExit">
-                    <i class="fa fa fa-sign-out">退出</i>
-                </a>
+                {% if user.is_authenticated %}
+                    <a href="{% url 'rest_framework:logout' %}?next={% url 'om:index' %}" class="roll-nav roll-right J_tabExit">
+                        <i class="fa fa fa-sign-out">退出</i>
+                    </a>
+                {% else %}
+                    <a href="{% url 'rest_framework:logout' %}?next={% url 'login' %}" class="roll-nav roll-right J_tabExit">
+                        <i class="fa fa fa-sign-in">登陆</i>
+                    </a>
+                {% endif %}
             </div>
             <div class="row J_mainContent" id="content-main">
                 <iframe class="J_iframe" name="iframe0" width="100%" height="100%" src="{%url 'om:default_content'%}" frameborder="0" data-id="index_v1.html" seamless></iframe>

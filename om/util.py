@@ -613,8 +613,10 @@ def get_paged_query(query, search_fields, request, force_order=None):
         search = request.GET.get('search')
         if force_order is not None:
             query = query.order_by(force_order)
-        offset = int(request.GET.get('offset'))
-        limit = int(request.GET.get('limit'))
+        offset = request.GET.get('offset')
+        offset = 0 if offset is None else int(offset)
+        limit = request.GET.get('limit')
+        limit = 5 if limit is None else int(limit)
         sort_val = request.GET.get('sort')
         order = request.GET.get('order')
         if all([sort_val, order]):
@@ -652,6 +654,7 @@ def get_paged_query(query, search_fields, request, force_order=None):
 
 def add_cpt(system_name, entity_name, ip, host, env_type, sys_type, installed_agent=False, desc=''):
     from om.models import System, Entity, Computer
+    print(system_name, entity_name, ip, host, env_type, sys_type, installed_agent, desc)
     if env_type not in [x[0] for x in Computer.ENV_TYPE]:
         return 'invalid env'
     if sys_type not in [x[0] for x in Computer.SYS_TYPE]:
@@ -671,6 +674,7 @@ def add_cpt(system_name, entity_name, ip, host, env_type, sys_type, installed_ag
         computer_obj.sys = sys_type
         computer_obj.installed_agent = installed_agent
         computer_obj.desc = desc
+        computer_obj.save()
     computer_obj.entity.add(entity_obj)
 
 
@@ -735,3 +739,48 @@ def syn_data_outside():
     import_detector()
     import_prism()
     sync_computer_agent_name()
+
+
+def get_task_computers_list(user):
+    from om.models import Computer
+    if user.is_superuser:
+        query = Computer.objects.select_related().all()
+    else:
+        from guardian.shortcuts import get_objects_for_user
+        pk_set = set([])
+        # 1、获取所有按系统授权的主机
+        for sys in get_objects_for_user(user, 'om.can_task_system'):
+            for ent in sys.entity_set.all():
+                pk_set |= set(list(ent.computer_set.values_list('pk', flat=True)))
+        # 2、获取所有按逻辑实体授权的主机
+        for ent in get_objects_for_user(user, 'om.can_task_entity'):
+            pk_set |= set(list(ent.computer_set.values_list('pk', flat=True)))
+        # 3、获取所有按主机授权的主机
+        cpt_list = get_objects_for_user(user, 'om.can_task_computer')
+        pk_set |= set(list(cpt_list.values_list('pk', flat=True)))
+        query = Computer.objects.select_related().filter(pk__in=pk_set)
+    return query
+
+
+def api_server_list(request, only_for_task=False):
+    from om.models import Computer
+    search_fields = [
+        'pk__icontains', 'host__icontains', 'ip__icontains', 'env__icontains',
+        'sys__icontains', 'agent_name__icontains', 'entity__name__icontains'
+    ]
+    if only_for_task:
+        query = get_task_computers_list(request.user)
+    else:
+        query = Computer.objects.select_related()
+    computers, computer_count = get_paged_query(query, search_fields, request)
+    result = {'total': computer_count, 'rows': []}
+    [result['rows'].append({
+        'env': c.env,
+        'entity_name': c.entity_name(),
+        'sys': c.sys,
+        'installed_agent': '是' if c.installed_agent else '否',
+        'agent_name': c.agent_name,
+        'ip': c.ip,
+        'host': c.host
+    }) for c in computers]
+    return result
