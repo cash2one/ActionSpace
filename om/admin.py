@@ -153,11 +153,13 @@ class FlowAdmin(GuardedModelAdmin):
 class JobGroupAdmin(GuardedModelAdmin):
     readonly_fields = ('created_time', 'last_modified_time',)
     list_display = ('id', 'name', 'founder', 'last_modified_by', 'job_list', 'desc')
+    search_fields = ('id', 'name')
 
 
 @admin.register(ExecUser)
 class ExecUserAdmin(GuardedModelAdmin):
     list_display = ('name', 'desc')
+    search_fields = ('id', 'name')
 
 
 @admin.register(Job)
@@ -169,6 +171,7 @@ class JobAdmin(GuardedModelAdmin):
         'id', 'name', 'founder', 'exec_user', 'pause_when_finish', 'last_modified_by'
     )
     list_filter = ('founder', 'exec_user', 'last_modified_by')
+    search_fields = ('id', 'name')
 
     fieldsets = (
         (None, {
@@ -234,6 +237,7 @@ class TaskFlowAdmin(ReadOnlyModelAdmin):
     list_display = ('id', 'name', 'flow_id', 'task')
     list_display_links = ('id', 'name')
     inlines = [TaskJobGroupInline]
+    search_fields = ('id', 'name')
 
 
 class TaskJobInline(admin.StackedInline):
@@ -255,6 +259,7 @@ class TaskJobGroupAdmin(ReadOnlyModelAdmin):
     list_display = ('id', 'name', 'group_id', 'flow', 'step')
     list_display_links = ('id', 'name')
     inlines = [TaskJobInline]
+    search_fields = ('id', 'name')
 
 
 @admin.register(TaskJob)
@@ -263,15 +268,17 @@ class TaskJobAdmin(GuardedModelAdmin):
     list_display_links = ('id', 'name')
     readonly_fields = [
         'name', 'job_id', 'group', 'job_type', 'script_type', 'file_name',
-        'target_name', 'begin_time', 'end_time', 'status', 'step',
+        'begin_time', 'end_time', 'status', 'step',
         'pause_need_confirm', 'pause_when_finish', 'pause_finish_tip'
     ]
+    search_fields = ('id', 'name')
 
 
 @admin.register(CommonScript)
 class CommonScriptAdmin(GuardedModelAdmin):
     list_display = ('id', 'name', 'script_type', 'desc')
     list_display_links = ('id', 'name')
+    search_fields = ('id', 'name')
 
     formfield_overrides = {
         models.TextField: {

@@ -325,25 +325,19 @@ def quick_script_exec(job, username):
     return make_task(username, flow.id, job.id)
 
 
-def exec_task_job(t_job, ips, env):
-    from om.models import Computer, ServerFile
-    ora_output = {}
-    if len(ips) == 0:
-        settings.logger.warn('ips is empty for {env}'.format(env=env))
-        # t_job.exec_output = '指定的IP无效！'
-        # t_job.status = 'run_fail'
-        return
-    if env == 'PRD':
-        agents = list(Computer.objects.filter(env='PRD', ip__in=ips).values_list('agent_name', flat=True))
+def set_task_job_output(t_job, val, first):
+    if first:
+        t_job.exec_output = ''
     else:
-        agents = list(Computer.objects.exclude(env='PRD').filter(ip__in=ips).values_list('agent_name', flat=True))
+        t_job.exec_output += '\n'
+    t_job.exec_output += repr(val)
+
+
+def exec_task_job_impl(t_job, salt, agents, first, is_windows=False):
+    from om.models import ServerFile
+    ora_output = {}
     if len(agents) == 0:
-        settings.logger.warn('agents is empty for {env}'.format(env=env))
-        # t_job.status = 'run_fail'
-        # t_job.exec_output = '指定的IP不符合当前环境！'
-        return
-    is_windows = Computer.objects.get(agent_name=agents[0]).sys == 'windows'
-    settings.logger.info('{env} agents:{ag}'.format(env=env, ag=agents))
+        return ora_output
     cmd = t_job.script_content
     if t_job.job_type == 'SCRIPT':
         if not is_windows and t_job.script_type == 'SHELL':
@@ -353,7 +347,7 @@ def exec_task_job(t_job, ips, env):
             def_shell = '' if cmd.startswith('#!') else "#!/bin/bash\n"
             tmp_file = '/tmp/{n}.sh'.format(n=uuid.uuid4())
             cmd = '''echo '{shell}{content}
-'>"{tg}";chmod u+x "{tg}";"{tg}"'''.format(shell=def_shell, content=dos2unix, tg=tmp_file)
+    '>"{tg}";chmod u+x "{tg}";"{tg}"'''.format(shell=def_shell, content=dos2unix, tg=tmp_file)
             if t_job.script_param.strip() != '':
                 cmd += ' {param}'.format(param=t_job.script_param)
             delete_after_exec = True
@@ -364,13 +358,13 @@ def exec_task_job(t_job, ips, env):
     try:
         if t_job.job_type == 'SCRIPT':
             if t_job.script_type == 'PY':
-                salt_result, salt_output = Salt(env).python(agents, cmd)
+                salt_result, salt_output = salt.python(agents, cmd)
             else:
                 exec_user = None if is_windows or t_job.script_type == 'BAT' else t_job.exec_user
-                salt_result, salt_output = Salt(env).shell(agents, cmd, exec_user)
+                salt_result, salt_output = salt.shell(agents, cmd, exec_user)
             t_job.status = 'finish' if salt_result else 'run_fail'
             ora_output = salt_output
-            t_job.exec_output = fmt_salt_out(salt_output)  # [1:-1].replace("\\n", "")
+            set_task_job_output(t_job, fmt_salt_out(salt_output), first)
         else:
             file_list = [ServerFile.objects.get(pk=x).name for x in str2arr(t_job.file_name)]
             if len(file_list) == 0:
@@ -384,21 +378,52 @@ def exec_task_job(t_job, ips, env):
                         target_path = os.path.join(t_job.target_name, file_to_trans)
                     else:
                         target_path = t_job.target_name
-                    salt_result, salt_output = Salt(env).file_trans(agents, file_to_trans, target_path)
+                    salt_result, salt_output = salt.file_trans(agents, file_to_trans, target_path)
                     if not is_windows:
-                        Salt(env).shell(agents, 'chown {0}:{0} {1}'.format(t_job.exec_user, target_path), 'root')
+                        salt.shell(agents, 'chown {0}:{0} {1}'.format(t_job.exec_user, target_path), 'root')
                     result_list.append(salt_result)
                     output_list.append(salt_output)
                     if not salt_result:
                         settings.logger.error()
                 t_job.status = 'finish' if all(result_list) else 'run_fail'
                 ora_output = output_list
-                t_job.exec_output = fmt_salt_out(output_list)
+                set_task_job_output(t_job, output_list, first)
     except Exception as e:
         t_job.status = 'run_fail'
         settings.logger.error(str(e))
         settings.logger.error(traceback.format_exc())
-        t_job.exec_output = '执行出错，请检查作业配置是否有误！'
+        t_job.exec_output = f'执行出错，请检查作业配置是否有误！'
+    return ora_output
+
+
+def exec_task_job(t_job, ips, env, first=True):
+    from om.models import Computer
+    ora_output = {}
+    if len(ips) == 0:
+        settings.logger.warn('ips is empty for {env}'.format(env=env))
+        # t_job.exec_output = '指定的IP无效！'
+        # t_job.status = 'run_fail'
+        return ora_output
+    if env == 'PRD':
+        agents = Computer.objects.filter(env='PRD', ip__in=ips)
+    else:
+        agents = Computer.objects.exclude(env='PRD').filter(ip__in=ips)
+
+    if len(agents) == 0:
+        settings.logger.warn('agents is empty for {env}'.format(env=env))
+        # t_job.status = 'run_fail'
+        # t_job.exec_output = '指定的IP不符合当前环境！'
+        return ora_output
+    settings.logger.info('{env} agents:{ag}'.format(env=env, ag=agents))
+    win_agents = list(agents.filter(sys='windows').values_list('agent_name', flat=True))
+    linux_agents = list(agents.exclude(sys='windows').values_list('agent_name', flat=True))
+    win_output = exec_task_job_impl(t_job, Salt(env), win_agents, first, True)
+    linux_output = exec_task_job_impl(t_job, Salt(env), linux_agents, False, False)
+    if isinstance(win_output, dict) and isinstance(linux_output, dict):
+        ora_output = win_output
+        ora_output.update(linux_output)
+    else:
+        ora_output = repr(win_output) + repr(linux_output)
     return ora_output
 
 
@@ -511,8 +536,11 @@ def exec_task(tid, sender):
                 if settings.OM_ENV == 'PRD':
                     ora_prd_output = exec_task_job(t_job, ips, 'PRD')
                     JobCallback(job_id_info, fmt_salt_out(ora_prd_output, False)).run(t_job)
-                ora_uat_output = exec_task_job(t_job, ips, 'UAT')
-                JobCallback(job_id_info, fmt_salt_out(ora_uat_output, False)).run(t_job)
+                    ora_uat_output = exec_task_job(t_job, ips, 'UAT', False)
+                    JobCallback(job_id_info, fmt_salt_out(ora_uat_output, False)).run(t_job)
+                else:
+                    ora_uat_output = exec_task_job(t_job, ips, 'UAT')
+                    JobCallback(job_id_info, fmt_salt_out(ora_uat_output, False)).run(t_job)
             else:
                 t_job.status = 'finish'
                 t_job.exec_output = '此任务没有指定执行服务器'
@@ -654,7 +682,7 @@ def get_paged_query(query, search_fields, request, force_order=None):
 
 def add_cpt(system_name, entity_name, ip, host, env_type, sys_type, installed_agent=False, desc=''):
     from om.models import System, Entity, Computer
-    print(system_name, entity_name, ip, host, env_type, sys_type, installed_agent, desc)
+    # print(system_name, entity_name, ip, host, env_type, sys_type, installed_agent, desc)
     if env_type not in [x[0] for x in Computer.ENV_TYPE]:
         return 'invalid env'
     if sys_type not in [x[0] for x in Computer.SYS_TYPE]:

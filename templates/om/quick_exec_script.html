@@ -9,9 +9,13 @@
         <script src="{% static 'om/js/bootstrap.min.js' %}"></script>
         <script src="{% static 'om/layer/layer.js' %}"></script>
         <script type="text/javascript">
-            var index = parent.layer.getFrameIndex(window.name);
-            layer.alert('保存成功！',{icon: 6}, function(){
-                window.parent.location.reload();
+            //var index = parent.layer.getFrameIndex(window.name);
+            //layer.alert('保存成功！',{icon: 6}, function(){
+            //    window.parent.location.reload();
+            //    parent.layer.close(index);
+            //});
+            var index = parent.layer.getFrameIndex(window.name); //获取窗口索引
+            layer.msg('创建成功！',{time: 3000},function(){
                 parent.layer.close(index);
             });
         </script>

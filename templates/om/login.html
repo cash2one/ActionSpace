@@ -51,12 +51,9 @@
     <div class="header">
             <div class="middle-box text-center loginscreen  animated fadeInDown">
                 <div>
-                    <div>
-                        <h1 class="logo-name light-font">OM</h1>
-                    </div>
-                    <h3>欢迎使用运维工作平台</h3>
-                    <label>动画</label>&nbsp;&nbsp<input id="animate" type="checkbox" checked>
-                    <a href="{% url 'utils:common_address' %}">常用网址导航</a>
+                    <h1 class="logo-name light-font">OM</h1>
+                    <h2 title="Operation and maintenance">运维工作平台</h2>
+                    <label>动画开关</label>&nbsp;&nbsp;<input id="animate" type="checkbox" checked>
                     <form class="m-t" role="form" method='post'>
                         {% csrf_token %}
                         <div class="form-group">
@@ -91,7 +88,7 @@
         hue = 217,
         stars = [],
         count = 0,
-        maxStars = 1300;//星星数量
+        maxStars = 1000;//星星数量
         window.animate = true;
 
         var canvas2 = document.createElement('canvas'), ctx2 = canvas2.getContext('2d');
@@ -141,7 +138,7 @@
           this.orbitX = w / 2;
           this.orbitY = h / 2;
           this.timePassed = random(0, maxStars);
-          this.speed = random(this.orbitRadius) / 100000;
+          this.speed = random(this.orbitRadius) / 1000000;
           //星星移动速度
           this.alpha = random(2, 10) / 10;
 

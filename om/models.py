@@ -319,7 +319,7 @@ class TaskJob(models.Model):
     pause_finish_tip = models.CharField(max_length=100, verbose_name='执行完成暂停提示', default='执行完成，请确认后继续。')
     exec_output = models.TextField(verbose_name='执行结果输出', blank=True)
     exec_user = models.CharField(max_length=100, default='', verbose_name='执行用户')
-    server_list = models.TextField(max_length=10000, default='', verbose_name='服务器列表')
+    server_list = models.TextField(default='', verbose_name='服务器列表')
     step = models.IntegerField(verbose_name='作业序号', default=-1)
 
     class Meta:

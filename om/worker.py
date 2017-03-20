@@ -14,8 +14,13 @@ class OmConsumer(JsonWebsocketConsumer):
     http_user = True
 
     def raw_connect(self, message, **kwargs):
+        user = 'unknown'
+        try:
+            user = User.objects.get(username=message.user.username)
+        except Exception as e:
+            settings.logger.error(repr(e))
         CallLog.objects.create(
-            user=User.objects.get(username=message.user.username),
+            user=user,
             type='message',
             action=message['path'],
             detail=message.content
