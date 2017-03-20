@@ -330,7 +330,7 @@ def set_task_job_output(t_job, val, first):
         t_job.exec_output = ''
     else:
         t_job.exec_output += '\n'
-    t_job.exec_output += repr(val)
+    t_job.exec_output += val if isinstance(val, str) else repr(val)
 
 
 def exec_task_job_impl(t_job, salt, agents, first, is_windows=False):
