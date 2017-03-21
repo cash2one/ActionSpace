@@ -3,7 +3,7 @@ from __future__ import print_function
 from ActionSpace import settings
 from om.util import update_salt_manage_status, fmt_salt_out
 from om.models import CallLog
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, AnonymousUser
 from om.proxy import Salt
 from channels.generic.websockets import JsonWebsocketConsumer
 from om.models import SaltMinion
@@ -15,10 +15,12 @@ class OmConsumer(JsonWebsocketConsumer):
 
     def raw_connect(self, message, **kwargs):
         user = 'unknown'
+        # noinspection PyBroadException
         try:
-            user = User.objects.get(username=message.user.username)
+            not_login_user = User.objects.get_or_create(username='not_login_yet', is_active=False)[0]
+            user = not_login_user if isinstance(message.user, AnonymousUser) else message.user
         except Exception as e:
-            settings.logger.error(repr(e))
+            settings.logger.error({repr(e)})
         CallLog.objects.create(
             user=user,
             type='message',
