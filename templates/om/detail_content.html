@@ -42,7 +42,7 @@
                     <div class="window">
                         <div class="title"><span>&nbsp;&nbsp;{{ job.name }}</span></div>
                     {% if job.status == 'finish' or job.status == 'run_fail' %}
-                        <div class="text">
+                        <div class="text" style="overflow-x: hidden; overflow-y: auto;">
                             <pre class="text" id="output-{{ group.group_id }}_{{ job.job_id }}">{{ job.exec_output }}</pre>
                         </div>
                     {% endif %}
