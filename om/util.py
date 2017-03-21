@@ -431,9 +431,9 @@ class JobExec(object):
 
     def process_script(self, salt, sys, agents):
         agents_list = list(agents.values_list('agent_name', flat=True))
-        if self.job.script_type == 'SHELL':
+        if self.job.script_type in ['SHELL', 'BAT']:
             cmd = self.windows_cmd() if sys == 'windows' else self.linux_shell_cmd()
-            exec_user = None if any([sys == 'windows', self.job.script_type == 'BAT']) else self.job.exec_user
+            exec_user = None if sys == 'windows' else self.job.exec_user
             salt_result, salt_output = salt.shell(agents_list, cmd, exec_user)
             self.job.status = 'finish' if salt_result else 'run_fail'
         elif self.job.script_type == 'PY':
