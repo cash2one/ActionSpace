@@ -139,7 +139,7 @@ INSTALLED_APPS = [
     'om.apps.OmConfig',
     'switch.apps.SwitchConfig',
     'utils.apps.UtilsConfig',
-    'rangefilter'
+    'rangefilter',
 ]
 
 if USE_DEBUG_TOOLBAR:
@@ -281,14 +281,16 @@ CKEDITOR_JQUERY_URL = '//cdn.bootcss.com/jquery/3.1.0/jquery.min.js'
 CKEDITOR_UPLOAD_PATH = "uploads/"
 CKEDITOR_CONFIGS = {
     'default': {
-        'toolbar': 'Custom',
-        'toolbar_Custom': [
-            ['Bold', 'Italic', 'Underline'],
-            ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', '-', 'JustifyLeft', 'JustifyCenter',
-             'JustifyRight', 'JustifyBlock'],
-            ['Link', 'Unlink'],
-            ['RemoveFormat', 'Source']
-        ]
+        'language': 'zh-cn',
+        # 'toolbar': 'Custom',
+        # 'toolbar_Custom': [
+        #     ['Bold', 'Italic', 'Underline'],
+        #     ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', '-', 'JustifyLeft', 'JustifyCenter',
+        #      'JustifyRight', 'JustifyBlock'],
+        #     ['Link', 'Unlink'],
+        #     ['RemoveFormat', 'Source']
+        # ],
+        # 'extraPlugins': 'markdown'
     },
     'awesome_ckeditor': {
         'toolbar': 'Full',

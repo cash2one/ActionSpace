@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="Cache-Control" content="no-siteapp" />
+    <title>{{ flatpage.title }}</title>
+    {% load staticfiles %}
+    <meta name="keywords" content="OM">
+    <meta name="description" content="OM">
+
+    <link rel="shortcut icon" href="{% static 'om/favicon.ico' %}">
+    <link href="{% static 'om/css/bootstrap.min14ed.css' %}" rel="stylesheet">
+    <link href="{% static 'om/css/font-awesome.min93e3.css' %}" rel="stylesheet">
+    <link href="{% static 'om/css/style.min862f.css' %}" rel="stylesheet">
+</head>
+<body class="gray-bg">
+    <div class="wrapper wrapper-content  animated fadeInRight article">
+        <div class="row">
+            <div class="col-lg-10 col-lg-offset-1">
+                <div class="ibox">
+                    <div class="ibox-content">
+                        <div class="text-center article-title">
+                            <h1>{{ flatpage.title }}</h1>
+                        </div>
+                        <p>{{ flatpage.content }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<!--[if lt IE 9]>
+    <script>
+        alert('需要使用chrome，firefox或者IE 10以上浏览器，否则可能显示错误！')
+    </script>
+<![endif]-->
+</body>
+</html>

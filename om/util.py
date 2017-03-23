@@ -225,7 +225,7 @@ def expand_server_list(post_form):
 
 def fmt_salt_out(val, replace=True):
     replace_list = [
-        ("[{'", ''), ("'}]", "'"), ("', '", "', \n"), ("': '", ":\n'"),
+        ("[{'", ''), ("'}]", "'"), ("', '", "', \n"), ("': '", ": \n'"), ("'}, '", "'}, \n"),
         (r'\r\n', '\n '), (r'\t', '\t'), (r'\n', '\n '), (r'\r', ''), (r'\x1b[7l', '')
     ]
     if isinstance(val, dict):
@@ -435,11 +435,11 @@ class JobExec(object):
             cmd = self.windows_cmd() if sys == 'windows' else self.linux_shell_cmd()
             exec_user = None if sys == 'windows' else self.job.exec_user
             salt_result, salt_output = salt.shell(agents_list, cmd, exec_user)
-            self.job.status = 'finish' if salt_result else 'run_fail'
         elif self.job.script_type == 'PY':
             salt_result, salt_output = salt.python(agents_list, self.job.script_content)
         else:
             assert False, f'Unsupported script_type:{self.job.script_type}'
+        self.job.status = 'finish' if salt_result else 'run_fail'
         self.set_job_output(fmt_salt_out(salt_output))
         JobCallback(self.job_key, salt_output)
 

@@ -268,7 +268,7 @@ class TaskJobAdmin(GuardedModelAdmin):
     list_display_links = ('id', 'name')
     readonly_fields = [
         'name', 'job_id', 'group', 'job_type', 'script_type', 'file_name',
-        'begin_time', 'end_time', 'status', 'step',
+        'begin_time', 'end_time', 'step',
         'pause_need_confirm', 'pause_when_finish', 'pause_finish_tip'
     ]
     search_fields = ('id', 'name')

@@ -13,10 +13,11 @@ import asyncio
 
 # noinspection PyCompatibility
 class Scan(object):
-    def __init__(self, clean_first=False):
+    def __init__(self, clean_first=False, use_async=False):
         if clean_first:
             self.clean_data()
         self.search = Search.objects.create()
+        self.use_async = use_async
 
     @staticmethod
     def clean_data():
@@ -130,6 +131,10 @@ class Scan(object):
                 print('can not get switch ip for [{switch}]'.format(switch=peer_switch))
 
     def scan_port(self, result, switch):
+        if not re.search(r'\w+/?\d+/\d+|mgmt\d+|FastEthernet\d+|Fa\d+', result.group('name')):
+            # 不符合命名规范的网口跳过
+            print(f'skip net_port {result.group("name")} in switch {switch.ip}')
+            return
         net_port, _ = NetworkInterface.objects.get_or_create(
             name=result.group('name'), switch=switch, search=self.search
         )
@@ -183,21 +188,26 @@ class Scan(object):
 
     def update_port(self, result, switch):
         begin = time.time()
-        net_face = NetworkInterface.objects.get(
-            switch=switch, num=result.group('net_port_num'), search=self.search
-        )
-        for bridge in BridgePort.objects.filter(
-                num=result.group('port_num'), switch=switch, search=self. search
-        ):
-            bridge.net_port = net_face
-            bridge.save()
-            machines = Machine.objects.filter(
-                mac_decimal=bridge.mac_decimal, switch=switch, search=self.search
+        try:
+            net_face = NetworkInterface.objects.get(
+                switch=switch, num=result.group('net_port_num'), search=self.search
             )
-            if net_face.connect_type in ['up', 'down']:
-                machines.delete()
-            else:
-                machines.update(net_face=net_face)
+            for bridge in BridgePort.objects.filter(
+                    num=result.group('port_num'), switch=switch, search=self. search
+            ):
+                bridge.net_port = net_face
+                bridge.save()
+                machines = Machine.objects.filter(
+                    mac_decimal=bridge.mac_decimal, switch=switch, search=self.search
+                )
+                if net_face.connect_type in ['up', 'down']:
+                    machines.delete()
+                else:
+                    machines.update(net_face=net_face)
+        except NetworkInterface.DoesNotExist as _:
+            pass
+        except Machine.MultipleObjectsReturned as e:
+            print(e)
         end = time.time()
         print('update_port(switch={switch}):{ct:.3f}'.format(switch=switch.ip, ct=end-begin))
 
@@ -222,6 +232,7 @@ class Scan(object):
             print(Machine.objects.filter(mac_hex=mac_hex, search=self.search))
 
     def run(self):
+        run_begin = time.time()
         loop = asyncio.get_event_loop()
 
         # 1 从汇聚交换机里遍历出所有的交换机信息
@@ -229,28 +240,41 @@ class Scan(object):
         for group_switch in Switch.objects.filter(is_group=True):
             kargs = {'ip': group_switch.ip, 'communication': group_switch.communication}
             peer_switch = OrderedDict()
-            tasks.append(self.async_process(1, kargs, self.scan_switch, peer_switch, group_switch))
-        loop.run_until_complete(asyncio.wait(tasks))
+            if self.use_async:
+                tasks.append(self.async_process(1, kargs, self.scan_switch, peer_switch, group_switch))
+            else:
+                self.process(1, kargs, self.scan_switch, peer_switch, group_switch)
+        if self.use_async:
+            loop.run_until_complete(asyncio.wait(tasks))
 
         # 2 遍历出所有交换机的网口
-        tasks = []
+        if self.use_async:
+            tasks = []
         for switch in Switch.objects.filter():
             kargs = {'ip': switch.ip, 'communication': switch.communication}
-            tasks.append(self.async_process(2, kargs, self.scan_port, switch))
-        loop.run_until_complete(asyncio.wait(tasks))
+            if self.use_async:
+                tasks.append(self.async_process(2, kargs, self.scan_port, switch))
+            else:
+                self.process(2, kargs, self.scan_port, switch)
+        if self.use_async:
+            loop.run_until_complete(asyncio.wait(tasks))
 
         # 3 处理所有非汇聚交换机里的vlan信息
-        tasks = []
+        if self.use_async:
+            tasks = []
         for switch in Switch.objects.exclude(is_group=True):
             print('begin({ip})'.format(ip=switch.ip))
             uplink_count = len(switch.uplink_switch.split(','))
-            if uplink_count < 2 and (switch.ip not in ['ip_spec']):
+            if uplink_count < 2 and (switch.ip not in ['10.25.154.231']):
                 print('skip[{ip}],[{uplink_count}]'.format(ip=switch.ip, uplink_count=uplink_count))
                 continue
             kargs = {'ip': switch.ip, 'communication': switch.communication}
-            # self.process(3, kargs, self.process_vlan, switch)
-            tasks.append(self.async_process(3, kargs, self.process_vlan, switch))
-        loop.run_until_complete(asyncio.wait(tasks))
+            if self.use_async:
+                tasks.append(self.async_process(3, kargs, self.process_vlan, switch))
+            else:
+                self.process(3, kargs, self.process_vlan, switch)
+        if self.use_async:
+            loop.run_until_complete(asyncio.wait(tasks))
 
         # 从om的salt信息里更新出salt-agent-name，包含了主机名和ip
         for mc in Machine.objects.filter(search=self.search):
@@ -260,9 +284,16 @@ class Scan(object):
                 mc.save()
 
         # 7从汇聚交换机的arp表里更新扫描到的主机IP，作为上一步的补充
-        tasks = []
+        if self.use_async:
+            tasks = []
         for switch in Switch.objects.filter(is_group=True):
             kargs = {'ip': switch.ip, 'communication': switch.communication}
-            tasks.append(self.async_process(7, kargs, self.scan_arp))
-        loop.run_until_complete(asyncio.wait(tasks))
+            if self.use_async:
+                tasks.append(self.async_process(7, kargs, self.scan_arp))
+            else:
+                self.process(7, kargs, self.scan_arp)
+        if self.use_async:
+            loop.run_until_complete(asyncio.wait(tasks))
         loop.close()
+        run_end = time.time()
+        print(f'run cost time:{run_end-run_begin:.3f}(s)')

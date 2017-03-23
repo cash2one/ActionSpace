@@ -7,6 +7,7 @@ from django.contrib.auth.models import User, AnonymousUser
 from om.proxy import Salt
 from channels.generic.websockets import JsonWebsocketConsumer
 from om.models import SaltMinion
+from utils.util import CheckFireWall
 import re
 
 
@@ -163,9 +164,35 @@ class CmdConsumer(OmConsumer):
             self.send({'result': f'{e}\n{content}'})
 
 
+class CheckFireWallConsumer(OmConsumer):
+    # noinspection PyBroadException
+    def receive(self, content, **kwargs):
+        super(CheckFireWallConsumer, self).receive(content, **kwargs)
+        if not self.message.user.is_authenticated:
+            self.send({'result': '未授权，请联系管理员！'})
+            return
+        src_hosts = content.get('src_hosts', '').strip()
+        dst_hosts = content.get('dst_hosts', '').strip()
+        port = content.get('port', '').strip()
+        if not all([src_hosts, dst_hosts, port]):
+            self.send({'result': '参数错误！'})
+            return
+        src_hosts = src_hosts.replace('<pre>', '').replace('</pre>', '').split('<br>')
+        dst_hosts = dst_hosts.replace('<pre>', '').replace('</pre>', '').split('<br>')
+        port = port.replace('<pre>', '').replace('</pre>', '').split('<br>')
+        port = [int(x) for x in port]
+        if False:
+            CheckFireWall(src_hosts, dst_hosts, port)
+        try:
+            self.send({'result': 'OK'})
+        except Exception as e:
+            self.send({'result': f'{e}\n{content}'})
+
+
 om_routing = [
     SaltConsumer.as_route(path=r"^/om/salt_status/"),
     ActionDetailConsumer.as_route(path=r"^/om/action_detail/", attrs={'group_prefix': 'action_detail-'}),
     UnlockWinConsumer.as_route(path=r"^/om/unlock_win/"),
-    CmdConsumer.as_route(path=r'^/om/admin_action/')
+    CmdConsumer.as_route(path=r'^/om/admin_action/'),
+    CheckFireWallConsumer.as_route(path=r'^/utils/make_firewall_table/')
 ]

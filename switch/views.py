@@ -25,10 +25,10 @@ def get_machine_list(request, search_id):
     machines, machine_count = get_paged_query(q, search_fields, request)
     result = {'total': machine_count, 'rows': []}
     [result['rows'].append({
-            'ip': 'NA' if m.minion is None else m.minion.name,
+            'minion': 'NA' if m.minion is None else m.minion.name,
             'mac_hex': m.mac_hex,
             'entity_name': m.entity_name().split(','),
-            'switch_ip': m.switch.ip,
+            'switch__ip': m.switch.ip,
             'net_face': 'NA' if m.net_face is None else m.net_face.name
         }) for m in machines]
     return JsonResponse(result, safe=False)
