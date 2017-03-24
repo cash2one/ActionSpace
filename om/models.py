@@ -366,10 +366,10 @@ class SaltMinion(models.Model):
     def __str__(self):
         return get_name(self.name)
 
-    def host(self):
+    def ip(self):
         return self.name.split('-')[-1]
 
-    def ip(self):
+    def hosts(self):
         return '-'.join(self.name.split('-')[0:-1])
 
     class Meta:

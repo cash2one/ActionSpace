@@ -3,6 +3,7 @@ import struct
 from collections import OrderedDict
 from om.proxy import Salt
 from om.models import SaltMinion
+from ActionSpace.settings import logger
 
 # noinspection PyCompatibility
 NET_TABLE = OrderedDict([
@@ -136,7 +137,7 @@ class CheckFireWall(object):
     }
 
     def __init__(
-            self, source, target, port, use_nc=True,
+            self, source, target, port, use_nc=False,
             win_py='C:/salt/bin/python.exe',
             win_tmp='C:/Windows/TEMP',
             linux_py='python',
@@ -164,6 +165,7 @@ class CheckFireWall(object):
         self.check_port()
         self.check_agent_name()
         self.check_env()
+        self.check_result = []
 
     def status(self, code=None):
         return self.CODE[self.code if code is None else code]
@@ -213,9 +215,12 @@ class CheckFireWall(object):
             self.salt = Salt(self.env)
 
     def _trans(self, ag_list, is_win):
+        logger.info(f"{ag_list}:{is_win}")
         return self.salt.file_trans(ag_list, self.check_script, f'{self.win_tmp if is_win else self.linux_tmp}/check_connect.py')
 
     def _nc_valid(self, ag_list, fail_code):
+        if not self.use_nc:
+            return False
         r = self.salt.shell(ag_list, 'which nc > /dev/null 2>&1;echo $?')
         if not r[0]:
             self.code = fail_code
@@ -230,22 +235,21 @@ class CheckFireWall(object):
         ag_list = self._names(self.source_win) + self._names(self.target_win)
         if len(ag_list) > 0:
             r = self._trans(ag_list, True)
+            logger.info(f"{r}")
             if not r[0]:
                 self.code = 5
                 return
 
         # 检查nc是否有效，无效则传探测脚本到linux
         ag_list = self._names(self.source_linux) + self._names(self.target_linux)
-        if not any([
-            not self.use_nc,  # 关闭nc检查
-            not all([self.use_nc, self._nc_valid(ag_list, 6)])]  # nc开启但无效
-        ):
+        if not all([self.use_nc, self._nc_valid(ag_list, 6)]):
             if len(ag_list) > 0:
                 r = self._trans(ag_list, False)
                 if not r[0]:
                     self.code = 7
+                    self.valid_nc = False
         else:
-            self.valid_nc = True
+            self.valid_nc = True and self.use_nc
 
     @classmethod
     def _names(cls, ins):
@@ -255,9 +259,7 @@ class CheckFireWall(object):
         py = self.win_py if target.env == 'Windows' else self.linux_py
         tmp_path = self.win_tmp if target.env == 'Windows' else self.linux_tmp
         r = self.salt.shell(target.name, f'{py} {tmp_path}/{self.check_script} {target.ip()} {self.port}')
-        if not all([r[0], list(set(r[1]['return'][0].values())) == ['True']]):
-            self.check_result[target.name]['peer_listen'] = 9
-        return self.check_result[target.name]['peer_listen'] == 0
+        return all([r[0], list(set(r[1]['return'][0].values())) == ['True']])
 
     def _check_peer_connect(self, target, linux=True):
         ag_list = self._names(self.source_linux) if linux else self._names(self.source_win)
@@ -268,33 +270,41 @@ class CheckFireWall(object):
                 else:
                     cmd = f'{self.linux_py} {self.linux_tmp}/{self.check_script} {target.ip()} {self.port}'
                 r = self.salt.shell(ag_list, cmd)
-                self.check_result[target.name]['linux']['result'] = r[1]['return'][0]
-                if not any([not r[0], list(set(r[1]['return'][0].values())) == ['True']]):
-                    self.check_result[target.name]['linux']['code'] = 10
+                check_pass = any([not r[0], list(set(r[1]['return'][0].values())) == ['True']])
+                self.check_result.append({
+                    'from': ag_list,
+                    'to': target.name,
+                    'port': self.port,
+                    'pass': check_pass,
+                    'desc': self.CODE[0 if check_pass else 10]
+                })
+                return check_pass
             else:
                 cmd = f'{self.win_py} {self.win_tmp}/{self.check_script} {target.ip()} {self.port}'
                 r = self.salt.shell(ag_list, cmd)
-                print(r)
-                self.check_result[target.name]['windows']['result'] = r[1]['return'][0]
-                if not any([not r[0], list(set(r[1]['return'][0].values())) == ['True']]):
-                    self.check_result[target.name]['windows']['code'] = 11
+                check_pass = any([not r[0], list(set(r[1]['return'][0].values())) == ['True']])
+                self.check_result.append({
+                    'from': ag_list,
+                    'to': target.name,
+                    'port': self.port,
+                    'pass': check_pass,
+                    'desc': self.CODE[0 if check_pass else 10]
+                })
+                return check_pass
 
     def check(self):
         self.trans_script()
+        self.check_result = []
         for target in self.target:
-            # 1、检测对端端口是否已开通
-            self.check_result[target.name] = {
-                'peer_listen': 0,
-                'windows': {
-                    'code': 0,
-                    'result': None
-                },
-                'linux': {
-                    'code': 0,
-                    'result': None
-                }
-            }
+            # 1、检测对端端口是否已开通，不通则放弃检查
             if not self._check_peer_listen(target):
+                self.check_result.append({
+                    'from': target.name,
+                    'to': target.name,
+                    'port': self.port,
+                    'pass': False,
+                    'desc': self.CODE[9]
+                })
                 continue
 
             # 2、从源端探测对端端口

@@ -131,7 +131,15 @@
         //noinspection JSUnresolvedFunction
         var inst = new ReconnectingWebSocket(url);
         inst.onmessage = function(msg) {
-            console.log(JSON.parse(msg.data));
+            console.log(msg.data);
+            var json_layer = layer.open({
+              type: 1,
+              skin: 'layui-layer-demo', //样式类名
+              closeBtn: 0, //不显示关闭按钮
+              anim: 2, area: ['90%', '90%'],
+              shadeClose: true, //开启遮罩关闭
+              content: '<pre>' + JSON.stringify(JSON.parse(msg.data), null, 4) + '</pre>'
+            });
             layer.closeAll('loading');
         };
 
@@ -157,8 +165,9 @@
             },
             'click .check_firewall': function (e, value, row, _) {
                 var send_data = {
-                    'src_hosts': row.s_host,
-                    'dst_hosts': row.t_host,
+                    's_ip': row.s_ip,
+                    't_host': row.t_host,
+                    't_ip': row.t_ip,
                     'port': row.port
                 };
                 inst.send(JSON.stringify(send_data));

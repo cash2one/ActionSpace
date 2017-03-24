@@ -1,5 +1,6 @@
 # coding=utf-8
 from __future__ import print_function
+
 from ActionSpace import settings
 from om.util import update_salt_manage_status, fmt_salt_out
 from om.models import CallLog
@@ -8,6 +9,7 @@ from om.proxy import Salt
 from channels.generic.websockets import JsonWebsocketConsumer
 from om.models import SaltMinion
 from utils.util import CheckFireWall
+import traceback
 import re
 
 
@@ -161,7 +163,7 @@ class CmdConsumer(OmConsumer):
             _, back = Salt(pc.env).shell(pc.name, cmd, None if user == 'NA' else user)
             self.send({'result': back['return'][0].get(name, '未知结果！')})
         except Exception as e:
-            self.send({'result': f'{e}\n{content}'})
+            self.send({'result': f"{e}\n{content}"})
 
 
 class CheckFireWallConsumer(OmConsumer):
@@ -171,22 +173,29 @@ class CheckFireWallConsumer(OmConsumer):
         if not self.message.user.is_authenticated:
             self.send({'result': '未授权，请联系管理员！'})
             return
-        src_hosts = content.get('src_hosts', '').strip()
-        dst_hosts = content.get('dst_hosts', '').strip()
+        s_ip = content.get('s_ip', '').strip()
+        t_ip = content.get('t_ip', '').strip()
         port = content.get('port', '').strip()
-        if not all([src_hosts, dst_hosts, port]):
+        if not all([s_ip, t_ip, port]):
             self.send({'result': '参数错误！'})
             return
-        src_hosts = src_hosts.replace('<pre>', '').replace('</pre>', '').split('<br>')
-        dst_hosts = dst_hosts.replace('<pre>', '').replace('</pre>', '').split('<br>')
+        s_ip = s_ip.replace('<pre>', '').replace('</pre>', '').split('<br>')
+        t_ip = t_ip.replace('<pre>', '').replace('</pre>', '').split('<br>')
         port = port.replace('<pre>', '').replace('</pre>', '').split('<br>')
-        port = [int(x) for x in port]
-        if False:
-            CheckFireWall(src_hosts, dst_hosts, port)
         try:
-            self.send({'result': 'OK'})
+            src_ag = [SaltMinion.objects.get(name__endswith='-'+x) for x in s_ip]
+            dst_ag = [SaltMinion.objects.get(name__endswith='-'+x) for x in t_ip]
+            result = []
+            for p in port:
+                cf = CheckFireWall(src_ag, dst_ag, int(p))
+                result.append(cf.check())
+                # self.message.reply_channel.send({'text': json.dumps(result)}, immediately=True)
+            self.send(result)
         except Exception as e:
-            self.send({'result': f'{e}\n{content}'})
+            if self.message.user.is_superuser:
+                self.send({'result': f"{e}\n{traceback.format_exc()}\n{content}"})
+            else:
+                self.send({'result': 'error'})
 
 
 om_routing = [

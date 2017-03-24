@@ -11,9 +11,6 @@ if __name__ == '__main__':
     try:
         sock.connect((host, int(port)))
         print(True)
-        sock.close()
-        sys.exit(100)
     except Exception:
         print(False)
-        sock.close()
-        sys.exit(104)
+    sock.close()
