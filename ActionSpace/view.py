@@ -4,10 +4,11 @@ from django.contrib.auth.models import Group, User
 from django.contrib import auth
 from django.http import HttpResponseRedirect
 from switch.models import Machine
+from om.models import MailGroup
 from django.shortcuts import render
 from django import forms
 
-from ActionSpace.serializers import UserSerializer, GroupSerializer, ServerSerializer, MachineSerializer
+from ActionSpace.serializers import UserSerializer, GroupSerializer, ServerSerializer, MachineSerializer, MailGroupSerializer
 from rest_framework import viewsets
 from om.models import Computer
 
@@ -54,11 +55,13 @@ class MachineViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = MachineSerializer
 
 
+class MailGroupViewSet(viewsets.ReadOnlyModelViewSet):  # ModelViewSet
+    # renderer_classes = (JSONRenderer,)
+    queryset = MailGroup.objects.all()
+    serializer_class = MailGroupSerializer
+
+
 # Create your views here.
-def index(_):
-    return HttpResponse("<script language='javascript'>document.location = 'om/'</script>")
-
-
 def ok(_):
     return HttpResponse('OK')
 

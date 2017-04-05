@@ -1,7 +1,7 @@
 # coding=utf-8
 from django.contrib.auth.models import User, Group
 from rest_framework import serializers
-from om.models import Computer, Entity
+from om.models import Computer, Entity, MailGroup
 from switch.models import Machine
 
 
@@ -43,3 +43,8 @@ class MachineSerializer(serializers.ModelSerializer):
         model = Machine
         fields = ('mac_hex', 'entity_name', 'switch', 'net_face')
 
+
+class MailGroupSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = MailGroup
+        fields = ('name', 'user_list')

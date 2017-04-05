@@ -13,7 +13,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
 # noinspection PyUnresolvedReferences
 from django.utils import timezone
-from om.form import JobForm, JobGroupForm, FlowForm, TaskItemForm, ChgPwdForm
+from om.form import JobForm, JobGroupForm, FlowForm, TaskItemForm, ChgPwdForm, MailGroupForm
 from om.models import *
 from djcelery.models import PeriodicTask, IntervalSchedule, CrontabSchedule
 from datetime import datetime as dt
@@ -23,6 +23,7 @@ from om.ftputil import Ftp
 import json
 import time
 from django_select2.views import AutoResponseView
+from utils.util import join_activity
 
 
 # @login_required
@@ -41,11 +42,9 @@ def index(request):
         }
     }
     # noinspection PyShadowingNames
-    from django.contrib.auth.models import Group as UG
-    is_internal = UG.objects.get(name='my group').user_set.filter(username=request.user.username).exists()
     return render(request, 'om/index.html', {
         'user': request.user, 'host': host_nginx[settings.OM_ENV],
-        'is_internal': is_internal or request.user.is_superuser
+        'join_activity': join_activity(request.user.username) or request.user.is_superuser
     })
 
 
@@ -201,6 +200,12 @@ def exec_task(request, task_id):
     except Task.DoesNotExist as e:
         print(e)
         return JsonResponse({'result': 'N', 'desc': '任务[{tid}]不存在！'.format(tid=task_id)})
+
+
+@login_required
+def confirm_exec_task(request, task_id):
+    settings.logger.info('%s %s' % (request.user.username, task_id))
+    return JsonResponse({'result': 'Y' if task_in_prd(task_id) else 'N'})
 
 
 @login_required
@@ -1141,3 +1146,87 @@ class ComputerTaskView(AutoResponseView):
         """Get QuerySet from cached widget."""
         self.queryset = get_task_computers_list(self.request.user)
         return self.widget.filter_queryset(self.term, self.queryset)
+
+
+@login_required
+def get_mail_group_list(request):
+    settings.logger.info(request.user.username)
+    search_fields = ['pk__icontains', 'name__icontains', 'last_modified_by__icontains']
+    mail_groups, mail_group_count = get_paged_query(MailGroup.objects.all(), search_fields, request)
+    result = {'total': mail_group_count, 'rows': []}
+    fmt = '%Y-%m-%d %H:%M:%S'
+    [result['rows'].append({
+        'id': m.id, 'name': m.name, 'users': m.users(),
+        'last_modified_by': m.last_modified_by,
+        'last_modified_time': dt.strftime(timezone.localtime(m.last_modified_time), fmt),
+    }) for m in mail_groups]
+    return JsonResponse(result, safe=False)
+
+
+@login_required
+def mail_group(request):
+    settings.logger.info(request.user.username)
+    return render(request, 'om/mail_group.html')
+
+
+@login_required
+def new_mail_group(request):
+    settings.logger.info(request.user.username)
+    close_layer = 'Y'
+    if not request.user.has_perm('om.add_mailgroup'):
+        return no_permission(request)
+    if request.method == 'POST':
+        request.POST._mutable = True
+        request.POST['last_modified_by'] = request.user.username
+        request.POST._mutable = False
+        form = MailGroupForm(request.POST)
+        if form.is_valid():
+            form.save(commit=False)
+            form.instance.last_modified_by = request.user.username
+            form.save()
+        else:
+            close_layer = 'N'
+    else:
+        form = MailGroupForm()
+        close_layer = 'N'
+    return render(request, 'om/new_mail_group.html', {
+        'form': form, 'mul_select': ['user_list'],
+        'close_layer': close_layer
+    })
+
+
+@login_required
+def edit_mail_group(request, mg_id):
+    settings.logger.info(f'{request.user.username}, {mg_id}')
+    close_layer = 'Y'
+    mg = get_object_or_404(MailGroup, pk=mg_id)
+    mg.last_modified_by = request.user.username
+    if not any([request.user.has_perm('om.change_mailgroup'), request.user.has_perm('om.change_mailgroup', mg)]):
+        return no_permission(request)
+    if request.method == 'POST':
+        form = MailGroupForm(data=request.POST, instance=mg)
+        if form.is_valid():
+            form.save()
+        else:
+            close_layer = 'N'
+    else:
+        close_layer = 'N'
+        form = MailGroupForm(instance=mg)
+    return render(request, 'om/new_mail_group.html', {
+        'form': form, 'mul_select': ['user_list'],
+        'close_layer': close_layer
+    })
+
+
+@login_required
+def delete_mail_group(request, mg_id):
+    settings.logger.info(f'{request.user.username}, {mg_id}')
+    try:
+        mg = MailGroup.objects.get(pk=mg_id)
+        if not any([request.user.has_perm('om.delete_mailgroup'), request.user.has_perm('om.delete_mailgroup', mg)]):
+            return JsonResponse({'result': 'N', 'desc': '没有删除权限，请联系管理员！'})
+        mg.delete()
+    except MailGroup.DoesNotExist as e:
+        settings.logger.error(repr(e))
+        return JsonResponse({'result': 'N', 'desc': '记录不存在，删除失败！'})
+    return JsonResponse({'result': 'Y', 'desc': '删除成功！'})

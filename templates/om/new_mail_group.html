@@ -1,0 +1,98 @@
+{% extends 'om/base.html' %}
+{% load form_extra_tag %}
+{% load staticfiles %}
+{% block body_begin %}
+<body class="gray-bg">
+{% endblock %}
+{% block body_content %}
+    <div class="wrapper wrapper-content  animated fadeInRight">
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="ibox ">
+                    <div class="ibox-title">
+                        <h5>邮件组</h5>
+                    </div>
+                    <div class="ibox-content">
+                        <form class="form-horizontal" method='post'>
+                            {% csrf_token %}
+                            {% for field in form %}
+                                <div class="form-group">
+                                    <label class="col-sm-2 control-label">{{ field.label_tag }}</label>
+                                    <div class="col-sm-8" style='display:block;'>
+                                        {{ field | set_attr:'class=form-control' }}
+                                        {{ field.errors }}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                            <div class="form-group">
+                                <div class="col-sm-10 col-sm-offset-5">
+                                    <button class="btn btn-primary" id="close_page" value="cancel">提交</button>
+                                    <button class="btn btn-white" id="cancel_form" type="button" value="cancel">取消</button>
+                                </div>
+                            </div>
+                    </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+{% endblock %}
+{% block other_js %}
+    <script src="{% static 'om/layer/layer.js' %}"></script>
+    <script src="{% static 'om/plugins/multi-select/js/jquery.quicksearch.min.js' %}"></script>
+    <script src="{% static 'om/plugins/multi-select/js/jquery.multi-select.min.js' %}"></script>
+    <!--suppress JSUnresolvedVariable -->
+    <script type="text/javascript">
+        $(document).ready(function() {
+            {% if close_layer == 'Y' %}
+                var index = parent.layer.getFrameIndex(window.name);
+                layer.alert('处理成功！',{icon: 6}, function(){
+                    parent.layer.close(index);
+                });
+            {% endif %}
+            $('#cancel_form').click(function (e) {
+                parent.layer.close(parent.layer.getFrameIndex(window.name));
+            });
+            {% for field_select in mul_select %}
+                $('#id_{{ field_select }}').multiSelect({
+                    dblClick: true,
+                    selectableOptgroup: true,
+                    selectableHeader: "<input type='text' class='search-input' autocomplete='off' placeholder='搜索可选项'>",
+                    selectionHeader: "<input type='text' class='search-input' autocomplete='off' placeholder='搜索已选项'>",
+                    afterInit: function(ms){
+                      var that = this,
+                          $selectableSearch = that.$selectableUl.prev(),
+                          $selectionSearch = that.$selectionUl.prev(),
+                          selectableSearchString = '#'+that.$container.attr('id')+' .ms-elem-selectable:not(.ms-selected)',
+                          selectionSearchString = '#'+that.$container.attr('id')+' .ms-elem-selection.ms-selected';
+                      that.qs1 = $selectableSearch.quicksearch(selectableSearchString)
+                      .on('keydown', function(e){
+                        if (e.which === 40){
+                          that.$selectableUl.focus();
+                          return false;
+                        }
+                      });
+
+                      that.qs2 = $selectionSearch.quicksearch(selectionSearchString)
+                      .on('keydown', function(e){
+                        if (e.which === 40){
+                          that.$selectionUl.focus();
+                          return false;
+                        }
+                      });
+                    },
+                    afterSelect: function(){
+                      this.qs1.cache();
+                      this.qs2.cache();
+                    },
+                    afterDeselect: function(){
+                      this.qs1.cache();
+                      this.qs2.cache();
+                    }
+                });
+                $('#loading-{{ field_select }}').remove();
+            {% endfor %}
+        });
+    </script>
+{% endblock %}

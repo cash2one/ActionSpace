@@ -3,8 +3,8 @@ from functools import reduce
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.http import JsonResponse
-from utils.models import Activity, CommonAddress
-from utils.util import format_subnet, ip_in_subnet, NET_TABLE
+from utils.models import Activity, CommonAddress, NetArea, NetInfo
+from utils.util import format_subnet, ip_in_subnet
 from utils.form import WallForm
 import json
 import re
@@ -20,19 +20,16 @@ def picutil(request):
 @login_required
 def query_net_area(request):
     ip = request.POST['ip']
-    for net_group in NET_TABLE.values():
-        for net_chile, net_ip_list in net_group.items():
-            if net_chile != 'name':
-                for net_ip in net_ip_list:
-                    if ip_in_subnet(ip, format_subnet(net_ip)):
-                        result = '网区：{group}，网段：{area}'.format(group=net_group['name'], area=net_chile)
-                        return JsonResponse({'result': result})
+    for net_info in NetInfo.objects.all():
+        if ip_in_subnet(ip, format_subnet(f'{net_info.ip}/{net_info.mask}')):
+            result = f'网区：{net_info.region.area.name}，网段：{net_info.region.name}'
+            return JsonResponse({'result': result})
     return JsonResponse({'result': '未知网段'})
 
 
 @login_required
 def net(request):
-    return render(request, 'utils/net.html', {'net': NET_TABLE})
+    return render(request, 'utils/net.html', {'net_area': NetArea.objects.all()})
 
 
 @login_required
@@ -52,17 +49,19 @@ def activity_vote(request):
 
 
 @login_required
+def activity_status(request):
+    joined_member = Activity.objects.filter(join=True)
+    return JsonResponse({
+        'joined_count': joined_member.count(), 'voted_count': joined_member.filter(voted=True).count()
+    })
+
+
+@login_required
 def activity(request):
-    user = Activity.objects.filter(user=request.user)
-    not_voted = Activity.objects.filter(voted=False, join=True)
-    all_voted = not not_voted.exists()
-    if not user.exists():
-        all_voted = True
+    me = Activity.objects.filter(user=request.user, join=True)
     context = {
-        'all_voted': all_voted,
-        'count': Activity.objects.count(),
-        'voted': Activity.objects.count() - not_voted.count(),
-        'i_voted': user.exists() and user.first().voted
+        'finished': not Activity.objects.filter(join=True, voted=False).exists(),
+        'i_need_voted': me.exists() and not me.first().voted
     }
     return render(request, 'utils/activity.html', context)
 

@@ -16,7 +16,7 @@ Including another URLconf
 from django.conf.urls import url, include
 from django.contrib import admin
 from django.views.generic import RedirectView
-from ActionSpace.view import UserViewSet, GroupViewSet, ServerViewSet, MachineViewSet, ok, login, guest_login
+from ActionSpace.view import UserViewSet, GroupViewSet, ServerViewSet, MachineViewSet, ok, login, guest_login, MailGroupViewSet
 from rest_framework import routers
 from django.conf import settings
 
@@ -26,6 +26,7 @@ router.register(r'users', UserViewSet)
 router.register(r'groups', GroupViewSet)
 router.register(r'servers', ServerViewSet)
 router.register(r'machines', MachineViewSet)
+router.register(r'mailgroup', MailGroupViewSet)
 
 urlpatterns = [
     url(r'^$', RedirectView.as_view(pattern_name='om:index', permanent=False), name='index'),

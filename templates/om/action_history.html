@@ -72,25 +72,25 @@
         });
 
         function actionFormatter(value, row, index) {
-            var actions = new Array()
+            var actions = [];
             actions.push('<div class="btn-group">');
-            if (row.approval_status == '未审') {
+            if (row.approval_status === '未审') {
                 actions.push('<button class="btn btn-xs btn-success approval_task" title="审批"><i class="fa fa-hand-o-right">审批</i></button>');
             } else {
-                if (row.status == '未执行') {
-                    if (row.approval_status == '通过') {
+                if (row.status === '未执行') {
+                    if (row.approval_status === '通过') {
                         actions.push('<button class="btn btn-xs btn-success exec_task" title="执行"><i class="fa fa-hand-o-right">执行</i></button>');
                     }
                 }
                 else {
                     actions.push('<button class="btn btn-xs btn-primary status" title="结果"><i class="fa fa-rss">结果</i></button>');
                 }
-                if (row.status == '已执行') {
+                if (row.status === '已执行') {
                     actions.push('<button class="btn btn-xs btn-white redo" title="重做"><i class="fa fa-repeat">重做</i></button>');
                 }
             }
             actions.push('<button class="btn btn-xs btn-primary detail" title="详情"><i class="fa fa-bar-chart">详情</i></button>');
-            actions.push('</div>')
+            actions.push('</div>');
             return actions.join('&nbsp;&nbsp;');
         }
         function show_detail(task_id){
@@ -103,6 +103,24 @@
             });
             layer.full(detail_layer);
         }
+
+        function exec_task(task_id) {
+            $.get('/om/exec_task/'+task_id, function(result) {
+                if (result.result === 'Y') {
+                    var detail_layer = layer.open({
+                        type: 2,
+                        area: ['700px', '530px'],
+                        fix: false, //不固定
+                        maxmin: true,
+                        content: "/om/action_detail/" + task_id
+                    });
+                    layer.full(detail_layer);
+                } else {
+                    layer.msg(result.desc,{time: 2000});
+                }
+            });
+        }
+
         function show_task_status(task_id){
             var task_status = layer.open({
                   type: 2,
@@ -128,18 +146,20 @@
                 layer.full(detail_layer);
             },
             'click .exec_task': function (e, value, row, index) {
-                $.get('/om/exec_task/'+row.id, function(result) {
-                    if (result.result == 'Y') {
-                        var detail_layer = layer.open({
-                            type: 2,
-                            area: ['700px', '530px'],
-                            fix: false, //不固定
-                            maxmin: true,
-                            content: "/om/action_detail/" + row.id
+                $.get('/om/confirm_exec_task/'+row.id, function(result) {
+                    if (result.result === 'Y') {
+                        layer.confirm('此任务执行对象包含生产主机，是否确认执行？', {
+                            title: '执行确认',
+                            btn: ['确认执行','放弃执行']
+                        }, function(index){
+                            layer.close(index);
+                            exec_task(row.id);
+                        }, function(){
+                            layer.msg('已取消',{time: 2000, icon: 1});
                         });
-                        layer.full(detail_layer);
-                    } else {
-                        layer.msg(result.desc,{time: 2000});
+                    }
+                    else {
+                        exec_task(row.id)
                     }
                 });
             },

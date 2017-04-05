@@ -315,5 +315,5 @@ class CallLogAdmin(GuardedModelAdmin):
 
 @admin.register(MailGroup)
 class MailGroupAdmin(GuardedModelAdmin):
-    list_display = ('id', 'name')
+    list_display = ('id', 'name', 'users')
     search_fields = ('id', 'name')

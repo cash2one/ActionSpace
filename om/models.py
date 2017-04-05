@@ -96,9 +96,16 @@ class ComputerGroup(models.Model):
 class MailGroup(models.Model):
     name = models.CharField(max_length=100, verbose_name='邮件组名称', default='')
     user_list = models.ManyToManyField(User, verbose_name='用户列表')
+    last_modified_time = models.DateTimeField(verbose_name="最后修改时间", auto_now=True)
+    last_modified_by = models.CharField(max_length=50, verbose_name='最后修改人', default='NA')
 
     def __str__(self):
         return get_name(self.name)
+
+    def users(self):
+        users = self.user_list.all()
+        return ','.join([f'{x.username}({x.last_name}{x.first_name})' for x in users]) if len(users) > 0 else '无'
+    users.short_description = '用户名列表'
 
     class Meta:
         verbose_name = '邮件组'

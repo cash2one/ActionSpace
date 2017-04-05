@@ -21,8 +21,8 @@ USE_DJANGO_CELERY = True
 USE_DEBUG_TOOLBAR = False
 DEBUG_TOOLBAR_CHG_TAG = False
 USE_ALL_AUTH = False
-MQ_URL = 'amqpurl'
-USE_ORACLE = False
+MQ_URL = 'amqp://action_space:action_space@localhost:5672/%2F'
+USE_ORACLE = True
 OM_ENV = 'UAT'
 
 if USE_DJANGO_CELERY:
@@ -282,15 +282,21 @@ CKEDITOR_UPLOAD_PATH = "uploads/"
 CKEDITOR_CONFIGS = {
     'default': {
         'language': 'zh-cn',
-        # 'toolbar': 'Custom',
-        # 'toolbar_Custom': [
-        #     ['Bold', 'Italic', 'Underline'],
-        #     ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', '-', 'JustifyLeft', 'JustifyCenter',
-        #      'JustifyRight', 'JustifyBlock'],
-        #     ['Link', 'Unlink'],
-        #     ['RemoveFormat', 'Source']
-        # ],
-        # 'extraPlugins': 'markdown'
+        # 'toolbar': 'Full',
+        'toolbar': 'Custom',
+        'toolbar_Custom': [
+            {'name': 'document', 'items': ['Print']},
+            {'name': 'clipboard', 'items': ['Undo', 'Redo']},
+            {'name': 'styles', 'items': ['Format', 'Font', 'FontSize']},
+            {'name': 'basicstyles', 'items': ['Bold', 'Italic', 'Underline', 'Strike', 'RemoveFormat', 'CopyFormatting']},
+            {'name': 'colors', 'items': ['TextColor', 'BGColor']},
+            {'name': 'align', 'items': ['JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock']},
+            {'name': 'links', 'items': ['Link', 'Unlink']},
+            {'name': 'paragraph', 'items': ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', '-', 'Blockquote', 'HorizontalRule']},
+            {'name': 'insert', 'items': ['Image', 'Table']},
+            {'name': 'tools', 'items': ['Maximize']},
+            {'name': 'editing', 'items': ['Scayt', 'Source']}
+        ],
     },
     'awesome_ckeditor': {
         'toolbar': 'Full',

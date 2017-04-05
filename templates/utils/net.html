@@ -14,8 +14,8 @@
                     <div class="ibox-content">
                         <ul class="nav nav-tabs">
                             <li class="active"><a data-toggle="tab" href="#net_table" aria-expanded="true">概况</a></li>
-                            {% for k, v in net.items %}
-                                <li><a data-toggle="tab" href="#{{ k }}" aria-expanded="false">{{ v.name }}</a></li>
+                            {% for area in net_area %}
+                                <li><a data-toggle="tab" href="#area_{{ area.id }}" aria-expanded="false">{{ area.name }}</a></li>
                             {% endfor %}
                             <li><a data-toggle="tab" href="#net_search" aria-expanded="false">查询</a></li>
                         </ul>
@@ -89,26 +89,24 @@
                                     </table>
                                 </div>
                             </div>
-                            {% for nk, nv in net.items %}
-                                <div id="{{ nk }}" class="tab-pane">
+                            {% for area in net_area %}
+                                <div id="area_{{ area.id }}" class="tab-pane">
                                     <div class="panel-body">
-                                        {% for k,v in nv.items %}
-                                            {% if k != 'name' %}
-                                                <div class="ibox-content timeline">
-                                                    <div class="timeline-item">
-                                                        <div class="row">
-                                                            <div class="col-xs-3 date">
-                                                                <small class="text-navy">{{ k }}</small>
-                                                            </div>
-                                                            <div class="col-xs-7 content no-top-border">
-                                                                {% for ip in v %}
-                                                                    <p class="m-b-xs"><strong>{{ ip }}</strong></p>
-                                                                {% endfor %}
-                                                            </div>
+                                        {% for region in area.netregion_set.all %}
+                                            <div class="ibox-content timeline">
+                                                <div class="timeline-item">
+                                                    <div class="row">
+                                                        <div class="col-xs-3 date">
+                                                            <small class="text-navy">{{ region.name }}</small>
+                                                        </div>
+                                                        <div class="col-xs-7 content no-top-border">
+                                                            {% for ipinfo in region.netinfo_set.all %}
+                                                                <p class="m-b-xs"><strong>{{ ipinfo.ip }}/{{ ipinfo.mask }}</strong></p>
+                                                            {% endfor %}
                                                         </div>
                                                     </div>
                                                 </div>
-                                            {% endif %}
+                                            </div>
                                         {% endfor %}
                                     </div>
                                 </div>

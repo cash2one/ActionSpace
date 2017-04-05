@@ -77,6 +77,9 @@
                                     <li>
                                         <a class="J_menuItem" href="{%url 'om:upload_file'%}"><i class="fa fa-file">配置文件管理</i></a>
                                     </li>
+                                    <li>
+                                        <a class="J_menuItem" href="{%url 'om:mail_group'%}"><i class="fa fa-group">邮件组管理</i></a>
+                                    </li>
                                 </ul>
                             </li>
                             <li>
@@ -120,7 +123,7 @@
                                 <li>
                                     <a class="J_menuItem" href="{%url 'utils:net'%}"><i class="fa fa-wifi">网络信息</i></a>
                                 </li>
-                                {% if is_internal %}
+                                {% if join_activity %}
                                     <li>
                                         <a class="J_menuItem" href="{%url 'utils:activity'%}"><i class="fa fa-recycle">竞猜活动</i></a>
                                     </li>

@@ -710,7 +710,7 @@ def import_detector(url='detector_url'):
         entity_name = ele['pool']
         ip = ele['ip']
         host = ele['hostname']
-        env_type = 'PRD' if ele['env'] == 'Production' else ele['env']
+        env_type = 'PRD' if ele['env'] in ['Production', 'DR'] else ele['env']
         sys_type = ele['system'].lower()
         # print(f'async from detector:{system_name}, {entity_name}, {ip}, {host}, {env_type}, {sys_type}')
         add_cpt(system_name, entity_name, ip, host, env_type, sys_type, desc='from detector')
@@ -808,3 +808,17 @@ def api_server_list(request, only_for_task=False):
         'host': c.host
     }) for c in computers]
     return result
+
+
+def task_in_prd(tid):
+    from om.models import Task, Computer
+    try:
+        t_flow = Task.objects.get(pk=tid).taskflow_set.first()
+        for t_group in t_flow.taskjobgroup_set.all().order_by('step'):
+            for t_job in t_group.taskjob_set.all().order_by('step'):
+                if Computer.objects.filter(ip__in=str2arr(t_job.server_list, digit_check=False), env='PRD').exists():
+                    return True
+    except Task.DoesNotExist as e:
+        settings.logger.error(repr(e))
+        return False
+    return False

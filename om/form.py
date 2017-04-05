@@ -1,8 +1,9 @@
 # coding=utf-8
 from django import forms
+from django.contrib.auth.models import User
 from django.utils.encoding import force_text
 from django.utils.html import format_html
-from om.models import Job, JobGroup, Computer, Flow, TaskJob
+from om.models import Job, JobGroup, Computer, Flow, TaskJob, MailGroup
 from django_select2.forms import ModelSelect2MultipleWidget
 from ActionSpace.settings import OM_ENV
 
@@ -197,3 +198,14 @@ class ChgPwdForm(forms.Form):
         else:
             cleaned_data = super(ChgPwdForm, self).clean()
         return cleaned_data
+
+
+class MailGroupForm(forms.ModelForm):
+    user_list = forms.ModelMultipleChoiceField(
+        required=True, label='用户列表', queryset=User.objects.exclude(email='')
+    )
+
+    class Meta:
+        model = MailGroup
+        fields = '__all__'
+        exclude = ('job_id', 'last_modified_by')

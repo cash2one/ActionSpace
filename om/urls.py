@@ -59,5 +59,11 @@ urlpatterns = [
     url(r'^get_grains', views.get_grains, name='get_grains'),
     url(r'^admin_action/(?P<name>.+)/$', views.admin_action, name='admin_action'),
     url(r'^set_flow_recipient/(?P<flow_id>[0-9]+)/(?P<mail_group_id>[\-0-9]+)/$', views.set_flow_recipient, name='set_flow_recipient'),
-    url(r'^computer_task_json$', views.ComputerTaskView.as_view(), name='ComputerTaskView')
+    url(r'^computer_task_json$', views.ComputerTaskView.as_view(), name='ComputerTaskView'),
+    url(r'^confirm_exec_task/(?P<task_id>[0-9]+)/$', views.confirm_exec_task, name='confirm_exec_task'),
+    url(r'^get_mail_group_list', views.get_mail_group_list, name='get_mail_group_list'),
+    url(r'^mail_group', views.mail_group, name='mail_group'),
+    url(r'^new_mail_group', views.new_mail_group, name='new_mail_group'),
+    url(r'^delete_mail_group/(?P<mg_id>[0-9]+)/$', views.delete_mail_group, name='delete_mail_group'),
+    url(r'^edit_mail_group/(?P<mg_id>[0-9]+)/$', views.edit_mail_group, name='edit_mail_group'),
 ]

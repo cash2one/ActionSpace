@@ -1,0 +1,129 @@
+{% extends 'om/base.html' %}
+{% load staticfiles %}
+{% block body_begin %}
+<body class="gray-bg">
+{% endblock %}
+{% block body_content %}
+    <div class="wrapper wrapper-content  animated fadeInRight">
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="ibox ">
+                    <div class="ibox-title">
+                        <h5>邮件组</h5>
+                    </div>
+                    <div class="ibox-content">
+                        <div id="toolbar" class="btn-group">
+                            <button id="add" class="btn btn-xs btn-success" title="新建"><i class="fa fa-plus">新建</i></button>
+                            <button id="edit" class="btn btn-xs btn-success" title="修改" disabled><i class="fa fa-edit">修改</i></button>
+                            <button id="delete" class="btn btn-xs btn-info" title="删除" disabled><i class="fa fa-remove">删除</i></button>
+                            <!-- <button id="recipient" class="btn btn-xs btn-success" title="收件人" disabled><i class="fa fa-at">收件人</i></button> -->
+                        </div>
+                        <table id="table" data-toggle="table" data-url="{% url 'om:get_mail_group_list' %}"
+                               data-striped="true" data-click-to-select="true" data-toolbar="#toolbar"
+                               data-page-list="[10, 20, 50{% if user.is_superuser %},ALL{% endif %}]"
+                               data-escape="true" data-pagination-v-align="both"
+                               data-show-toggle="true" data-resizable="true"
+                               data-minimum-count-columns="2" data-show-columns="true"
+                               data-show-refresh="true" data-icon-size="sm" data-search="true"
+                               data-pagination="true" data-side-pagination="server"
+                               data-show-export="true" data-single-select="true"
+                               data-export-types="['json', 'xml', 'png', 'csv', 'txt', 'sql', 'doc', 'excel', 'pdf']"
+                               data-export-options='{
+                                 "fileName": "邮件组",
+                                 "worksheetName": "邮件组",
+                                 "ignoreColumn": ["select"],
+                                 "jspdf": {
+                                   "autotable": {
+                                     "styles": { "rowHeight": 20, "fontSize": 10 },
+                                     "headerStyles": { "fillColor": 255, "textColor": 0 },
+                                     "alternateRowStyles": { "fillColor": [60, 69, 79], "textColor": 255 }
+                                   }
+                                 }
+                               }'
+                        >
+                            <thead>
+                                <tr>
+                                    <th data-field="select" data-field="state" data-checkbox="true"></th>
+                                    <th data-field="id" data-sortable="true" data-width="90">ID</th>
+                                    <th data-field="name" data-sortable="true" data-width="90">名称</th>
+                                    <th data-field="users" data-formatter="usersFormatter">用户列表</th>
+                                    <th data-field="last_modified_by" data-sortable="true">最后修改人</th>
+                                    <th data-field="last_modified_time" data-sortable="true">最后修改时间</th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block other_js %}
+    {% include 'om/table_load.html' %}
+    <script src="{% static 'om/layer/layer.js' %}"></script>
+    <!--suppress JSUnusedLocalSymbols -->
+    <script>
+        var $table=$("#table"), $add=$("#add"), $edit=$("#edit"), $delete=$("#delete"), selections = [];
+        var need_single = [$edit, $delete];
+        $table.on('check.bs.table uncheck.bs.table ' + 'check-all.bs.table uncheck-all.bs.table', function () {
+            selections = $table.bootstrapTable('getSelections');
+            need_single.forEach(function(btn) {
+                btn.prop('disabled', selections.length !== 1);
+            });
+        });
+
+        $add.click(function () {
+            var new_mail_group_layer = layer.open({
+              type: 2,
+              title: '新建作业流',
+              area: ['700px', '530px'],
+              fix: false, //不固定
+              maxmin: true,
+              content:"{%url 'om:new_mail_group' %}"
+            });
+            layer.full(new_mail_group_layer);
+        });
+
+        function single_bind(btn, func) {
+            btn.click(function () {
+                if (selections.length === 1) {
+                    func(selections[0])
+                }
+                else {
+                    layer.msg('需要仅选中一个！',{time: 2000, icon: 1});
+                }
+            })
+        }
+
+        single_bind($edit,function (row){
+            var edit_mail_group_layer = layer.open({
+              type: 2,
+              title: '新建作业流',
+              area: ['700px', '530px'],
+              fix: false, //不固定
+              maxmin: true,
+              content:'/om/edit_mail_group/'+row.id+'/'
+            });
+            layer.full(edit_mail_group_layer);
+        });
+
+        single_bind($delete, function (row){
+            layer.confirm('确认删除？', {
+                title: '确认',
+                btn: ['确认','取消']
+            }, function(index){
+                $.get('/om/delete_mail_group/'+row.id+'/', function(result) {
+                    layer.msg(result.desc,{time: 2000});
+                    layer.close(index);
+                });
+            }, function(){
+                layer.msg('已取消',{time: 2000, icon: 1});
+            });
+        });
+
+        function usersFormatter(value, row, index) {
+            var content_arr = value.split(',');
+            return content_arr.length > 1 ? "<pre style='background-color: rgba(255,255,255,.15);border-style: none;padding: 0;margin: 0;'>" + content_arr.join('</br>') + '</pre>' : value;
+        }
+    </script>
+{% endblock %}
