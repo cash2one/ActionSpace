@@ -16,13 +16,15 @@
                         <form class="form-horizontal" method='post'>
                             {% csrf_token %}
                             {% for field in form %}
-                                <div class="form-group">
-                                    <label class="col-sm-2 control-label">{{ field.label_tag }}</label>
-                                    <div class="col-sm-8" style='display:block;'>
-                                        {{ field | set_attr:'class=form-control,readonly=true' }}
-                                        {{ field.errors }}
+                                {% if field.value != '' %}
+                                    <div class="form-group">
+                                        <label class="col-sm-2 control-label">{{ field.label_tag }}</label>
+                                        <div class="col-sm-8" style='display:block;'>
+                                            {{ field | set_attr:'class=form-control,readonly=true' }}
+                                            {{ field.errors }}
+                                        </div>
                                     </div>
-                                </div>
+                                {% endif %}
                             {% endfor %}
                             <div class="form-group">
                                 <div class="col-sm-10 col-sm-offset-5">

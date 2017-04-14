@@ -761,7 +761,7 @@ def approval_task(request, task_id):
 def task_item_detail(request, task_job_id):
     settings.logger.info('%s %s' % (request.user.username, task_job_id))
     task_job = get_object_or_404(TaskJob, pk=task_job_id)
-    return render(request, 'om/task_item_detail.html', {'form': TaskItemForm(instance=task_job)})
+    return render(request, 'om/task_item_detail.html', {'tid':task_job_id, 'form': TaskItemForm(instance=task_job)})
 
 
 @login_required

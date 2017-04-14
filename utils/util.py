@@ -2,8 +2,15 @@ import socket
 import struct
 from om.proxy import Salt
 from om.models import SaltMinion
-from ActionSpace.settings import logger
+from ActionSpace.settings import logger, OM_ENV
 from utils.models import Activity
+import requests
+
+
+def sh_zs():
+    ip = '10.17.144.44' if OM_ENV == 'PRD' else '10.25.161.122'
+    url = f'http://{ip}:8080/quotation/v1/stock?code=000001.SH'
+    return requests.get(url).json()['data']['DQCJJ']
 
 
 def join_activity(username):

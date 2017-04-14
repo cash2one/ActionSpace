@@ -33,7 +33,7 @@ class ReadOnlyModelAdmin(GuardedModelAdmin):
 class FlatPageCustom(FlatPageAdmin):
     # 'widget': CKEditorWidget(config_name='awesome_ckeditor')
     formfield_overrides = {
-        models.TextField: {'widget': CKEditorWidget(config_name='default')}
+        models.TextField: {'widget': CKEditorWidget()}
     }
 
 

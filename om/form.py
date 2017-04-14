@@ -154,7 +154,7 @@ class TaskItemForm(forms.ModelForm):
         fields = '__all__'
         exclude = (
             'job_id', 'group', 'status', 'pause_need_confirm',
-            'pause_when_finish', 'pause_finish_tip', 'exec_output'
+            'pause_when_finish', 'pause_finish_tip', 'exec_output', 'step'
         )
 
 

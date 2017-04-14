@@ -1,14 +1,13 @@
 from functools import reduce
-
+from ActionSpace.settings import logger
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.http import JsonResponse
 from utils.models import Activity, CommonAddress, NetArea, NetInfo
-from utils.util import format_subnet, ip_in_subnet
+from utils.util import format_subnet, ip_in_subnet, sh_zs
 from utils.form import WallForm
 import json
 import re
-from ActionSpace.settings import logger
 
 
 # Create your views here.
@@ -54,6 +53,11 @@ def activity_status(request):
     return JsonResponse({
         'joined_count': joined_member.count(), 'voted_count': joined_member.filter(voted=True).count()
     })
+
+
+@login_required
+def get_sh_zs(request):
+    return JsonResponse({'result': sh_zs()})
 
 
 @login_required

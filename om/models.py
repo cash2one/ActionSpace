@@ -61,6 +61,18 @@ class Computer(models.Model):
         return ','.join([x.name for x in entitys]) if len(entitys) > 0 else '无'
     entity_name.short_description = '实体名（列表）'
 
+    @staticmethod
+    def _system_name(ent):
+        if ent.syetem.desc.strip() != '':
+            return f'{ent.system.name}({ent.system.desc}){ent.system.name}'
+        else:
+            return ent.system.name
+
+    def system_entity_name(self):
+        entitys = self.entity.all()
+        return ','.join([f'{self._system_name(x)}-{x.name}' for x in entitys]) if len(entitys) > 0 else '无'
+    system_entity_name.short_description = '系统名-实体名（列表）'
+
     class Meta:
         verbose_name = '主机'
         verbose_name_plural = '主机'
@@ -185,7 +197,7 @@ class ExecUser(models.Model):
 
 
 class ServerFile(models.Model):
-    name = models.CharField(max_length=100, verbose_name='作业名称')
+    name = models.CharField(max_length=100, verbose_name='文件名')
     founder = models.CharField(max_length=50, verbose_name='上传建人', default='NA')
     upload_time = models.DateTimeField(verbose_name="上传时间", auto_now_add=True)
     desc = models.CharField(max_length=400, verbose_name='备注', default='NA')
