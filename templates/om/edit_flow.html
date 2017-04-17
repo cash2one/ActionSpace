@@ -14,8 +14,8 @@
                     </div>
                     <label title="收件人">收件人</label>
                     <select title="收件人组" id="id_recipient" class="chosen-select" style="width:115px;">
+                        <option value="-1" {% if not flow.recipient %}selected{% endif %}>---</option>
                         {% for mail_group in mail_group_list %}
-                            <option value="-1" {% if not flow.recipient %}selected{% endif %}>---</option>
                             <option value="{{ mail_group.id }}" {% if flow.recipient and flow.recipient == mail_group%}selected{% endif %}>{{ mail_group.name }}</option>
                         {% endfor %}
                     </select>

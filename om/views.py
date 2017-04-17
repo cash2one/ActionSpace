@@ -761,7 +761,27 @@ def approval_task(request, task_id):
 def task_item_detail(request, task_job_id):
     settings.logger.info('%s %s' % (request.user.username, task_job_id))
     task_job = get_object_or_404(TaskJob, pk=task_job_id)
-    return render(request, 'om/task_item_detail.html', {'tid':task_job_id, 'form': TaskItemForm(instance=task_job)})
+    return render(request, 'om/task_item_detail.html', {
+        'tid': task_job_id,
+        'ip_list_field': ['server_list'],
+        'form': TaskItemForm(instance=task_job)
+    })
+
+
+@login_required
+def task_server_detail_list(request, task_job_id):
+    settings.logger.info(f'{request.user.username}, {task_job_id}')
+    result = []
+    for ip in str2arr(TaskJob.objects.get(pk=task_job_id).server_list, digit_check=False):
+        cpt = Computer.objects.get(ip=ip)
+        k = f'{ip}-{cpt.host}'
+        info = {f'{ip}-{cpt.host}': []}
+        for ent in cpt.entity.all():
+            system = ent.system
+            sys_name = f'{system.name}' if system.desc.strip() in ['', 'NA'] else f'{system.name}({system.desc})'
+            info[k].append({'系统': sys_name, '实体': ent.name})
+        result.append(info)
+    return JsonResponse(result, safe=False)
 
 
 @login_required

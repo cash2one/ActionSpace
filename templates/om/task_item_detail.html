@@ -23,6 +23,9 @@
                                             {{ field | set_attr:'class=form-control,readonly=true' }}
                                             {{ field.errors }}
                                         </div>
+                                        {% if field.name in ip_list_field %}
+                                            <button id="show_ip_list" class="btn btn-xs btn-info" type="button">详情</button>
+                                        {% endif %}
                                     </div>
                                 {% endif %}
                             {% endfor %}
@@ -46,15 +49,34 @@
     <script src="{% static 'codemirror/mode/python/python.js' %}"></script>
     <script src="{% static 'codemirror/mode/perl/perl.js' %}"></script>
     <script src="{% static 'om/js/plugins/prettyfile/bootstrap-prettyfile.js' %}"></script>
+    <script src="{% static 'om/layer/layer.js' %}"></script>
+    {% include 'om/json_view.html' %}
     <script type="text/javascript">
     $(document).ready(
-            function() {
-                $('#close_page').on('click', function(){
-                    var index = parent.layer.getFrameIndex(window.name);
-                    parent.layer.close(index);
+        function() {
+            $('#close_page').on('click', function(){
+                var index = parent.layer.getFrameIndex(window.name);
+                parent.layer.close(index);
+            });
+            $("select").prop("disabled", true);
+            $('#show_ip_list').on('click', function() {
+                layer.load();
+                $.get('/om/task_server_detail_list/'+'{{ tid }}', function(result) {
+                    $("#json").JSONView(result, { collapsed: false, nl2br: true, recursive_collapser: true });
+                    //$('#json').JSONView('toggle', 2);
+                    var json_layer = layer.open({
+                        type: 1,
+                        title: '详情',
+                        area: ['700px', '900px'],
+                        fix: false, //不固定
+                        maxmin: true,
+                        content: $('#json_view')
+                    });
+                    layer.full(json_layer);
                 });
-                $("select").prop("disabled", true);
-            }
+                layer.closeAll('loading');
+            });
+        }
     );
     </script>
 {% endblock %}

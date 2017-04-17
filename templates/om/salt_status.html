@@ -57,16 +57,17 @@
     <script src="{% static 'om/js/reconnecting-websocket.min.js' %}"></script>
     <script src="{% static 'om/js/plugins/toastr/toastr.min.js' %}"></script>
     <script src="{% static 'om/layer/layer.js' %}"></script>
+    {% include 'om/json_view.html' %}
     <!--suppress JSUnresolvedVariable, JSUnusedLocalSymbols -->
     <script type="text/javascript">
         $(document).ready(function (){
-            var ws_scheme = window.location.protocol == "https:" ? "wss" : "ws";
+            var ws_scheme = window.location.protocol === "https:" ? "wss" : "ws";
             var url = ws_scheme + '://' + window.location.host + window.location.pathname;
             url += '?session_key={{ request.session.session_key }}';
             //noinspection JSUnresolvedFunction
             var inst = new ReconnectingWebSocket(url);
             inst.onmessage = function(msg) {
-                if (JSON.parse(msg.data).result == 'Y') {
+                if (JSON.parse(msg.data).result === 'Y') {
                     toastr.success('刷新成功！');
                     $('#table').bootstrapTable("refresh")
                 }
@@ -83,13 +84,14 @@
             {% endif %}
         });
         function formatter(value, row, index) {
-            var actions = new Array()
+            var actions = [];
             actions.push('<div class="btn-group">');
             actions.push('<button class="btn btn-xs btn-success show_info" title="查看"><i class="fa fa-edit">查看</i></button>');
             actions.push('<button class="btn btn-xs btn-danger admin_action" title="操作"><i class="fa fa-certificate">操作</i></button>');
             actions.push('</div>');
             return actions.join('&nbsp;&nbsp;');
         }
+
         window.events = {
             'click .show_info': function (e, value, row, _) {
                 $.post("{% url 'om:get_grains' %}", {
@@ -97,20 +99,21 @@
                     'agent_name': row.name
                 },function(result) {
                     layer.load();
+                    $("#json").JSONView(JSON.stringify(result.return[0][row.name]), { collapsed: true, nl2br: true, recursive_collapser: true });
                     var json_layer = layer.open({
                       type: 1,
                       skin: 'layui-layer-demo', //样式类名
                       closeBtn: 0, //不显示关闭按钮
                       anim: 2, area: ['90%', '90%'],
                       shadeClose: true, //开启遮罩关闭
-                      content: '<pre>' + JSON.stringify(result.return[0][row.name], null, 4) + '</pre>'
+                      content: $('#json_view')
+                      //content: '<pre>' + JSON.stringify(result.return[0][row.name], null, 4) + '</pre>'
                     });
                     layer.closeAll('loading');
                 });
             },
             'click .admin_action': function (e, value, row, _) {
-                var admin_action_layer = layer.ope
-n({
+                var admin_action_layer = layer.open({
                   type: 2,
                   title: '操作[' + row.name + ']',
                   area: ['700px', '530px'],

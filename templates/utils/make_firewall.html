@@ -123,6 +123,7 @@
     <script src="{% static 'om/js/reconnecting-websocket.min.js' %}"></script>
     {{ form.media.js }}
     {% include 'om/table_load.html' %}
+    {% include 'om/json_view.html' %}
     <!--suppress JSUnusedLocalSymbols -->
     <script type="text/javascript">
         var ws_scheme = window.location.protocol == "https:" ? "wss" : "ws";
@@ -131,14 +132,14 @@
         //noinspection JSUnresolvedFunction
         var inst = new ReconnectingWebSocket(url);
         inst.onmessage = function(msg) {
-            console.log(msg.data);
+            $("#json").JSONView(msg.data, { collapsed: true, nl2br: true, recursive_collapser: true });
             var json_layer = layer.open({
               type: 1,
               skin: 'layui-layer-demo', //样式类名
               closeBtn: 0, //不显示关闭按钮
               anim: 2, area: ['90%', '90%'],
               shadeClose: true, //开启遮罩关闭
-              content: '<pre>' + JSON.stringify(JSON.parse(msg.data), null, 4) + '</pre>'
+              content: $('#json_view')
             });
             layer.closeAll('loading');
         };

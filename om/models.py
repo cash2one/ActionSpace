@@ -58,20 +58,15 @@ class Computer(models.Model):
 
     def entity_name(self):
         entitys = self.entity.all()
-        return ','.join([x.name for x in entitys]) if len(entitys) > 0 else '无'
+        return ','.join([f'{self._system_name(x)}' for x in entitys]) if len(entitys) > 0 else '无'
     entity_name.short_description = '实体名（列表）'
 
     @staticmethod
     def _system_name(ent):
-        if ent.syetem.desc.strip() != '':
-            return f'{ent.system.name}({ent.system.desc}){ent.system.name}'
+        if ent.system.desc.strip() != '':
+            return f'{ent.name}({ent.system.name}{ent.system.desc})'
         else:
-            return ent.system.name
-
-    def system_entity_name(self):
-        entitys = self.entity.all()
-        return ','.join([f'{self._system_name(x)}-{x.name}' for x in entitys]) if len(entitys) > 0 else '无'
-    system_entity_name.short_description = '系统名-实体名（列表）'
+            return ent.name
 
     class Meta:
         verbose_name = '主机'

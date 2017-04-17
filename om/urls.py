@@ -66,4 +66,5 @@ urlpatterns = [
     url(r'^new_mail_group', views.new_mail_group, name='new_mail_group'),
     url(r'^delete_mail_group/(?P<mg_id>[0-9]+)/$', views.delete_mail_group, name='delete_mail_group'),
     url(r'^edit_mail_group/(?P<mg_id>[0-9]+)/$', views.edit_mail_group, name='edit_mail_group'),
+    url(r'^task_server_detail_list/(?P<task_job_id>[0-9]+)/$', views.task_server_detail_list, name='task_server_detail_list'),
 ]
