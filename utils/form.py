@@ -12,12 +12,12 @@ def check_port(v):
 
 class WallForm(forms.Form):
     source_entity = forms.ModelMultipleChoiceField(
-        widget=ModelSelect2MultipleWidget(search_fields=['name__icontains']),
+        widget=ModelSelect2MultipleWidget(model=Entity, search_fields=['name__icontains']),
         queryset=Entity.objects.all(), label='请求方实体'
     )
 
     target_entity = forms.ModelMultipleChoiceField(
-        widget=ModelSelect2MultipleWidget(search_fields=['name__icontains']),
+        widget=ModelSelect2MultipleWidget(model=Entity, search_fields=['name__icontains']),
         queryset=Entity.objects.all(), label='响应方实体'
     )
 

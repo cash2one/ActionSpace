@@ -120,19 +120,16 @@
     <script src="{% static 'om/layer/layer.js' %}"></script>
     <script src="{% static 'om/plugins/multi-select/js/jquery.quicksearch.min.js' %}"></script>
     <script src="{% static 'om/plugins/multi-select/js/jquery.multi-select.min.js' %}"></script>
-    <script src="{% static 'om/js/reconnecting-websocket.min.js' %}"></script>
+    <script src="{% static "channels/js/websocketbridge.js" %}"></script>
     {{ form.media.js }}
     {% include 'om/table_load.html' %}
     {% include 'om/json_view.html' %}
     <!--suppress JSUnusedLocalSymbols -->
     <script type="text/javascript">
-        var ws_scheme = window.location.protocol == "https:" ? "wss" : "ws";
-        var url = ws_scheme + '://' + window.location.host + window.location.pathname;
-        url += '?session_key={{ request.session.session_key }}';
-        //noinspection JSUnresolvedFunction
-        var inst = new ReconnectingWebSocket(url);
-        inst.onmessage = function(msg) {
-            $("#json").JSONView(msg.data, { collapsed: true, nl2br: true, recursive_collapser: true });
+        const web = new channels.WebSocketBridge();
+        web.connect(window.location.pathname+'?session_key={{ request.session.session_key }}');
+        web.listen(function(action) {
+            $("#json").JSONView(action, { collapsed: true, nl2br: true, recursive_collapser: true });
             var json_layer = layer.open({
               type: 1,
               skin: 'layui-layer-demo', //样式类名
@@ -142,7 +139,7 @@
               content: $('#json_view')
             });
             layer.closeAll('loading');
-        };
+        });
 
         function before_submit() {
             var data = JSON.stringify($('#table').bootstrapTable("getData"));
@@ -165,13 +162,7 @@
                 $('#table').bootstrapTable('remove', {field: 's_entity', values: [row.s_entity]});
             },
             'click .check_firewall': function (e, value, row, _) {
-                var send_data = {
-                    's_ip': row.s_ip,
-                    't_host': row.t_host,
-                    't_ip': row.t_ip,
-                    'port': row.port
-                };
-                inst.send(JSON.stringify(send_data));
+                web.send({'s_ip': row.s_ip, 't_host': row.t_host, 't_ip': row.t_ip, 'port': row.port});
                 layer.load();
             }
         };

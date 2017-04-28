@@ -12,6 +12,9 @@
                         <h5>信息查询</h5>
                     </div>
                     <div class="ibox-content">
+                        {% if user.is_superuser %}
+                            <button id="syn_data_outside" title="同步棱镜和detector的数据" class="btn btn-primary" type="button" value="save">同步外部数据</button>
+                        {% endif %}
                         <table id="table" data-toggle="table" data-url="{% url 'om:get_server_list' %}"
                                data-striped="true" data-click-to-select="true"
                                data-page-list="[10, 20, 50{% if user.is_superuser %},ALL{% endif %}]"
@@ -52,7 +55,29 @@
 {% endblock %}
 {% block other_js %}
     {% include 'om/table_load.html' %}
-    <script>
+    <script src="{% static 'om/js/plugins/toastr/toastr.min.js' %}"></script>
+    <script src="{% static "channels/js/websocketbridge.js" %}"></script>
+    <script src="{% static 'om/layer/layer.js' %}"></script>
+    <!--suppress JSUnusedLocalSymbols -->
+    <script type="text/javascript">
+        const web = new channels.WebSocketBridge();
+        web.connect(window.location.pathname+'?session_key={{ request.session.session_key }}');
+        web.listen(function(action) {
+            if (action.result === 'Y') {
+                toastr.success('导入成功！');
+                $('#table').bootstrapTable("refresh")
+            }
+            else {
+                toastr.error(action.result);
+            }
+            layer.closeAll('loading');
+        });
+        {% if user.is_superuser %}
+            $('#syn_data_outside').on('click', function () {
+                layer.load();
+                web.send({info: 'syn_data_outside'});
+            });
+        {% endif %}
         function entityFormatter(value, row, index) {
             var content_arr = value.split(',');
             return content_arr.length > 1 ? "<pre style='background-color: rgba(255,255,255,.15);border-style: none;padding: 0;margin: 0;'>" + content_arr.join('</br>') + '</pre>' : value;

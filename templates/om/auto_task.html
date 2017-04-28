@@ -17,26 +17,36 @@
                                 <i class="glyphicon glyphicon-plus">添加</i>
                             </button>
                         </div>
-                        <table id="table" data-toggle="table" data-sort-name="system"
-                               data-sort-order="desc" data-url="{% url 'om:auto_task_list' %}"
-                               data-striped="true" data-click-to-select="true"
-                               data-pagination="true" data-search="true"
-                               data-icon-size="sm" data-resizable="true"
-                               data-page-list="[5, 10, 20, 50{% if user.is_superuser %},ALL{% endif %}]"
-                               data-show-refresh="true" data-show-toggle="true"
-                               data-filter-control="true" data-filter-show-clear="true"
-                               data-toolbar="#toolbar" data-pagination-v-align="both"
+                        <table data-toggle="table" id="table" data-url="{% url 'om:auto_task_list' %}"
+                               data-id-field="id" data-page-list="[10, 25, 50{% if user.is_superuser %},ALL{% endif %}]"
+                               data-show-toggle="true" data-resizable="true"
+                               data-minimum-count-columns="2" data-show-columns="true"
+                               data-show-refresh="true" data-icon-size="sm" data-search="true"
+                               data-pagination="true" data-side-pagination="server"  data-single-select="true"
+                               data-show-export="true" data-pagination-v-align="both"  data-click-to-select="true"
+                               data-export-types="['json', 'xml', 'png', 'csv', 'txt', 'sql', 'doc', 'excel', 'pdf']"
+                               data-export-options='{
+                                 "fileName": "定时任务",
+                                 "worksheetName": "定时任务",
+                                 "jspdf": {
+                                   "autotable": {
+                                     "styles": { "rowHeight": 20, "fontSize": 10 },
+                                     "headerStyles": { "fillColor": 255, "textColor": 0 },
+                                     "alternateRowStyles": { "fillColor": [60, 69, 79], "textColor": 255 }
+                                   }
+                                 }
+                               }'
                         >
                             <thead>
                             <tr>
-                                <th data-field="id" data-sortable="true" data-filter-control="input" data-width="20">ID</th>
-                                <th data-field="name" data-sortable="true" data-filter-control="input" data-width="300">自动任务</th>
-                                <th data-field="task_info" data-sortable="true" data-filter-control="input" data-width="300">任务模板</th>
-                                <th data-field="enabled" data-sortable="true" data-filter-control="select" data-width="20">是否启用</th>
-                                <th data-field="type" data-sortable="true" data-filter-control="select" data-width="20">任务类型</th>
-                                <th data-field="interval" data-sortable="true" data-filter-control="select" data-width="40">周期任务</th>
-                                <th data-field="cron" data-sortable="true" data-filter-control="select" data-width="200">定时任务</th>
-                                <th data-field="expires" data-sortable="true" data-filter-control="input" data-width="140">过期时间</th>
+                                <th data-field="id" data-sortable="true" data-width="20">ID</th>
+                                <th data-field="name" data-sortable="true" data-width="300">自动任务</th>
+                                <th data-field="args" data-sortable="false" data-width="300">任务模板</th>
+                                <th data-field="enabled" data-sortable="true" data-width="20">是否启用</th>
+                                <th data-field="type" data-sortable="false" data-width="20">任务类型</th>
+                                <th data-field="interval" data-sortable="true" data-width="40">周期任务</th>
+                                <th data-field="crontab" data-sortable="true" data-width="200">定时任务</th>
+                                <th data-field="expires" data-sortable="true" data-width="140">过期时间</th>
                                 <th data-field="auto_task_action" data-formatter="actionFormatter" data-events="actionEvents" data-width="120">操作</th>
                             </tr>
                             </thead>
@@ -48,12 +58,7 @@
     </div>
 {% endblock %}
 {% block other_js %}
-    <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table.min.js' %}"></script>
-    <script src="{% static 'om/js/plugins/bootstrap-table/locale/bootstrap-table-zh-CN.min.js' %}"></script>
-    <script src="{% static 'om/js/plugins/bootstrap-table/toolbar/bootstrap-table-toolbar.min.js' %}"></script>
-    <script src="{% static 'om/js/plugins/bootstrap-table/filter-control/bootstrap-table-filter-control.min.js' %}"></script>
-    <script src="{% static 'om/js/plugins/bootstrap-table/resizable/bootstrap-table-resizable.min.js' %}"></script>
-    <script src="{% static 'om/js/plugins/bootstrap-table/resizable/colResizable-1.5.source.js' %}"></script>
+    {% include 'om/table_load.html' %}
     <script src="{% static 'om/js/plugins/chosen/chosen.jquery.js' %}"></script>
     <script src="{% static 'om/layer/layer.js' %}"></script>
     <!--suppress JSUnusedLocalSymbols -->

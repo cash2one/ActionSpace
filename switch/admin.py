@@ -7,12 +7,14 @@ from switch.models import *
 class SwitchAdmin(admin.ModelAdmin):
     list_display = ('ip', 'area', 'name', 'uplink_switch', 'model', 'is_group')
     search_fields = ('ip', 'area', 'name', 'uplink_switch', 'model', 'desc')
+    list_filter = ('model', 'is_group')
 
 
 @admin.register(NetworkInterface)
 class NetworkInterfaceAdmin(admin.ModelAdmin):
     list_display = ('name', 'num', 'switch_ip', 'connect_type')
     search_fields = ('name', 'num', 'switch__ip')
+    list_filter = ('switch__ip', )
 
 
 @admin.register(BridgePort)

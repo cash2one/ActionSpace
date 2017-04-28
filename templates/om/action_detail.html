@@ -20,14 +20,25 @@
     <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table-mobile.min.js' %}"></script>
     <script src="{% static 'om/js/plugins/bootstrap-table/locale/bootstrap-table-zh-CN.min.js' %}"></script>
     <script src="{% static 'om/layer/layer.js' %}"></script>
-    <script src="{% static 'om/js/reconnecting-websocket.min.js' %}"></script>
+    <script src="{% static "channels/js/websocketbridge.js" %}"></script>
     <script>
         $(document).ready(function(){
-            var ws_scheme = window.location.protocol == "https:" ? "wss" : "ws";
-            var url = ws_scheme + '://' + window.location.host + window.location.pathname;
-            url += '?session_key={{ request.session.session_key }}';
-            //noinspection JSUnresolvedFunction
-            var inst = new ReconnectingWebSocket(url);
+            const web = new channels.WebSocketBridge();
+            web.connect(window.location.pathname+'?session_key={{ request.session.session_key }}');
+            web.listen(function(action) {
+                if (action.result == 'Y') {
+                    $.get('/om/detail_content/'+'{{ task }}', function(result) {
+                        $("#ibox-content").html(result);
+                    });
+                }
+                else {
+                    $("#ibox-content").html('未授权，请联系管理员！');
+                }
+            });
+
+            web.socket.addEventListener('open', function() {
+                web.send(JSON.stringify('{}'));
+            });
 
             $("#lightVersion").click(function(event){
                 event.preventDefault();
@@ -45,19 +56,6 @@
                 event.preventDefault();
                 $("#vertical-timeline").toggleClass("center-orientation")
             });
-            inst.onmessage = function(msg) {
-                if (JSON.parse(msg.data).result == 'Y') {
-                    $.get('/om/detail_content/'+'{{ task }}', function(result) {
-                        $("#ibox-content").html(result);
-                    });
-                }
-                else {
-                    $("#ibox-content").html('未授权，请联系管理员！');
-                }
-            };
-            inst.onopen = function() {
-                inst.send(JSON.stringify('{}'));
-            };
         });
     </script>
 {% endblock %}

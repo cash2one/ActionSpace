@@ -12,6 +12,7 @@
                         <h5>解锁windows主机</h5>
                     </div>
                     <div class="ibox-content">
+                        <!--suppress JSUnresolvedFunction -->
                         <form class="form-horizontal" method='post' onsubmit="return before_submit()">
                             {% csrf_token %}
                             <div class="form-group">
@@ -58,39 +59,30 @@
 {% endblock %}
 {% block other_js %}
     {% include 'om/table_load.html' %}
-	<script src="{% static 'om/js/reconnecting-websocket.min.js' %}"></script>
     <script src="{% static 'om/layer/layer.js' %}"></script>
+    <script src="{% static "channels/js/websocketbridge.js" %}"></script>
+    <!--suppress JSUnusedLocalSymbols -->
     <script type="text/javascript">
         $(document).ready(function (){
-            var ws_scheme = window.location.protocol == "https:" ? "wss" : "ws";
-            var url = ws_scheme + '://' + window.location.host + window.location.pathname;
-            url += '?session_key={{ request.session.session_key }}';
-            //noinspection JSUnresolvedFunction
-            var inst = new ReconnectingWebSocket(url);
-            inst.onmessage = function(msg) {
-                $('#result').text(JSON.parse(msg.data).result);
+            var $t = $('#table');
+            var $r = $('#result');
+            const unlocker = new channels.WebSocketBridge();
+            unlocker.connect(window.location.pathname+'?session_key={{ request.session.session_key }}');
+            unlocker.listen(function(action) {
+                $r.text(action.result);
                 layer.closeAll('loading');
-            };
+            });
 
             $('#save_layer').on('click', function () {
-                var send_data = {
-                    'user': $('#id_user').val(),
-                    'server_info': $('#table').bootstrapTable("getSelections")
-                };
-                inst.send(JSON.stringify(send_data));
-                $('#result').text('解锁中，请稍后……');
+                unlocker.send({'user': $('#id_user').val(), 'server_info': $t.bootstrapTable("getSelections")});
+                $r.text('解锁中，请稍后……');
                 layer.load();
             });
-        });
 
-        function before_submit() {
-            $('#id_server_list').val(JSON.stringify($('#table').bootstrapTable("getSelections")));
-            return true;
-        }
-
-        $('#cancel_layer').on('click', function(){
-            var index = parent.layer.getFrameIndex(window.name); //获取窗口索引
-            parent.layer.close(index);
+            function before_submit() {
+                $('#id_server_list').val(JSON.stringify($t.bootstrapTable("getSelections")));
+                return true;
+            }
         });
     </script>
 {% endblock %}

@@ -94,6 +94,7 @@ class JobForm(forms.ModelForm):
 
     server_list = forms.ModelMultipleChoiceField(
         widget=ModelSelect2MultipleWidget(
+            queryset=Computer.objects.filter(env=OM_ENV) if OM_ENV == 'UAT' else Computer.objects.all(),
             search_fields=[
                 'agent_name__icontains',
                 'ip__icontains',

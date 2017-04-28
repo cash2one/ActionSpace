@@ -25,6 +25,8 @@
                                         </div>
                                         {% if field.name in ip_list_field %}
                                             <button id="show_ip_list" class="btn btn-xs btn-info" type="button">详情</button>
+                                            <br>
+                                            <button id="check_ip_list" class="btn btn-xs btn-success" type="button">检查</button>
                                         {% endif %}
                                     </div>
                                 {% endif %}
@@ -64,6 +66,24 @@
                 $.get('/om/task_server_detail_list/'+'{{ tid }}', function(result) {
                     $("#json").JSONView(result, { collapsed: false, nl2br: true, recursive_collapser: true });
                     //$('#json').JSONView('toggle', 2);
+                    var json_layer = layer.open({
+                        type: 1,
+                        title: '详情',
+                        area: ['700px', '900px'],
+                        fix: false, //不固定
+                        maxmin: true,
+                        content: $('#json_view')
+                    });
+                    layer.full(json_layer);
+                });
+                layer.closeAll('loading');
+            });
+
+            $('#check_ip_list').on('click', function() {
+                layer.load();
+                $.get('/om/valid_task_job_ip_list/'+'{{ tid }}', function(result) {
+                    $("#json").JSONView(result, { collapsed: false, nl2br: true, recursive_collapser: true });
+                    $('#json').JSONView('toggle', 2);
                     var json_layer = layer.open({
                         type: 1,
                         title: '详情',

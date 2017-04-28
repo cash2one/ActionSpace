@@ -109,7 +109,7 @@ class Scan(object):
                     print(ip)
                     print(e)
                     return
-                if not ip.startswith('172.') and not any([x for x in ['HB', 'ILO'] if x in switch_name]):
+                if not ip.startswith('172.') and not any([x for x in ['HB'] if x in switch_name]) and ip in ['10.25.155.235', '10.25.154.242']:
                     switch, _ = Switch.objects.get_or_create(ip=ip)
                     switch.desc = peer_switch['5']
                     switch.name = switch_name
@@ -131,10 +131,12 @@ class Scan(object):
                 print('can not get switch ip for [{switch}]'.format(switch=peer_switch))
 
     def scan_port(self, result, switch):
-        if not re.search(r'\w+/?\d+/\d+|mgmt\d+|FastEthernet\d+|Fa\d+', result.group('name')):
-            # 不符合命名规范的网口跳过
-            print(f'skip net_port {result.group("name")} in switch {switch.ip}')
+        if switch.is_group:
             return
+        # # 不符合命名规范的网口跳过
+        # if not re.search(r'\w+/?\d+/\d+|mgmt\d+|FastEthernet\d+|Fa\d+', result.group('name')):
+        #     print(f'skip net_port {result.group("name")} in switch {switch.ip}')
+        #     return#
         net_port, _ = NetworkInterface.objects.get_or_create(
             name=result.group('name'), switch=switch, search=self.search
         )
@@ -264,10 +266,11 @@ class Scan(object):
             tasks = []
         for switch in Switch.objects.exclude(is_group=True):
             print('begin({ip})'.format(ip=switch.ip))
-            uplink_count = len(switch.uplink_switch.split(','))
-            if uplink_count < 2 and (switch.ip not in ['10.25.154.231']):
-                print('skip[{ip}],[{uplink_count}]'.format(ip=switch.ip, uplink_count=uplink_count))
-                continue
+            #  # 排除只连了一个汇聚交换机的
+            #  uplink_count = len(switch.uplink_switch.split(','))
+            #  if uplink_count < 2 and (switch.ip not in ['10.25.154.231']):
+            #      print('skip[{ip}],[{uplink_count}]'.format(ip=switch.ip, uplink_count=uplink_count))
+            #      continue
             kargs = {'ip': switch.ip, 'communication': switch.communication}
             if self.use_async:
                 tasks.append(self.async_process(3, kargs, self.process_vlan, switch))

@@ -13,7 +13,7 @@
                     </div>
                     <div class="ibox-content">
                         {% if user.is_superuser %}
-                            <button id="refresh-server" class="btn btn-primary" type="button" value="save">更新</button>
+                            <button id="refresh-server" title="同步salt master数据，大操作，谨慎！" class="btn btn-primary" type="button" value="save">更新</button>
                         {% endif %}
                         <table id="table" data-toggle="table" data-url="{% url 'om:salt_status_api' %}"
                                data-striped="true" data-click-to-select="true"
@@ -54,32 +54,29 @@
 {% endblock %}
 {% block other_js %}
     {% include 'om/table_load.html' %}
-    <script src="{% static 'om/js/reconnecting-websocket.min.js' %}"></script>
     <script src="{% static 'om/js/plugins/toastr/toastr.min.js' %}"></script>
     <script src="{% static 'om/layer/layer.js' %}"></script>
     {% include 'om/json_view.html' %}
+    <script src="{% static "channels/js/websocketbridge.js" %}"></script>
     <!--suppress JSUnresolvedVariable, JSUnusedLocalSymbols -->
     <script type="text/javascript">
         $(document).ready(function (){
-            var ws_scheme = window.location.protocol === "https:" ? "wss" : "ws";
-            var url = ws_scheme + '://' + window.location.host + window.location.pathname;
-            url += '?session_key={{ request.session.session_key }}';
-            //noinspection JSUnresolvedFunction
-            var inst = new ReconnectingWebSocket(url);
-            inst.onmessage = function(msg) {
-                if (JSON.parse(msg.data).result === 'Y') {
+            const web = new channels.WebSocketBridge();
+            web.connect(window.location.pathname+'?session_key={{ request.session.session_key }}');
+            web.listen(function(action) {
+                if (action.result === 'Y') {
                     toastr.success('刷新成功！');
                     $('#table').bootstrapTable("refresh")
                 }
                 else {
-                    toastr.error(msg.data);
+                    toastr.error(action.result);
                 }
                 layer.closeAll('loading');
-            };
+            });
             {% if user.is_superuser %}
                 $('#refresh-server').on('click', function () {
                     layer.load();
-                    inst.send(JSON.stringify({'info': 'refresh-server'}));
+                    web.send({info: 'refresh-server'});
                 });
             {% endif %}
         });

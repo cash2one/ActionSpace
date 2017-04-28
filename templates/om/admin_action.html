@@ -64,29 +64,21 @@
 {% endblock %}
 {% block other_js %}
     <script src="{% static 'om/js/plugins/chosen/chosen.jquery.js' %}"></script>
-	<script src="{% static 'om/js/reconnecting-websocket.min.js' %}"></script>
+	<script src="{% static "channels/js/websocketbridge.js" %}"></script>
     <script src="{% static 'om/layer/layer.js' %}"></script>
 
     <script type="text/javascript">
         $(document).ready(function (){
             $("#id_cmd").focus();
-            var ws_scheme = window.location.protocol == "https:" ? "wss" : "ws";
-            var url = ws_scheme + '://' + window.location.host + window.location.pathname;
-            url += '?session_key={{ request.session.session_key }}';
-            //noinspection JSUnresolvedFunction
-            var inst = new ReconnectingWebSocket(url);
-            inst.onmessage = function(msg) {
-                $('#result').text(JSON.parse(msg.data).result);
+            const web = new channels.WebSocketBridge();
+            web.connect(window.location.pathname+'?session_key={{ request.session.session_key }}');
+            web.listen(function(action) {
+                $('#result').text(action.result);
                 layer.closeAll('loading');
-            };
+            });
             $("#id_user").chosen();
             function send_cmd(){
-                var send_data = {
-                    'name': '{{ minion.name }}',
-                    'cmd': $('#id_cmd').val(),
-                    'user': $('#id_user').val()
-                };
-                inst.send(JSON.stringify(send_data));
+                web.send({'name': '{{ minion.name }}', 'cmd': $('#id_cmd').val(), 'user': $('#id_user').val()});
                 $('#result').text('请稍后……');
                 layer.load();
             }

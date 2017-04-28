@@ -2,7 +2,7 @@
 from __future__ import print_function
 
 from ActionSpace import settings
-from om.util import update_salt_manage_status, fmt_salt_out
+from om.util import salt_all, syn_data_outside, fmt_salt_out
 from om.models import CallLog
 from django.contrib.auth.models import User, AnonymousUser
 from om.proxy import Salt
@@ -56,7 +56,23 @@ class SaltConsumer(OmConsumer):
         if content.get('info', None) != 'refresh-server':
             self.send({'result': '未知操作！'})
             return
-        update_salt_manage_status()
+        salt_all(None if settings.OM_ENV == 'PRD' else 'UAT')
+        self.send({'result': 'Y'})
+
+
+class ServerConsumer(OmConsumer):
+    def receive(self, content, **kwargs):
+        super(ServerConsumer, self).receive(content, **kwargs)
+        if not self.message.user.is_authenticated:
+            self.send({'result': '未授权，请联系管理员！'})
+            return
+        if not self.message.user.is_superuser:
+            self.send({'result': '仅管理员有权限执行该操作！'})
+            return
+        if content.get('info', None) != 'syn_data_outside':
+            self.send({'result': '未知操作！'})
+            return
+        syn_data_outside()
         self.send({'result': 'Y'})
 
 
@@ -203,5 +219,6 @@ om_routing = [
     ActionDetailConsumer.as_route(path=r"^/om/action_detail/", attrs={'group_prefix': 'action_detail-'}),
     UnlockWinConsumer.as_route(path=r"^/om/unlock_win/"),
     CmdConsumer.as_route(path=r'^/om/admin_action/'),
-    CheckFireWallConsumer.as_route(path=r'^/utils/make_firewall_table/')
+    CheckFireWallConsumer.as_route(path=r'^/utils/make_firewall_table/'),
+    ServerConsumer.as_route(path=r'^/om/show_server/')
 ]

@@ -248,7 +248,7 @@ class TaskJobInline(admin.StackedInline):
     verbose_name_plural = '[任务]作业'
     # readonly_fields = ['name', 'job_id', 'step']
     readonly_fields = [
-        'name', 'job_id', 'group', 'job_type', 'script_type', 'file_name',
+        'job_id', 'group', 'job_type', 'script_type', 'file_name',
         'target_name', 'begin_time', 'end_time', 'status', 'step',
         'pause_need_confirm', 'pause_when_finish', 'pause_finish_tip'
     ]
@@ -267,7 +267,7 @@ class TaskJobAdmin(GuardedModelAdmin):
     list_display = ('id', 'name', 'job_id', 'step', 'group', 'status')
     list_display_links = ('id', 'name')
     readonly_fields = [
-        'name', 'job_id', 'group', 'job_type', 'script_type', 'file_name',
+        'job_id', 'group', 'job_type', 'script_type', 'file_name',
         'begin_time', 'end_time', 'step',
         'pause_need_confirm', 'pause_when_finish', 'pause_finish_tip'
     ]

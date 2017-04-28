@@ -273,6 +273,7 @@ STATICFILES_DIRS = (
     ("ckeditor", os.path.join(STATIC_ROOT, 'ckeditor')),
     ("admin", os.path.join(STATIC_ROOT, 'admin')),
     ("codemirror", os.path.join(STATIC_ROOT, 'codemirror')),
+    ("jquery-jsonview", os.path.join(STATIC_ROOT, 'jquery-jsonview')),
 )
 STATIC_URL = '/static/'
 CODEMIRROR_JS_VAR_FORMAT = "%s_editor"
@@ -367,4 +368,4 @@ STATICFILES_FINDERS = [
     'django.contrib.staticfiles.finders.FileSystemFinder',
 ]
 SESSION_SAVE_EVERY_REQUEST = True
-SESSION_COOKIE_AGE = 60 * 30
+SESSION_COOKIE_AGE = 60 * 60 * 2

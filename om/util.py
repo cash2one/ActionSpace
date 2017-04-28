@@ -84,28 +84,46 @@ def update_salt_manage_status(env_input=None):
         env_list = [env_input]
 
     for env in env_list:
-        SaltMinion.objects.filter(env=env).delete()
-        result, back = Salt(env).manage_status()
-        if result:
-            total = back['return'][0]
-            for status in total.keys():
-                for agent in total[status]:
-                    ag, _ = SaltMinion.objects.get_or_create(name=agent, env=env)
-                    ag.status = status
-                    ag.update_time = timezone.now()
-                    ag.save()
-                settings.logger.info('{st}:{ct}'.format(st=status, ct=len(total[status])))
-            settings.logger.info('{env} OK'.format(env=env))
+        # SaltMinion.objects.filter(env=env).delete()
+        use_runner = False
+        if use_runner:
+            result, back = Salt(env).manage_status()
+            if result:
+                total = back['return'][0]
+                for status in total.keys():
+                    for agent in total[status]:
+                        ag, _ = SaltMinion.objects.get_or_create(name=agent, env=env)
+                        ag.status = status
+                        ag.update_time = timezone.now()
+                        ag.save()
+                    settings.logger.info('{st}:{ct}'.format(st=status, ct=len(total[status])))
+                settings.logger.info('{env} OK'.format(env=env))
+            else:
+                settings.logger.error('fail')
+            result, back = Salt(env).os_type()
+            if result:
+                total = back['return'][0]
+                for agent, os_type in total.items():
+                    minions = SaltMinion.objects.filter(name=agent, env=env)
+                    for minion in minions:
+                        minion.os = os_type['os']
+                        minion.save()
         else:
-            settings.logger.error('fail')
-        result, back = Salt(env).os_type()
-        if result:
-            total = back['return'][0]
-            for agent, os_type in total.items():
-                minions = SaltMinion.objects.filter(name=agent, env=env)
-                for minion in minions:
-                    minion.os = os_type['os']
-                    minion.save()
+            try:
+                result, back=Salt(env).grains('*', ['os'])
+                if not result:
+                    settings.logger.error(back)
+                    settings.logger.error(f'{env} update_salt_manage_status fail')
+                    continue
+                now = timezone.now()
+                # SaltMinion.objects.filter(env=env).delete()
+                for ag_name, info in back['return'][0].items():
+                    ag, _ = SaltMinion.objects.get_or_create(name=ag_name, os=info['os'], env=env, status='up', update_time=now)
+                settings.logger.info(f'{env} update_salt_manage_status OK')
+            except Exception as e:
+                settings.logger.error(repr(e))
+                settings.logger.error(f'{env} update_salt_manage_status fail')
+                settings.logger.error(traceback.format_exc())
 
 
 def sync_computer_agent_name():
@@ -176,7 +194,7 @@ def salt_all(env=None):
 def str2arr(val, sep=',', digit_check=True):
     arr = []
     if val:
-        arr = [x for x in val.split(sep) if not digit_check or x.isdigit()]
+        arr = [x.strip() for x in val.split(sep) if not digit_check or x.isdigit()]
     return arr
 
 

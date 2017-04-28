@@ -773,7 +773,10 @@ def task_server_detail_list(request, task_job_id):
     settings.logger.info(f'{request.user.username}, {task_job_id}')
     result = []
     for ip in str2arr(TaskJob.objects.get(pk=task_job_id).server_list, digit_check=False):
-        cpt = Computer.objects.get(ip=ip)
+        cpt = Computer.objects.filter(ip=ip)
+        if not cpt.exists():
+            continue
+        cpt = cpt.first()
         k = f'{ip}-{cpt.host}'
         info = {f'{ip}-{cpt.host}': []}
         for ent in cpt.entity.all():
@@ -781,6 +784,24 @@ def task_server_detail_list(request, task_job_id):
             sys_name = f'{system.name}' if system.desc.strip() in ['', 'NA'] else f'{system.name}({system.desc})'
             info[k].append({'系统': sys_name, '实体': ent.name})
         result.append(info)
+    return JsonResponse(result, safe=False)
+
+
+@login_required
+def valid_task_job_ip_list(request, task_job_id):
+    settings.logger.info(f'{request.user.username}, {task_job_id}')
+    result = {}
+    ip_list = str2arr(TaskJob.objects.get(pk=task_job_id).server_list, digit_check=False)
+    cpt_list = Computer.objects.filter(ip__in=ip_list)
+    valid_ip_list = cpt_list.values_list('ip', flat=True)
+    invalid_ip_list = set(ip_list) - set(valid_ip_list)
+    no_agent_ip_list = cpt_list.filter(installed_agent=False).values_list('ip', flat=True)
+    if len(invalid_ip_list) == 0 and len(no_agent_ip_list) == 0:
+        return JsonResponse({'结果': '通过！'}, safe=False)
+    if len(invalid_ip_list) > 0:
+        result['未录入信息IP列表'] = list(invalid_ip_list)
+    if len(no_agent_ip_list) > 0:
+        result['未安装agent IP列表'] = list(no_agent_ip_list)
     return JsonResponse(result, safe=False)
 
 
@@ -1014,21 +1035,26 @@ def modify_auto_task(request, task_id):
 @login_required
 def auto_task_list(request):
     settings.logger.info(request.user.username)
-    result = []
+    search_fields = [
+        'pk__icontains', 'name__icontains'
+    ]
+    auto_tasks, auto_task_count = get_paged_query(PeriodicTask.objects.filter(task='om.util.celery_auto_task'), search_fields, request)
+    result = {'total': auto_task_count, 'rows': []}
     fmt = '%Y-%m-%d %H:%M:%S'
-    for p in PeriodicTask.objects.filter(task='om.util.celery_auto_task'):
+    for p in auto_tasks:
         task = task_from_args(p.args)
         task_info = '' if task is None else '{t_id}-{t_name}'.format(t_id=task.id, t_name=task.name)
-        result.append({
+        result['rows'].append({
             'id': p.id,
             'name': p.name,
-            'task_info': task_info,
+            'args': task_info,
             'type': '定时任务' if p.interval is None else '周期任务',
             'enabled': '是' if p.enabled else '否',
             'interval': '无' if p.interval is None else str(p.interval),
-            'cron': '无' if p.crontab is None else str(p.crontab),
+            'crontab': '无' if p.crontab is None else str(p.crontab),
             'expires': '未设置' if p.expires is None else dt.strftime(timezone.localtime(p.expires), fmt)
         })
+
     return JsonResponse(result, safe=False)
 
 
