@@ -1,6 +1,6 @@
 # coding=utf-8
 from django.contrib import auth
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse
 # from guardian.shortcuts import get_perms
 # noinspection PyUnresolvedReferences
 from django.views.decorators.cache import cache_page
@@ -904,13 +904,13 @@ def show_server(request):
 @login_required
 def salt_status_api(request):
     settings.logger.info(request.user.username)
-    search_fields = ['name__icontains', 'status__icontains', 'env__icontains', 'os__icontains']
-    minions, minion_count = get_paged_query(SaltMinion.objects.filter(status='up'), search_fields, request)
+    search_fields = ['pk__icontains', 'name__icontains', 'status__icontains', 'env__icontains', 'os__icontains']
+    minions, minion_count = get_paged_query(SaltMinion.objects.all(), search_fields, request)
     result = {'total': minion_count, 'rows': []}
 
     fmt = '%Y-%m-%d %H:%M:%S'
     [result['rows'].append({
-            'name': x.name, 'env': x.env, 'os': x.os,
+            'id': x.id, 'name': x.name, 'env': x.env, 'os': x.os, 'status': x.status,
             'update_time': dt.strftime(timezone.localtime(x.update_time), fmt)
     }) for x in minions]
     return JsonResponse(result, safe=False)
@@ -931,9 +931,16 @@ def add_auto_task(request):
         return HttpResponseRedirect("/om/no_permission/")
 
     if request.method == 'POST':
+        tid = request.POST['task_base']
+        try:
+            if Task.objects.get(pk=tid).approval_status != 'Y':
+                return render(request, 'om/close_this_layer.html', {'msg': '添加失败，请先对确保任务已审批通过！'})
+        except Task.DoesNotExist as e:
+            settings.logger.error(repr(e))
+            return render(request, 'om/close_this_layer.html', {'msg': '任务已失效！'})
         p = PeriodicTask.objects.create(task='om.util.celery_auto_task')
         p.name = request.POST['name']
-        p.args = '[{task_id}, "{user}"]'.format(task_id=request.POST['task_base'], user='auto')
+        p.args = '[{task_id}, "{user}"]'.format(task_id=tid, user='auto')
         p.enabled = request.POST.get('enabled', 'off') == 'on'
         task_type = request.POST['task_type']
         interval_val = request.POST['interval_val']
@@ -1116,17 +1123,37 @@ def upload_file(request):
 
 
 @login_required
+def download_file(request, sf_id):
+    settings.logger.info(request.user.username)
+    try:
+        sf = ServerFile.objects.get(pk=sf_id)
+        perm = 'om.can_do_quick_file'
+        if not any([request.user.has_perm(perm), request.user.has_perm(perm, sf)]):
+            return no_permission(request)
+        ftp = Ftp()
+        response = HttpResponse()
+        ftp.download_stream(sf.name, response)
+        response['Content-Type'] = 'application/octet-stream'
+        response['Content-Disposition'] = f'attachment;filename={sf.name}'
+        ftp.quit()
+        return response
+    except ServerFile.DoesNotExist as e:
+        settings.logger.error(repr(e))
+        return JsonResponse({'result': 'N', 'desc': '该文件不存在！'})
+
+
+@login_required
 def get_server_file_list(request):
     settings.logger.info(request.user.username)
-    result = []
+    search_fields = ['pk__icontains', 'name__icontains', 'founder__icontains', 'desc__icontains']
+    server_files, server_files_count = get_paged_query(ServerFile.objects.all(), search_fields, request)
+    result = {'total': server_files_count, 'rows': []}
     fmt = '%Y-%m-%d %H:%M:%S'
-    for f in ServerFile.objects.all():
-        result.append({
-            'name': f.name,
-            'founder': f.founder,
-            'upload_time': dt.strftime(timezone.localtime(f.upload_time), fmt),
-            'desc': f.desc
-        })
+    [result['rows'].append({
+        'id': f.id, 'name': f.name, 'founder': f.founder,
+        'upload_time': dt.strftime(timezone.localtime(f.upload_time), fmt),
+        'desc': f.desc
+    }) for f in server_files]
     return JsonResponse(result, safe=False)
 
 
@@ -1276,3 +1303,21 @@ def delete_mail_group(request, mg_id):
         settings.logger.error(repr(e))
         return JsonResponse({'result': 'N', 'desc': '记录不存在，删除失败！'})
     return JsonResponse({'result': 'Y', 'desc': '删除成功！'})
+
+
+@login_required
+def computer_ping(request, cpt_id):
+    settings.logger.info(f'{request.user.username}, {cpt_id}')
+    if not request.user.is_superuser:
+        return JsonResponse({'result': 'N', 'desc': '无此操作权限，请联系管理员！'})
+    result = check_cpt_ping(cpt_id)
+    return JsonResponse({'result': 'Y' if result else 'N', 'desc': '服务可用' if result else '检查失败'}, safe=False)
+
+
+@login_required
+def salt_minion_ping(request, minion_id):
+    settings.logger.info(f'{request.user.username}, {minion_id}')
+    if not request.user.is_superuser:
+        return JsonResponse({'result': 'N', 'desc': '无此操作权限，请联系管理员！'})
+    result = check_minion_ping(minion_id)
+    return JsonResponse({'result': 'Y' if result else 'N', 'desc': '服务可用' if result else '检查失败'}, safe=False)

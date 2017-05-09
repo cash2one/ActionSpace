@@ -28,6 +28,7 @@
                                data-export-options='{
                                  "fileName": "服务器",
                                  "worksheetName": "服务器",
+                                 "ignoreColumn": ["id", "action"],
                                  "jspdf": {
                                    "autotable": {
                                      "styles": { "rowHeight": 20, "fontSize": 10 },
@@ -39,11 +40,16 @@
                         >
                             <thead>
                                 <tr>
+                                    <th data-field="id" data-sortable="true" data-width="20">ID</th>
                                     <th data-field="ip" data-sortable="true" data-width="90">IP</th>
                                     <th data-field="host" data-sortable="true" data-width="90">主机名</th>
                                     <th data-field="entity_name" data-formatter="entityFormatter">实体</th>
                                     <th data-field="env" data-sortable="true" data-width="60">环境</th>
                                     <th data-field="sys" data-sortable="true" data-width="60">系统类型</th>
+                                    <th data-field="installed_agent" data-sortable="true" data-width="60">salt可用</th>
+                                    {% if user.is_superuser %}
+                                    <th data-field="action" data-formatter="formatter" data-events="events">操作</th>
+                                    {% endif %}
                                 </tr>
                             </thead>
                         </table>
@@ -60,6 +66,12 @@
     <script src="{% static 'om/layer/layer.js' %}"></script>
     <!--suppress JSUnusedLocalSymbols -->
     <script type="text/javascript">
+        $(document).ready(function() {
+            var $table = $('#table');
+            {% if not user.is_superuser %}
+                $table.bootstrapTable('hideColumn', 'installed_agent');
+            {% endif %}
+        });
         const web = new channels.WebSocketBridge();
         web.connect(window.location.pathname+'?session_key={{ request.session.session_key }}');
         web.listen(function(action) {
@@ -82,5 +94,22 @@
             var content_arr = value.split(',');
             return content_arr.length > 1 ? "<pre style='background-color: rgba(255,255,255,.15);border-style: none;padding: 0;margin: 0;'>" + content_arr.join('</br>') + '</pre>' : value;
         }
+        {% if user.is_superuser %}
+            function formatter(value, row, index) {
+                var actions = [];
+                actions.push('<div class="btn-group">');
+                actions.push('<button class="btn btn-xs btn-success test_ping" title="ping"><i class="fa fa-check">ping</i></button>');
+                actions.push('</div>');
+                return actions.join('&nbsp;&nbsp;');
+            }
+
+            window.events = {
+                'click .test_ping': function (e, value, row, _) {
+                    $.get('/om/computer_ping/' + row.id, function(result) {
+                        layer.msg(result.desc,{time: 2000});
+                    });
+                }
+            };
+        {% endif %}
     </script>
 {% endblock %}

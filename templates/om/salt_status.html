@@ -38,9 +38,11 @@
                         >
                             <thead>
                                 <tr>
+                                    <th data-field="id" data-sortable="true">ID</th>
                                     <th data-field="name" data-sortable="true">主机</th>
                                     <th data-field="env" data-sortable="true">环境类型</th>
                                     <th data-field="os" data-sortable="true">系统类型</th>
+                                    <th data-field="status" data-sortable="true">状态</th>
                                     <th data-field="update_time" data-sortable="true">更新时间</th>
                                     <th data-field="action" data-formatter="formatter" data-events="events">操作</th>
                                 </tr>
@@ -83,8 +85,11 @@
         function formatter(value, row, index) {
             var actions = [];
             actions.push('<div class="btn-group">');
-            actions.push('<button class="btn btn-xs btn-success show_info" title="查看"><i class="fa fa-edit">查看</i></button>');
-            actions.push('<button class="btn btn-xs btn-danger admin_action" title="操作"><i class="fa fa-certificate">操作</i></button>');
+            if (row.status == 'up') {
+                actions.push('<button class="btn btn-xs btn-success show_info" title="查看"><i class="fa fa-edit">查看</i></button>');
+                actions.push('<button class="btn btn-xs btn-danger admin_action" title="操作"><i class="fa fa-certificate">操作</i></button>');
+            }
+            actions.push('<button class="btn btn-xs btn-success test_ping" title="ping"><i class="fa fa-check">ping</i></button>');
             actions.push('</div>');
             return actions.join('&nbsp;&nbsp;');
         }
@@ -119,6 +124,11 @@
                   content:"/om/admin_action/"+row.name+"/"
                 });
                 layer.full(admin_action_layer);
+            },
+            'click .test_ping': function (e, value, row, _) {
+                $.get('/om/salt_minion_ping/' + row.id, function(result) {
+                    layer.msg(result.desc,{time: 2000});
+                });
             }
         };
     </script>

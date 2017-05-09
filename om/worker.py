@@ -182,10 +182,10 @@ class CmdConsumer(OmConsumer):
             self.send({'result': f"{e}\n{content}"})
 
 
-class CheckFireWallConsumer(OmConsumer):
+class MakeFireWallConsumer(OmConsumer):
     # noinspection PyBroadException
     def receive(self, content, **kwargs):
-        super(CheckFireWallConsumer, self).receive(content, **kwargs)
+        super(MakeFireWallConsumer, self).receive(content, **kwargs)
         if not self.message.user.is_authenticated:
             self.send({'result': '未授权，请联系管理员！'})
             return
@@ -214,11 +214,62 @@ class CheckFireWallConsumer(OmConsumer):
                 self.send({'result': 'error'})
 
 
+class CheckFireWallConsumer(OmConsumer):
+
+    def check_port(self, src_list, dst_list, port):
+        result = []
+        for p in port:
+            cf = CheckFireWall(src_list, dst_list, int(p))
+            result.append(cf.check())
+        self.send(result)
+
+    def check_policy(self, src_list, dst_list, port):
+        from utils.util import FireWallPolicy
+        src = ';'.join([x.ip() for x in src_list])
+        dst = ';'.join([x.ip() for x in dst_list])
+        srv = ','.join([f'tcp/{x}' for x in port])
+        self.send({
+            'src': [x.ip() for x in src_list],
+            'dst': [x.ip() for x in dst_list],
+            'port': port,
+            'protocol': 'TCP',
+            'result': FireWallPolicy(src, dst, srv).check()
+        })
+
+    def receive(self, content, **kwargs):
+        super(CheckFireWallConsumer, self).receive(content, **kwargs)
+        if not self.message.user.is_authenticated:
+            self.send({'result': '未授权，请联系管理员！'})
+            return
+        check_type = content.get('check_type', '')
+        src = content.get('src', [])
+        dst = content.get('dst', [])
+        port = [int(x) for x in re.split(r'\W+', content.get('port', [''])[0]) if x.strip() != '']
+        try:
+            if all([src, dst, port]):
+                src_list = [x for x in SaltMinion.objects.filter(pk__in=src)]
+                dst_list = [x for x in SaltMinion.objects.filter(pk__in=dst)]
+                if all([src_list, dst_list]):
+                    if check_type == 'port':
+                        self.check_port(src_list, dst_list, port)
+                    elif check_type == 'policy':
+                        self.check_policy(src_list, dst_list, port)
+                    else:
+                        self.send({'result': '类型错误'})
+        except Exception as e:
+            settings.logger.error(repr(e))
+            if self.message.user.is_superuser:
+                self.send({'result': f"{e}\n{traceback.format_exc()}\n{content}"})
+            else:
+                self.send({'result': '执行报错，请联系管理员检查！'})
+
+
 om_routing = [
     SaltConsumer.as_route(path=r"^/om/salt_status/"),
     ActionDetailConsumer.as_route(path=r"^/om/action_detail/", attrs={'group_prefix': 'action_detail-'}),
     UnlockWinConsumer.as_route(path=r"^/om/unlock_win/"),
     CmdConsumer.as_route(path=r'^/om/admin_action/'),
-    CheckFireWallConsumer.as_route(path=r'^/utils/make_firewall_table/'),
+    MakeFireWallConsumer.as_route(path=r'^/utils/make_firewall_table/'),
+    CheckFireWallConsumer.as_route(path=r'^/utils/check_firewall/'),
     ServerConsumer.as_route(path=r'^/om/show_server/')
 ]

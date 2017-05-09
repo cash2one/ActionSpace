@@ -685,7 +685,8 @@ def get_paged_query(query, search_fields, request, force_order=None):
             settings.logger.info(repr(select))
             query = query.filter(select).distinct()
         query_count = query.count()
-        return query[int(offset): min(offset + limit, query_count)], query_count
+        settings.logger.info(f'query[{offset}: {min(offset + limit, query_count)}], {query_count}')
+        return query[offset: min(offset + limit, query_count)], query_count
     except Exception as e:
         settings.logger.error(repr(e))
         if request.user.is_superuser:
@@ -817,6 +818,7 @@ def api_server_list(request, only_for_task=False):
     computers, computer_count = get_paged_query(query, search_fields, request)
     result = {'total': computer_count, 'rows': []}
     [result['rows'].append({
+        'id': c.id,
         'env': c.env,
         'entity_name': c.entity_name(),
         'sys': c.sys,
@@ -840,3 +842,25 @@ def task_in_prd(tid):
         settings.logger.error(repr(e))
         return False
     return False
+
+
+def check_cpt_ping(cpt_id):
+    from om.models import Computer
+    cpt = Computer.objects.get(pk=cpt_id)
+    result, back = Salt('PRD' if cpt.env == 'PRD' else 'UAT').ping([cpt.agent_name])
+    ping_success = back['return'][0].get(cpt.agent_name, False)
+    if ping_success != cpt.installed_agent:
+        cpt.installed_agent = ping_success
+        cpt.save()
+    return result and ping_success
+
+
+def check_minion_ping(minion_id):
+    from om.models import SaltMinion
+    minion = SaltMinion.objects.get(pk=minion_id)
+    result, back = Salt('PRD' if minion.env == 'PRD' else 'UAT').ping([minion.name])
+    ping_success = back['return'][0].get(minion.name, False)
+    if ping_success != (minion.status == 'up'):
+        minion.status = 'up' if ping_success else 'down'
+        minion.save()
+    return result and ping_success

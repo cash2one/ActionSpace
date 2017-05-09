@@ -7,8 +7,8 @@ class Ftp(object):
     def __init__(self):
         self.ftp = FTP()
         self.ftp.set_pasv(True)
-        self.ftp.connect('10.17.162.58', 8088)
-        self.ftp.login('wls81', pw('O=)CgKyY$o').decode())
+        self.ftp.connect('ip', port)
+        self.ftp.login('user', pw('pwkey').decode())
 
     def list(self):
         return self.ftp.nlst()
@@ -22,7 +22,10 @@ class Ftp(object):
 
     def download(self, server_name, client_path_name):
         with open(client_path_name, 'wb') as f:
-            self.ftp.retrbinary('RETR ' + server_name, f)
+            self.ftp.retrbinary('RETR ' + server_name, f.write)
+
+    def download_stream(self, server_name, client_stream):
+        self.ftp.retrbinary('RETR ' + server_name, client_stream.write)
 
     def quit(self):
         self.ftp.quit()

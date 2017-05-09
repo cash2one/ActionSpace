@@ -90,8 +90,9 @@ class CheckFireWall(object):
         11: 'The port is unreachable[windows]'
     }
 
+    # source和target可以传入minion的名称或者SaltMinion对象的单个或数组
     def __init__(
-            self, source, target, port, use_nc=False,
+            self, source, target, port,
             win_py='C:/salt/bin/python.exe',
             win_tmp='C:/Windows/TEMP',
             linux_py='python',
@@ -106,7 +107,6 @@ class CheckFireWall(object):
         self.source = source
         self.target = target
         self.port = port
-        self.use_nc = use_nc
         self.code = 0
         self.salt = None
         self.env = None
@@ -114,7 +114,6 @@ class CheckFireWall(object):
         self.source_linux = None
         self.target_win = None
         self.target_linux = None
-        self.valid_nc = False
         self.check_result = {}
         self.check_port()
         self.check_agent_name()
@@ -170,17 +169,8 @@ class CheckFireWall(object):
 
     def _trans(self, ag_list, is_win):
         logger.info(f"{ag_list}:{is_win}")
-        return self.salt.file_trans(ag_list, self.check_script, f'{self.win_tmp if is_win else self.linux_tmp}/check_connect.py')
-
-    def _nc_valid(self, ag_list, fail_code):
-        if not self.use_nc:
-            return False
-        r = self.salt.shell(ag_list, 'which nc > /dev/null 2>&1;echo $?')
-        if not r[0]:
-            self.code = fail_code
-            return False
-        r_list = list(set(r[1]['return'][0].values()))
-        return any([len(r_list) == 0, r_list[0] == '0'])
+        return self.salt.file_trans(ag_list, self.check_script,
+                                    f'{self.win_tmp if is_win else self.linux_tmp}/check_connect.py')
 
     def trans_script(self):
         if self.code != 0:
@@ -194,16 +184,11 @@ class CheckFireWall(object):
                 self.code = 5
                 return
 
-        # 检查nc是否有效，无效则传探测脚本到linux
         ag_list = self._names(self.source_linux) + self._names(self.target_linux)
-        if not all([self.use_nc, self._nc_valid(ag_list, 6)]):
-            if len(ag_list) > 0:
-                r = self._trans(ag_list, False)
-                if not r[0]:
-                    self.code = 7
-                    self.valid_nc = False
-        else:
-            self.valid_nc = True and self.use_nc
+        if len(ag_list) > 0:
+            r = self._trans(ag_list, False)
+            if not r[0]:
+                self.code = 7
 
     @classmethod
     def _names(cls, ins):
@@ -215,14 +200,20 @@ class CheckFireWall(object):
         r = self.salt.shell(target.name, f'{py} {tmp_path}/{self.check_script} {target.ip()} {self.port}')
         return all([r[0], list(set(r[1]['return'][0].values())) == ['True']])
 
+    def _result_desc(self, r, check_pass, linux):
+        all_false = r[0] and list(set(r[1]['return'][0].values())) == ['False']
+        if check_pass:
+            return self.CODE[0]
+        elif all_false:
+            return self.CODE[10] if linux else self.CODE[11]
+        else:
+            return r[1]['return'][0]
+
     def _check_peer_connect(self, target, linux=True):
         ag_list = self._names(self.source_linux) if linux else self._names(self.source_win)
         if len(ag_list) > 0:
             if linux:
-                if self.valid_nc:
-                    cmd = f'[ -n "$(nc -z -w 1 {target.ip()} {self.port}|grep succeeded)" ] && echo True || echo False'
-                else:
-                    cmd = f'{self.linux_py} {self.linux_tmp}/{self.check_script} {target.ip()} {self.port}'
+                cmd = f'{self.linux_py} {self.linux_tmp}/{self.check_script} {target.ip()} {self.port}'
                 r = self.salt.shell(ag_list, cmd)
                 check_pass = any([not r[0], list(set(r[1]['return'][0].values())) == ['True']])
                 self.check_result.append({
@@ -230,7 +221,7 @@ class CheckFireWall(object):
                     'to': target.name,
                     'port': self.port,
                     'pass': check_pass,
-                    'desc': self.CODE[0 if check_pass else 10]
+                    'desc': self._result_desc(r, check_pass, linux)
                 })
                 return check_pass
             else:
@@ -242,7 +233,7 @@ class CheckFireWall(object):
                     'to': target.name,
                     'port': self.port,
                     'pass': check_pass,
-                    'desc': self.CODE[0 if check_pass else 10]
+                    'desc': self._result_desc(r, check_pass, linux)
                 })
                 return check_pass
 
@@ -265,3 +256,40 @@ class CheckFireWall(object):
             self._check_peer_connect(target, True)
             self._check_peer_connect(target, False)
         return self.check_result
+
+
+class FireWallPolicy(object):
+    def __init__(self, src, dst, srv):
+        self.ie_headers = {
+            "Accept": "application/json, text/javascript, */*; q=0.01",
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            "X-Requested-With": "XMLHttpRequest",
+            "Referer": "http://fw-manager.paic.com.cn/fw/addfw/forwardFwPolicyPage.shtml",
+            "Accept-Language": "zh-CN",
+            "Accept-Encoding": "gzip, deflate",
+            "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko",
+            "Host": "fw-manager.paic.com.cn",
+            "Content-Length": "51",
+            "Connection": "Keep-Alive",
+            "Cache-Control": "no-cache",
+        }
+        self.url = 'http://fw-manager.paic.com.cn/fw/addfw/buildFwPolicyAjax.shtml'
+        self.data = {"src": src, "dst": dst, "srv": srv}
+
+    def check(self):
+        content = requests.post(self.url, data=self.data, headers=self.ie_headers).json()['content']
+        if isinstance(content, list):
+            result = content[0]['policyContents'][0]
+            if result['exist']:
+                result = result['exist']['content']
+                back = '策略已存在，如下：\n'
+            else:
+                back = '策略不存在，需新增：\n'
+                result = result['newContent']['content']
+            back += result.replace('&nbsp;', '').replace('<br/>', '\n')
+        else:
+            if '命中了同一个防火墙' in content:
+                back = '没有墙'
+            else:
+                back = content.split('at')[0]
+        return back

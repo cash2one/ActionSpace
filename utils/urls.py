@@ -14,4 +14,5 @@ urlpatterns = [
     url(r'^make_firewall_table/$', views.make_firewall_table, name='make_firewall_table'),
     url(r'^common_address/$', views.common_address, name='common_address'),
     url(r'^get_sh_zs/$', views.get_sh_zs, name='get_sh_zs'),
+    url(r'^check_firewall/$', views.check_firewall, name='check_firewall'),
 ]

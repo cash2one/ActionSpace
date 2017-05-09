@@ -55,6 +55,7 @@ urlpatterns = [
     url(r'^add_auto_task/$', views.add_auto_task, name='add_auto_task'),
     url(r'^job_quick_task/(?P<task_id>[0-9]+)/$', views.job_quick_task, name='job_quick_task'),
     url(r'^upload_file/$', views.upload_file, name='upload_file'),
+    url(r'^download_file/(?P<sf_id>[0-9]+)/$', views.download_file, name='download_file'),
     url(r'^get_server_file_list', views.get_server_file_list, name='get_server_file_list'),
     url(r'^get_grains', views.get_grains, name='get_grains'),
     url(r'^admin_action/(?P<name>.+)/$', views.admin_action, name='admin_action'),
@@ -68,4 +69,6 @@ urlpatterns = [
     url(r'^edit_mail_group/(?P<mg_id>[0-9]+)/$', views.edit_mail_group, name='edit_mail_group'),
     url(r'^task_server_detail_list/(?P<task_job_id>[0-9]+)/$', views.task_server_detail_list, name='task_server_detail_list'),
     url(r'^valid_task_job_ip_list/(?P<task_job_id>[0-9]+)/$', views.valid_task_job_ip_list, name='valid_task_job_ip_list'),
+    url(r'^computer_ping/(?P<cpt_id>[0-9]+)/$', views.computer_ping, name='computer_ping'),
+    url(r'^salt_minion_ping/(?P<minion_id>[0-9]+)/$', views.salt_minion_ping, name='salt_minion_ping'),
 ]

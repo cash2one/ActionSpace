@@ -12,19 +12,37 @@
                         <h5>配置文件管理</h5>
                     </div>
                     <div class="ibox-content">
-                        <table id="table" data-toggle="table" data-pagination-v-align="both"
+                        <table data-toggle="table" id="table" data-url="{% url 'om:get_server_file_list' %}"
                                data-striped="true" data-click-to-select="true"
-                               data-pagination="true" data-search="true"
-                               data-show-refresh="true" data-show-toggle="true"
-                               data-filter-control="true" data-filter-show-clear="true"
-                               data-resizable="true" data-url="{% url 'om:get_server_file_list' %}"
+                               data-page-list="[10, 20, 50{% if user.is_superuser %},ALL{% endif %}]"
+                               data-escape="true" data-pagination-v-align="both"
+                               data-show-toggle="true" data-resizable="true"
+                               data-minimum-count-columns="2" data-show-columns="true"
+                               data-show-refresh="true" data-icon-size="sm" data-search="true"
+                               data-pagination="true" data-side-pagination="server"
+                               data-show-export="true"
+                               data-export-types="['json', 'xml', 'png', 'csv', 'txt', 'sql', 'doc', 'excel', 'pdf']"
+                               data-export-options='{
+                                 "fileName": "配置文件",
+                                 "worksheetName": "配置文件",
+                                 "ignoreColumn": ["action"],
+                                 "jspdf": {
+                                   "autotable": {
+                                     "styles": { "rowHeight": 20, "fontSize": 10 },
+                                     "headerStyles": { "fillColor": 255, "textColor": 0 },
+                                     "alternateRowStyles": { "fillColor": [60, 69, 79], "textColor": 255 }
+                                   }
+                                 }
+                               }'
                         >
                             <thead>
                                 <tr>
-                                    <th data-field="name" data-filter-control="input">文件名</th>
-                                    <th data-field="founder" data-filter-control="select">上传人</th>
-                                    <th data-field="upload_time" data-filter-control="input">上传时间</th>
-                                    <th data-field="desc" data-filter-control="input">描述</th>
+                                    <th data-field="id" data-sortable="true">ID</th>
+                                    <th data-field="name" data-sortable="true">文件名</th>
+                                    <th data-field="founder" data-sortable="true">上传人</th>
+                                    <th data-field="upload_time" data-sortable="true">上传时间</th>
+                                    <th data-field="desc" data-sortable="true">描述</th>
+                                    <th data-field="action" data-formatter="formatter" data-events="events">操作</th>
                                 </tr>
                             </thead>
                         </table>
@@ -59,15 +77,11 @@
     </div>
 {% endblock %}
 {% block other_js %}
-    <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table.min.js' %}"></script>
-    <script src="{% static 'om/js/plugins/bootstrap-table/bootstrap-table-mobile.min.js' %}"></script>
-    <script src="{% static 'om/js/plugins/bootstrap-table/locale/bootstrap-table-zh-CN.min.js' %}"></script>
-    <script src="{% static 'om/js/plugins/bootstrap-table/filter-control/bootstrap-table-filter-control.min.js' %}"></script>
-    <script src="{% static 'om/js/plugins/bootstrap-table/resizable/bootstrap-table-resizable.min.js' %}"></script>
-    <script src="{% static 'om/js/plugins/bootstrap-table/resizable/colResizable-1.5.source.js' %}"></script>
+    {% include 'om/table_load.html' %}
     <script src="{% static 'om/layer/layer.js' %}"></script>
     <script src="{% static 'om/js/plugins/peity/jquery.peity.min.js' %}"></script>
     <script src="{% static 'om/js/plugins/prettyfile/bootstrap-prettyfile.js' %}"></script>
+    <!--suppress JSUnusedLocalSymbols, JSUnresolvedFunction -->
     <script>
         // 判断是否为IE浏览器： /msie/i.test(navigator.userAgent) 为一个简单正则
         var isIE = /msie/i.test(navigator.userAgent) && !window.opera;
@@ -111,5 +125,18 @@
         $(document).ready(function(){
             $('input[type="file"]').prettyFile();
         });
+        function formatter(value, row, index) {
+            var actions = [];
+            actions.push('<div class="btn-group">');
+            actions.push('<button class="btn btn-xs btn-success download_server_file" title="下载"><i class="fa fa-download">下载</i></button>');
+            actions.push('</div>');
+            return actions.join('&nbsp;&nbsp;');
+        }
+
+        window.events = {
+            'click .download_server_file': function (e, value, row, _) {
+                location.href = '/om/download_file/' + row.id;
+            }
+        };
     </script>
 {% endblock %}

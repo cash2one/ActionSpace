@@ -120,16 +120,28 @@
                                 <li>
                                     <a class="J_menuItem" href="{%url 'utils:picutil'%}"><i class="fa fa-picture-o">图片工具</i></a>
                                 </li>
-                                <li>
-                                    <a class="J_menuItem" href="{%url 'utils:net'%}"><i class="fa fa-wifi">网络信息</i></a>
-                                </li>
                                 {% if join_activity %}
                                     <li>
                                         <a class="J_menuItem" href="{%url 'utils:activity'%}"><i class="fa fa-recycle">竞猜活动</i></a>
                                     </li>
                                 {% endif %}
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="#">
+                                <i class="fa fa-wifi"></i>
+                                <span class="nav-label">网络相关</span>
+                                <span class="fa arrow"></span>
+                            </a>
+                            <ul class="nav nav-second-level">
                                 <li>
-                                    <a class="J_menuItem" href="{%url 'utils:make_firewall_table'%}"><i class="fa fa-wifi">提墙辅助</i></a>
+                                    <a class="J_menuItem" href="{%url 'utils:net'%}"><i class="fa fa-book">信息查询</i></a>
+                                </li>
+                                <li>
+                                    <a class="J_menuItem" href="{%url 'utils:make_firewall_table'%}"><i class="fa fa-child">提墙辅助</i></a>
+                                </li>
+                                <li>
+                                    <a class="J_menuItem" href="{%url 'utils:check_firewall'%}"><i class="fa fa-gavel">验证防火墙</i></a>
                                 </li>
                             </ul>
                         </li>

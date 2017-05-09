@@ -104,7 +104,7 @@ class ComputerGroupInline(admin.TabularInline):
 
 @admin.register(Computer)
 class ComputerAdmin(GuardedModelAdmin):
-    list_display = ('id', 'env', 'sys', 'ip', 'installed_agent', 'agent_name', 'entity_name')
+    list_display = ('id', 'env', 'sys', 'ip', 'installed_agent', 'agent_name', 'entity_name', 'desc')
     filter_horizontal = ('entity',)
     inlines = [JobInline, ComputerGroupInline]
     list_display_links = ('id', 'agent_name')

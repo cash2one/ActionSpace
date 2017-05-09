@@ -5,7 +5,7 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from utils.models import Activity, CommonAddress, NetArea, NetInfo
 from utils.util import format_subnet, ip_in_subnet, sh_zs
-from utils.form import WallForm
+from utils.form import WallForm, CheckWallForm
 import json
 import re
 
@@ -117,3 +117,10 @@ def make_firewall_table(request):
 
 def common_address(request):
     return render(request, 'utils/common_address.html', {'objects': CommonAddress.objects.all()})
+
+
+@login_required
+def check_firewall(request):
+    logger.info(request.user.username)
+    return render(request, 'utils/check_firewall.html', {'form': CheckWallForm()})
+
