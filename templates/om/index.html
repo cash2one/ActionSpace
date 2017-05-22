@@ -109,9 +109,6 @@
                                     <a class="J_menuItem" href="{%url 'om:unlock_win'%}"><i class="fa fa-unlock">解锁windows</i></a>
                                 </li>
                                 <li>
-                                    <a class="J_menuItem" href="{%url 'switch:index'%}"><i class="fa fa-tv">查看交换机</i></a>
-                                </li>
-                                <li>
                                     <a class="J_menuItem" href="{%url 'om:show_server'%}"><i class="fa fa-search">系统信息</i></a>
                                 </li>
                                 <li>
@@ -138,6 +135,9 @@
                                     <a class="J_menuItem" href="{%url 'utils:net'%}"><i class="fa fa-book">信息查询</i></a>
                                 </li>
                                 <li>
+                                    <a class="J_menuItem" href="{%url 'switch:index'%}"><i class="fa fa-tv">查看交换机</i></a>
+                                </li>
+                                <li>
                                     <a class="J_menuItem" href="{%url 'utils:make_firewall_table'%}"><i class="fa fa-child">提墙辅助</i></a>
                                 </li>
                                 <li>
@@ -145,9 +145,15 @@
                                 </li>
                             </ul>
                         </li>
+                        {% if user.is_superuser %}
+                        <li>
+                            <a class="J_menuItem" href="{%url 'cmdb:index'%}"><i class="fa fa-database"></i> <span class="nav-label">CMDB辅助</span></a>
+                        </li>
+                        {% endif %}
                         <li>
                             <a class="J_menuItem" href="/om/help/index/"><i class="fa fa-question"></i> <span class="nav-label">帮助文档</span></a>
                         </li>
+
                     {% endif %}
                 </ul>
             </div>

@@ -799,9 +799,11 @@ def valid_task_job_ip_list(request, task_job_id):
     if len(invalid_ip_list) == 0 and len(no_agent_ip_list) == 0:
         return JsonResponse({'结果': '通过！'}, safe=False)
     if len(invalid_ip_list) > 0:
-        result['未录入信息IP列表'] = list(invalid_ip_list)
+        result['未录入信息列表'] = list(invalid_ip_list)
     if len(no_agent_ip_list) > 0:
-        result['未安装agent IP列表'] = list(no_agent_ip_list)
+        result['已录入信息但agent未上线列表'] = list(no_agent_ip_list)
+    result['salt未上线列表'] = [x for x in ip_list if not SaltMinion.objects.filter(
+        name__endswith=x, status='up').exists()]
     return JsonResponse(result, safe=False)
 
 

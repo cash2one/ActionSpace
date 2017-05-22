@@ -91,6 +91,30 @@ class NetworkInterface(models.Model):
         unique_together = ('name', 'switch', 'search')
 
 
+class PortChannel(models.Model):
+    switch = models.ForeignKey(Switch, verbose_name='交换机')
+    CONNECT_TYPE = (('down', '下联交换机'), ('up', '上联交换机'), ('host', '连接主机'), ('other', '其他'))
+    connect_type = models.CharField(max_length=10, choices=CONNECT_TYPE, verbose_name='接口类型', default='other')
+    port_channel = models.ForeignKey(NetworkInterface, related_name='port_related', verbose_name='捆绑口')
+    physical_channel = models.ManyToManyField(NetworkInterface, related_name='physical_related', verbose_name='PO口')
+    search = models.ForeignKey(Search, verbose_name='查询批次', null=True)
+
+    def __str__(self):
+        return self.switch.ip
+
+    def switch_ip(self):
+        return self.switch.ip
+    switch_ip.short_description = '交换机IP'
+
+    def physical_channel_name(self):
+        return ','.join(self.physical_channel.values_list('name', flat=True))
+    physical_channel_name.short_description = '级联物理口'
+
+    class Meta:
+        verbose_name = '捆绑口'
+        verbose_name_plural = '捆绑口'
+
+
 class BridgePort(models.Model):
     num = models.IntegerField(verbose_name='桥接口')
     switch = models.ForeignKey(Switch, verbose_name='交换机', null=True)
@@ -109,10 +133,10 @@ class BridgePort(models.Model):
 
 
 class Machine(models.Model):
-    mac_hex = models.CharField(max_length=100, verbose_name='MAC地址（十六进制）')
-    mac_decimal = models.CharField(max_length=100, verbose_name='MAC地址（十进制）')
-    switch = models.ForeignKey(Switch, verbose_name='交换机', null=True)
-    vlan = models.IntegerField(verbose_name='VLAN编号', null=True)
+    mac_hex = models.CharField(max_length=100, verbose_name='MAC地址（十六进制）')  # 80.86.191.29.20
+    mac_decimal = models.CharField(max_length=100, verbose_name='MAC地址（十进制）')  # 00 50 56 BF 1D 14
+    switch = models.ForeignKey(Switch, verbose_name='交换机', null=True)  # 10.25.154.231
+    vlan = models.IntegerField(verbose_name='VLAN编号', null=True)  # 154
     net_face = models.ForeignKey(NetworkInterface, verbose_name='网口', null=True)
     minion = models.ForeignKey(SaltMinion, verbose_name='主机', null=True)
     search = models.ForeignKey(Search, verbose_name='查询批次', null=True)

@@ -51,6 +51,7 @@ class Computer(models.Model):
     sys = models.CharField(max_length=20, choices=SYS_TYPE, verbose_name='系统类型', default='other')
     installed_agent = models.BooleanField(default=False, verbose_name='是否已安装AGENT')
     agent_name = models.CharField(max_length=100, verbose_name='AGENT名称')
+    update_time = models.DateTimeField(verbose_name="更新时间", default=timezone.now, blank=True, null=True)
     desc = models.CharField(max_length=400, verbose_name='备注', default='NA')
 
     def __str__(self):
@@ -60,6 +61,10 @@ class Computer(models.Model):
         entitys = self.entity.all()
         return ','.join([f'{self._system_name(x)}' for x in entitys]) if len(entitys) > 0 else '无'
     entity_name.short_description = '实体名（列表）'
+
+    @staticmethod
+    def get_sys(name):
+        return 'windows' if name == 'Windows' else 'linux'
 
     @staticmethod
     def _system_name(ent):
@@ -375,7 +380,7 @@ class SaltMinion(models.Model):
     ENV_TYPE = (('PRD', '生产环境'), ('UAT', '测试环境'), ('FAT', '开发环境'))
     env = models.CharField(max_length=20, choices=ENV_TYPE, verbose_name='环境类型', default='UAT')
     os = models.CharField(max_length=100, default='', verbose_name='系统类型')
-    update_time = models.DateTimeField(auto_now_add=True, verbose_name='更新时间')
+    update_time = models.DateTimeField(verbose_name="更新时间", default=timezone.now, blank=True, null=True)
 
     def __str__(self):
         return get_name(self.name)
@@ -399,6 +404,7 @@ class MacAddr(models.Model):
     mac_hex = models.CharField(max_length=20, verbose_name='MAC地址（16进制）', default='')
     interface = models.CharField(max_length=200, verbose_name='网口', default='')
     minion = models.ForeignKey(SaltMinion, verbose_name='主机', null=True)
+    update_time = models.DateTimeField(verbose_name="更新时间", default=timezone.now, blank=True, null=True)
 
     def __str__(self):
         return get_name('{face}:{hex}'.format(face=self.interface, hex=self.mac_hex))

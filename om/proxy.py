@@ -3,6 +3,7 @@ from base64 import b85decode as pw
 from ActionSpace.settings import logger
 from pprint import pformat
 import requests
+import uuid
 
 
 class Salt(object):
@@ -119,3 +120,34 @@ class Salt(object):
 
     def hwaddr_interfaces(self, host='*'):
         return self.grains(host, ['hwaddr_interfaces'])
+
+    def linux_shell(self, agents, script, param, user, delete_after_exec=True):
+        cmd = script
+        dos2unix = cmd.replace('\r\n', '\n').replace("'", r"'\''")
+        default_shell = '' if cmd.startswith('#!') else "#!/bin/bash\n"
+        tmp_file = f'/tmp/{uuid.uuid4()}.sh'
+        cmd = f'''echo '{default_shell}{dos2unix}
+        '>"{tmp_file}";chmod u+x "{tmp_file}";"{tmp_file}"'''
+        if param.strip() != '':
+            cmd += f' {param.strip()}'
+        if delete_after_exec:
+            cmd += f';[ -f "{tmp_file}" ] && rm -f "{tmp_file}"'
+        return self.shell(agents, cmd, user)
+
+    def windows_batch(self, agents, script, param, delete_after_exec=True):
+        escaped_list = r'\()&|%<>'
+        tmp_file = f'%tmp%\\{uuid.uuid4()}.bat'
+        cmd = 'echo off&('
+        for line in script.split('\n'):
+            last_line = line.strip()
+            if last_line != '':
+                for ec in escaped_list:
+                    last_line = last_line.replace(ec, f'^{ec}')
+                cmd += f'echo {last_line}&'
+        cmd += f'echo.)>"{tmp_file}"&"{tmp_file}"'
+        if delete_after_exec:
+            cmd += f'&del "{tmp_file}"'
+        cmd += '&echo on'
+        if param.strip() != '':
+            cmd += f' {param.strip()}'
+        return self.shell(agents, cmd)

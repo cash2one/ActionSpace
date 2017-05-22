@@ -7,23 +7,21 @@ import re
 import subprocess
 import os
 import time
-# noinspection PyCompatibility
-import asyncio
 
 
 # noinspection PyCompatibility
 class Scan(object):
-    def __init__(self, clean_first=False, use_async=False):
+    def __init__(self, clean_first=False):
         if clean_first:
             self.clean_data()
         self.search = Search.objects.create()
-        self.use_async = use_async
 
     @staticmethod
     def clean_data():
         Machine.objects.all().delete()
         BridgePort.objects.all().delete()
         NetworkInterface.objects.all().delete()
+        PortChannel.objects.all().delete()
         StepResult.objects.all().delete()
         Search.objects.all().delete()
         Switch.objects.filter(is_group=False).delete()
@@ -45,34 +43,11 @@ class Scan(object):
                 print(cmd, output.stdout.read(), output.stderr.read())
             return out
 
-    async def async_call(self, cmd):
-        return self.call(cmd)
-
     def process(self, step, kargs, func, *args):
         template = CmdTemplate.objects.get(step=step)
         kargs['oid'] = template.oid
         cmd = template.template.format(**kargs)
         output = self.call(cmd)
-        StepResult.objects.create(cmd_info=cmd, step=step, search=self.search, output=output)
-        if isinstance(func, list):
-            func_yes, func_no = func
-        else:
-            func_yes, func_no = func, None
-        for line in StringIO(output).readlines():
-            if line.strip('\t\r\n "') == '':
-                continue
-            result = re.search(template.reg, line)
-            if result is None:
-                if func_no is not None:
-                    func_no(line, *args)
-            else:
-                func_yes(result, *args)
-
-    async def async_process(self, step, kargs, func, *args):
-        template = CmdTemplate.objects.get(step=step)
-        kargs['oid'] = template.oid
-        cmd = template.template.format(**kargs)
-        output = await self.async_call(cmd)
         StepResult.objects.create(cmd_info=cmd, step=step, search=self.search, output=output)
         if isinstance(func, list):
             func_yes, func_no = func
@@ -109,7 +84,9 @@ class Scan(object):
                     print(ip)
                     print(e)
                     return
-                if not ip.startswith('172.') and not any([x for x in ['HB'] if x in switch_name]) and ip in ['10.25.155.235', '10.25.154.242']:
+                # uat_condition = ip in ['10.25.155.235', '10.25.154.242']
+                uat_condition = True
+                if not ip.startswith('172.') and not any([x for x in ['HB'] if x in switch_name]) and uat_condition:
                     switch, _ = Switch.objects.get_or_create(ip=ip)
                     switch.desc = peer_switch['5']
                     switch.name = switch_name
@@ -142,6 +119,25 @@ class Scan(object):
         )
         net_port.num = str(result.group('port_num'))
         net_port.save()
+
+    def scan_port_channel(self, result, switch):
+        try:
+            begin = time.time()
+            po_if_index = int(result.group('po_if_index'))
+            phy_if_index = int(result.group('phy_if_index'))
+            po_c = NetworkInterface.objects.get(switch=switch, num=po_if_index, search=self.search)
+            phy_c = NetworkInterface.objects.get(switch=switch, num=phy_if_index, search=self.search)
+            poc, created = PortChannel.objects.get_or_create(
+                switch=switch, port_channel=po_c, connect_type=phy_c.connect_type, search=self.search
+            )
+            if created:
+                poc.save()
+            poc.physical_channel.add(phy_c)
+            poc.save()
+            end = time.time()
+            print(f'scan_port_channel(switch={switch.ip}):{end - begin}')
+        except NetworkInterface.DoesNotExist as _:
+            print(f'scan_port_channel fail:{switch.ip}, {po_if_index}, {phy_if_index}, ')
 
     def vlan_yes(self, result, switch, vlan_id):
         begin = time.time()
@@ -205,7 +201,11 @@ class Scan(object):
                 if net_face.connect_type in ['up', 'down']:
                     machines.delete()
                 else:
-                    machines.update(net_face=net_face)
+                    port_chan = PortChannel.objects.filter(switch=switch, port_channel=net_face)
+                    if port_chan.exists() and port_chan.first().connect_type in ['up', 'down']:
+                        machines.delete()
+                    else:
+                        machines.update(net_face=net_face)
         except NetworkInterface.DoesNotExist as _:
             pass
         except Machine.MultipleObjectsReturned as e:
@@ -233,70 +233,43 @@ class Scan(object):
             print(e)
             print(Machine.objects.filter(mac_hex=mac_hex, search=self.search))
 
-    def run(self):
-        run_begin = time.time()
-        loop = asyncio.get_event_loop()
-
-        # 1 从汇聚交换机里遍历出所有的交换机信息
-        tasks = []
-        for group_switch in Switch.objects.filter(is_group=True):
-            kargs = {'ip': group_switch.ip, 'communication': group_switch.communication}
-            peer_switch = OrderedDict()
-            if self.use_async:
-                tasks.append(self.async_process(1, kargs, self.scan_switch, peer_switch, group_switch))
-            else:
-                self.process(1, kargs, self.scan_switch, peer_switch, group_switch)
-        if self.use_async:
-            loop.run_until_complete(asyncio.wait(tasks))
-
-        # 2 遍历出所有交换机的网口
-        if self.use_async:
-            tasks = []
-        for switch in Switch.objects.filter():
-            kargs = {'ip': switch.ip, 'communication': switch.communication}
-            if self.use_async:
-                tasks.append(self.async_process(2, kargs, self.scan_port, switch))
-            else:
-                self.process(2, kargs, self.scan_port, switch)
-        if self.use_async:
-            loop.run_until_complete(asyncio.wait(tasks))
-
-        # 3 处理所有非汇聚交换机里的vlan信息
-        if self.use_async:
-            tasks = []
-        for switch in Switch.objects.exclude(is_group=True):
-            print('begin({ip})'.format(ip=switch.ip))
-            #  # 排除只连了一个汇聚交换机的
-            #  uplink_count = len(switch.uplink_switch.split(','))
-            #  if uplink_count < 2 and (switch.ip not in ['10.25.154.231']):
-            #      print('skip[{ip}],[{uplink_count}]'.format(ip=switch.ip, uplink_count=uplink_count))
-            #      continue
-            kargs = {'ip': switch.ip, 'communication': switch.communication}
-            if self.use_async:
-                tasks.append(self.async_process(3, kargs, self.process_vlan, switch))
-            else:
-                self.process(3, kargs, self.process_vlan, switch)
-        if self.use_async:
-            loop.run_until_complete(asyncio.wait(tasks))
-
-        # 从om的salt信息里更新出salt-agent-name，包含了主机名和ip
-        for mc in Machine.objects.filter(search=self.search):
+    def update_minion(self, all_minion=False):
+        machines = Machine.objects.all()
+        if not all_minion:
+            machines.filter(search=self.search)
+        for mc in machines:
             mc_hex = mc.mac_hex.strip().replace(' ', ':')
             for mac in MacAddr.objects.select_related('minion').filter(mac_hex__iexact=mc_hex):
                 mc.minion = mac.minion
                 mc.save()
 
+    def run(self):
+        run_begin = time.time()
+
+        # 1 从汇聚交换机里遍历出所有的交换机信息
+        for group_switch in Switch.objects.filter(is_group=True):
+            kargs = {'ip': group_switch.ip, 'communication': group_switch.communication}
+            peer_switch = OrderedDict()
+            self.process(1, kargs, self.scan_switch, peer_switch, group_switch)
+
+        # 2 遍历出所有交换机的网口
+        for switch in Switch.objects.filter():
+            kargs = {'ip': switch.ip, 'communication': switch.communication}
+            self.process(2, kargs, self.scan_port, switch)  # 扫描端口
+            self.process(8, kargs, self.scan_port_channel, switch)  # 扫描捆绑口
+
+        # 3 处理所有非汇聚交换机里的vlan信息
+        for switch in Switch.objects.exclude(is_group=True):
+            print('begin({ip})'.format(ip=switch.ip))
+            kargs = {'ip': switch.ip, 'communication': switch.communication}
+            self.process(3, kargs, self.process_vlan, switch)
+
+        # 从om的salt信息里更新出salt-agent-name，包含了主机名和ip
+        self.update_minion()
+
         # 7从汇聚交换机的arp表里更新扫描到的主机IP，作为上一步的补充
-        if self.use_async:
-            tasks = []
         for switch in Switch.objects.filter(is_group=True):
             kargs = {'ip': switch.ip, 'communication': switch.communication}
-            if self.use_async:
-                tasks.append(self.async_process(7, kargs, self.scan_arp))
-            else:
-                self.process(7, kargs, self.scan_arp)
-        if self.use_async:
-            loop.run_until_complete(asyncio.wait(tasks))
-        loop.close()
+            self.process(7, kargs, self.scan_arp)
         run_end = time.time()
         print(f'run cost time:{run_end-run_begin:.3f}(s)')

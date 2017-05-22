@@ -78,9 +78,12 @@
             });
             $("#id_user").chosen();
             function send_cmd(){
-                web.send({'name': '{{ minion.name }}', 'cmd': $('#id_cmd').val(), 'user': $('#id_user').val()});
-                $('#result').text('请稍后……');
-                layer.load();
+                var send_info = $('#id_cmd').val().trim();
+                if (send_info != '') {
+                    web.send({'name': '{{ minion.name }}', 'cmd': send_info, 'user': $('#id_user').val()});
+                    $('#result').text('请稍后……');
+                    layer.load();
+                }
             }
             function close_layer() {
                 var index = parent.layer.getFrameIndex(window.name);

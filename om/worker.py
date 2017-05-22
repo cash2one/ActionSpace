@@ -2,7 +2,7 @@
 from __future__ import print_function
 
 from ActionSpace import settings
-from om.util import salt_all, syn_data_outside, fmt_salt_out
+from om.util import update_from_salt, syn_data_outside, fmt_salt_out, check_computer
 from om.models import CallLog
 from django.contrib.auth.models import User, AnonymousUser
 from om.proxy import Salt
@@ -23,7 +23,7 @@ class OmConsumer(JsonWebsocketConsumer):
             not_login_user = User.objects.get_or_create(username='not_login_yet', is_active=False)[0]
             user = not_login_user if isinstance(message.user, AnonymousUser) else message.user
         except Exception as e:
-            settings.logger.error({repr(e)})
+            settings.logger.error(repr(e))
         CallLog.objects.create(
             user=user,
             type='message',
@@ -34,12 +34,19 @@ class OmConsumer(JsonWebsocketConsumer):
         super(OmConsumer, self).raw_connect(message, **kwargs)
 
     def receive(self, content, **kwargs):
-        CallLog.objects.create(
-            user=User.objects.get(username=self.message.user.username),
-            type='message',
-            action=self.message['path'],
-            detail=self.message.content
-        )
+        try:
+            CallLog.objects.create(
+                user=User.objects.get(username=self.message.user.username),
+                type='message',
+                action=self.message['path'],
+                detail=self.message.content
+            )
+        except Exception as e:
+            settings.logger.error(repr(e))
+            try:
+                settings.logger.error(self.message.user.username)
+            except Exception as e:
+                settings.logger.error(repr(e))
         settings.logger.info('recv_data:{data}'.format(data=content, path=self.message['path']))
         super(OmConsumer, self).receive(content, **kwargs)
 
@@ -53,11 +60,14 @@ class SaltConsumer(OmConsumer):
         if not self.message.user.is_superuser:
             self.send({'result': '仅管理员有权限执行该操作！'})
             return
-        if content.get('info', None) != 'refresh-server':
+        info = content.get('info', '')
+        if info == 'refresh-server':
+            update_from_salt(None if settings.OM_ENV == 'PRD' else 'UAT')
+            self.send({'result': 'Y', 'info': 'refresh-server'})
+        elif info == 'check_computer':
+            self.send({'return': check_computer(), 'info': 'check_computer'})
+        else:
             self.send({'result': '未知操作！'})
-            return
-        salt_all(None if settings.OM_ENV == 'PRD' else 'UAT')
-        self.send({'result': 'Y'})
 
 
 class ServerConsumer(OmConsumer):

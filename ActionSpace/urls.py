@@ -37,6 +37,7 @@ urlpatterns = [
     url(r'^om/', include('om.urls', namespace='om')),
     url(r'^switch/', include('switch.urls', namespace='switch')),
     url(r'^utils/', include('utils.urls', namespace='utils')),
+    url(r'^cmdb/', include('cmdb.urls', namespace='cmdb')),
     url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
     url(r'^admin/', admin.site.urls),
     url(r'^ckeditor/', include('ckeditor_uploader.urls')),

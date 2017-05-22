@@ -104,7 +104,7 @@ class ComputerGroupInline(admin.TabularInline):
 
 @admin.register(Computer)
 class ComputerAdmin(GuardedModelAdmin):
-    list_display = ('id', 'env', 'sys', 'ip', 'installed_agent', 'agent_name', 'entity_name', 'desc')
+    list_display = ('id', 'env', 'sys', 'ip', 'installed_agent', 'agent_name', 'entity_name', 'update_time', 'desc')
     filter_horizontal = ('entity',)
     inlines = [JobInline, ComputerGroupInline]
     list_display_links = ('id', 'agent_name')
@@ -127,7 +127,7 @@ class ComputerAdmin(GuardedModelAdmin):
 
 @admin.register(MacAddr)
 class MacAddrAdmin(GuardedModelAdmin):
-    list_display = ('id', 'mac_hex', 'interface', 'minion')
+    list_display = ('id', 'mac_hex', 'interface', 'minion', 'update_time')
     search_fields = ('id', 'mac_hex', 'interface')
 
 
@@ -300,7 +300,7 @@ class MacAddrInline(admin.StackedInline):
 
 @admin.register(SaltMinion)
 class SaltMinionAdmin(GuardedModelAdmin):
-    list_display = ('name', 'status', 'env', 'os')
+    list_display = ('name', 'status', 'env', 'os', 'update_time')
     search_fields = ('name', 'status', 'env', 'os')
     inlines = [MacAddrInline]
     list_filter = ('status', 'env', 'os')

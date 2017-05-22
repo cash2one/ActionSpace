@@ -17,6 +17,13 @@ class NetworkInterfaceAdmin(admin.ModelAdmin):
     list_filter = ('switch__ip', )
 
 
+@admin.register(PortChannel)
+class PortChannelAdmin(admin.ModelAdmin):
+    list_display = ('switch_ip', 'port_channel', 'physical_channel_name', 'connect_type')
+    search_fields = ('switch__ip', 'port_channel__name', 'connect_type')
+    list_filter = ('switch__ip', 'connect_type')
+
+
 @admin.register(BridgePort)
 class BridgePortAdmin(admin.ModelAdmin):
     list_display = ('num', 'switch', 'net_port_name')

@@ -1,3 +1,4 @@
+# coding=utf-8
 import socket
 import struct
 from om.proxy import Salt

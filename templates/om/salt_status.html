@@ -13,7 +13,8 @@
                     </div>
                     <div class="ibox-content">
                         {% if user.is_superuser %}
-                            <button id="refresh-server" title="同步salt master数据，大操作，谨慎！" class="btn btn-primary" type="button" value="save">更新</button>
+                            <button id="refresh-server" title="大操作，谨慎！" class="btn btn-primary" type="button" value="save">更新</button>
+                            <button id="check_computer" title="大操作，谨慎！" class="btn btn-primary" type="button" value="save">检查</button>
                         {% endif %}
                         <table id="table" data-toggle="table" data-url="{% url 'om:salt_status_api' %}"
                                data-striped="true" data-click-to-select="true"
@@ -66,19 +67,37 @@
             const web = new channels.WebSocketBridge();
             web.connect(window.location.pathname+'?session_key={{ request.session.session_key }}');
             web.listen(function(action) {
-                if (action.result === 'Y') {
-                    toastr.success('刷新成功！');
-                    $('#table').bootstrapTable("refresh")
-                }
-                else {
-                    toastr.error(action.result);
-                }
                 layer.closeAll('loading');
+                if (action.info === 'refresh-server') {
+                    if (action.result === 'Y') {
+                        toastr.success('刷新成功！');
+                        $('#table').bootstrapTable("refresh")
+                    }
+                    else {
+                        toastr.error(action.result);
+                    }
+                }
+                else if (action.info === 'check_computer') {
+                    $("#json").JSONView(action.return, { collapsed: true, nl2br: true, recursive_collapser: true });
+                    var json_layer = layer.open({
+                      type: 1,
+                      skin: 'layui-layer-demo', //样式类名
+                      closeBtn: 0, //不显示关闭按钮
+                      anim: 2, area: ['90%', '90%'],
+                      shadeClose: true, //开启遮罩关闭
+                      content: $('#json_view')
+                      //content: '<pre>' + JSON.stringify(result.return[0][row.name], null, 4) + '</pre>'
+                    });
+                }
             });
             {% if user.is_superuser %}
                 $('#refresh-server').on('click', function () {
                     layer.load();
                     web.send({info: 'refresh-server'});
+                });
+                $('#check_computer').on('click', function () {
+                    layer.load();
+                    web.send({info: 'check_computer'});
                 });
             {% endif %}
         });

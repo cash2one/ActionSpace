@@ -74,121 +74,74 @@ def celery_send_mail(subject, msg, to):
         return 'send mail to fail cause recipient is None'
 
 
-def update_salt_manage_status(env_input=None):
-    from om.models import SaltMinion
-    if env_input is None:
-        env_list = ['UAT']
-        if settings.OM_ENV == 'PRD':
-            env_list.append('PRD')
-    else:
-        env_list = [env_input]
-
-    for env in env_list:
-        # SaltMinion.objects.filter(env=env).delete()
-        use_runner = False
-        if use_runner:
-            result, back = Salt(env).manage_status()
-            if result:
-                total = back['return'][0]
-                for status in total.keys():
-                    for agent in total[status]:
-                        ag, _ = SaltMinion.objects.get_or_create(name=agent, env=env)
-                        ag.status = status
-                        ag.update_time = timezone.now()
-                        ag.save()
-                    settings.logger.info('{st}:{ct}'.format(st=status, ct=len(total[status])))
-                settings.logger.info('{env} OK'.format(env=env))
-            else:
-                settings.logger.error('fail')
-            result, back = Salt(env).os_type()
-            if result:
-                total = back['return'][0]
-                for agent, os_type in total.items():
-                    minions = SaltMinion.objects.filter(name=agent, env=env)
-                    for minion in minions:
-                        minion.os = os_type['os']
-                        minion.save()
-        else:
-            try:
-                result, back=Salt(env).grains('*', ['os'])
-                if not result:
-                    settings.logger.error(back)
-                    settings.logger.error(f'{env} update_salt_manage_status fail')
-                    continue
-                now = timezone.now()
-                # SaltMinion.objects.filter(env=env).delete()
-                for ag_name, info in back['return'][0].items():
-                    ag, _ = SaltMinion.objects.get_or_create(name=ag_name, os=info['os'], env=env, status='up', update_time=now)
-                settings.logger.info(f'{env} update_salt_manage_status OK')
-            except Exception as e:
-                settings.logger.error(repr(e))
-                settings.logger.error(f'{env} update_salt_manage_status fail')
-                settings.logger.error(traceback.format_exc())
-
-
-def sync_computer_agent_name():
-    from om.models import Computer, SaltMinion
-    for agent in SaltMinion.objects.all():
-        ag_ip = agent.name.split('-')[-1]
-        for cp in Computer.objects.filter(ip=ag_ip):
-            cp.agent_name = agent.name
-            cp.installed_agent = agent.status == 'up'
-            cp.save()
-
-
-def sync_computer_sys_type(env_input=None):
+def check_computer(env_input=None):
     from om.models import Computer
-    if env_input is None:
-        env_list = ['UAT']
-        if settings.OM_ENV == 'PRD':
-            env_list.append('PRD')
-    else:
-        env_list = [env_input]
+    env_list = [env_input] if env_input is not None else ['PRD', 'UAT'] if settings.OM_ENV == 'PRD' else ['UAT']
+    last_return = {}
+
     for env in env_list:
-        result, back = Salt(env).os_type()
-        if result:
-            total = back['return'][0]
-            for agent, info in total.items():
-                for cp in Computer.objects.filter(agent_name=agent):
-                    cp.sys = 'windows' if info['os'] == 'Windows' else 'linux'
-                    cp.save()
-        else:
-            settings.logger.error('fail')
+        last_return[env] = {'count_not_one': [], 'change': []}
+        result, back = Salt(env).grains('*', ['os', 'localhost', 'ipv4'])
+        if not result:
+            settings.logger.error(back)
+            settings.logger.error(f'{env} update_salt_manage_status fail')
+            continue
+        for ag_name, info in back['return'][0].items():
+            ipv4_list = [x for x in info['ipv4'] if x != '127.0.0.1']
+            cpts = Computer.objects.filter(env=env, host__iexact=info['localhost'])
+            cpt_count = cpts.count()
+            if cpt_count == 1:
+                cpt = cpts.first()
+                if cpt.ip not in ipv4_list:
+                    last_return[env]['change'].append({
+                        'from': {
+                            'host': cpt.host, 'ip': cpt.ip, 'agent_name': cpt.agent_name
+                        },
+                        'to': {
+                            'host': info['localhost'], 'agent_name': ag_name, 'ipv4': ipv4_list
+                        }
+                    })
+            elif cpt_count > 1:
+                last_return[env]['count_not_one'].append([info['localhost'], cpt_count])
+    return last_return
 
 
-def sync_mac_address(env_input=None):
-    from om.models import SaltMinion, MacAddr
-    if env_input is None:
-        env_list = ['UAT']
-        if settings.OM_ENV == 'PRD':
-            env_list.append('PRD')
-    else:
-        env_list = [env_input]
-    MacAddr.objects.all().delete()
+def update_from_salt(env_input=None):
+    from om.models import SaltMinion, Computer, MacAddr
+    from django.db.models import Subquery
+    env_list = [env_input] if env_input is not None else ['PRD', 'UAT'] if settings.OM_ENV == 'PRD' else ['UAT']
+    # SaltMinion.objects.all().delete()
     for env in env_list:
-        result, back = Salt(env).hwaddr_interfaces()
-        if result:
-            for name, mac in back['return'][0].items():
-                try:
-                    minion = SaltMinion.objects.get(name=name, env=env)
-                    for eth, mac_addr in mac['hwaddr_interfaces'].items():
-                        if mac_addr.strip() not in ['0.0.0.0', '00:00:00:00:00:00']:
-                            MacAddr.objects.get_or_create(mac_hex=mac_addr, interface=eth, minion=minion)
-                except SaltMinion.DoesNotExist as _:
-                    print('DoesNotExist:{name}, env:{env}'.format(name=name, env=env))
-                except SaltMinion.MultipleObjectsReturned as _:
-                    print('MultipleObjectsReturned:{name}, info:{info}, env:{env}'.format(
-                        name=name, info=SaltMinion.objects.filter(name=name), env=env
-                    ))
-        else:
-            settings.logger.error('fail')
-
-
-def salt_all(env=None):
-    update_salt_manage_status(env)
-    sync_computer_agent_name()
-    sync_computer_sys_type(env)
-    sync_mac_address(env)
+        try:
+            result, back = Salt(env).grains('*', ['os', 'localhost', 'hwaddr_interfaces', 'ipv4'])
+            if not result:
+                settings.logger.error(back)
+                settings.logger.error(f'{env} update_salt_manage_status fail')
+                continue
+            now = timezone.now()
+            for ag_name, info in back['return'][0].items():
+                minion, _ = SaltMinion.objects.get_or_create(name=ag_name, os=info['os'], env=env, status='up')
+                minion.update_time = now
+                minion.save()
+                cpts = Computer.objects.filter(host__iexact=info['localhost'], env=env)
+                cpts.update(
+                    host=info['localhost'], agent_name=ag_name, installed_agent=True,
+                    sys=Computer.get_sys(info['os']), update_time=now
+                )
+                ipv4_list = [x for x in info['ipv4'] if x != '127.0.0.1']
+                if len(ipv4_list) == 1 and cpts.count() == 1:
+                    if cpts.first().ip != ipv4_list[0]:
+                        cpts.update(ip=ipv4_list[0], update_time=now)
+                for eth, mac_addr in info['hwaddr_interfaces'].items():
+                    MacAddr.objects.get_or_create(mac_hex=mac_addr, interface=eth, minion=minion, update_time=now)
+            settings.logger.info(f'{env} update_salt_manage_status OK')
+        except Exception as e:
+            settings.logger.error(repr(e))
+            settings.logger.error(f'{env} update_salt_manage_status fail')
+            settings.logger.error(traceback.format_exc())
+    # Computer.objects.only('agent_name').filter(agent_name__in=Subquery(SaltMinion.objects.filter(status='up').values('name'))).update(installed_agent=True)
+    Computer.objects.only('agent_name').exclude(agent_name__in=Subquery(SaltMinion.objects.filter(status='up').values('name'))).update(installed_agent=False)
+    # MacAddr.objects.filter(minion__name__in=Subquery(SaltMinion.objects.filter(status='up').values('name'))).delete()
 
 
 def str2arr(val, sep=',', digit_check=True):
@@ -431,28 +384,17 @@ class JobExec(object):
             self.first = i == 0
             self.exec_job(**v)
 
-    def linux_shell_cmd(self, delete_after_exec=True):
-        cmd = self.job.script_content
-        dos2unix = cmd.replace('\r\n', '\n').replace("'", r"'\''")
-        def_shell = '' if cmd.startswith('#!') else "#!/bin/bash\n"
-        tmp_file = '/tmp/{n}.sh'.format(n=uuid.uuid4())
-        cmd = f'''echo '{def_shell}{dos2unix}
-'>"{tmp_file}";chmod u+x "{tmp_file}";"{tmp_file}"'''
-        if self.job.script_param.strip() != '':
-            cmd += f' {self.job.script_param}'
-        if delete_after_exec:
-            cmd += f';[ -f "{tmp_file}" ] && rm -f "{tmp_file}"'
-        return cmd
-
-    def windows_cmd(self):
-        return ' '.join([self.job.script_content, self.job.script_param])
-
     def process_script(self, salt, sys, agents):
         agents_list = list(agents.values_list('agent_name', flat=True))
         if self.job.script_type in ['SHELL', 'BAT']:
-            cmd = self.windows_cmd() if sys == 'windows' else self.linux_shell_cmd()
-            exec_user = None if sys == 'windows' else self.job.exec_user
-            salt_result, salt_output = salt.shell(agents_list, cmd, exec_user)
+            if sys == 'windows':
+                salt_result, salt_output = salt.windows_batch(
+                    agents_list, self.job.script_content, self.job.script_param
+                )
+            else:
+                salt_result, salt_output = salt.linux_shell(
+                    agents_list, self.job.script_content, self.job.script_param, self.job.exec_user
+                )
         elif self.job.script_type == 'PY':
             salt_result, salt_output = salt.python(agents_list, self.job.script_content)
         else:
@@ -781,7 +723,6 @@ def import_prism(url='prism_url'):
 def syn_data_outside():
     import_detector()
     import_prism()
-    sync_computer_agent_name()
 
 
 def get_task_computers_list(user):

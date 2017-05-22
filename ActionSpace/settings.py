@@ -53,7 +53,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/1.9/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'key'
+SECRET_KEY = 'p497&f@ey9wu33lc*)pa(ruj!58cq%=vfatufny6)y!u!))0f4'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -139,6 +139,7 @@ INSTALLED_APPS = [
     'om.apps.OmConfig',
     'switch.apps.SwitchConfig',
     'utils.apps.UtilsConfig',
+    'cmdb.apps.CmdbConfig',
     'rangefilter',
 ]
 
@@ -268,12 +269,14 @@ LOCALE_PATHS = (os.path.join(BASE_DIR, 'templates', 'locale'),)
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.9/howto/static-files/
 STATIC_ROOT = os.path.join(BASE_DIR, 'static').replace('\\', '/')
+# noinspection PyUnresolvedReferences
 STATICFILES_DIRS = (
     ("om", os.path.join(STATIC_ROOT, 'om')),
     ("ckeditor", os.path.join(STATIC_ROOT, 'ckeditor')),
     ("admin", os.path.join(STATIC_ROOT, 'admin')),
     ("codemirror", os.path.join(STATIC_ROOT, 'codemirror')),
     ("jquery-jsonview", os.path.join(STATIC_ROOT, 'jquery-jsonview')),
+    ("eui", os.path.join(STATIC_ROOT, 'eui')),
 )
 STATIC_URL = '/static/'
 CODEMIRROR_JS_VAR_FORMAT = "%s_editor"
