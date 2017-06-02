@@ -168,9 +168,15 @@ def create_task(request, flow_id, job_id):
     settings.logger.info('%s %s %s ' % (request.user.username, flow_id, job_id))
     if not request.user.has_perm('om.add_task'):
         return JsonResponse({'result': 'N', 'desc': '没有权限，请联系管理员！'})
-
-    task = make_task(request.user.username, flow_id, job_id)
-    return JsonResponse({'result': 'Y', 'desc': '任务已创建,ID={id}！'.format(id=task.id)})
+    try:
+        flow = Flow.objects.get(pk=flow_id)
+        if flow.locked:
+            return JsonResponse({'result': 'N', 'desc': '请先解锁！'})
+        task = make_task(request.user.username, flow_id, job_id)
+        return JsonResponse({'result': 'Y', 'desc': '任务已创建,ID={id}！'.format(id=task.id)})
+    except Flow.DoesNotExist as e:
+        settings.logger.error(repr(e))
+        return JsonResponse({'result': 'N', 'desc': f'作业流[{flow_id}]不存在！'})
 
 
 @login_required
@@ -257,7 +263,7 @@ def get_flow_list(request):
 
     [result['rows'].append({
         'id': x.id, 'name': x.name, 'founder': x.founder, 'last_modified_by': x.last_modified_by,
-        'created_time': dt.strftime(timezone.localtime(x.created_time), fmt),
+        'created_time': dt.strftime(timezone.localtime(x.created_time), fmt), 'locked': x.locked,
         'last_modified_time': dt.strftime(timezone.localtime(x.last_modified_time), fmt),
         'recipient': x.recipient.name if x.recipient is not None else '启动人',
         'desc': x.desc
@@ -272,6 +278,8 @@ def flow_clone(request, flow_id):
     if not any([request.user.has_perm('om.add_flow'), request.user.has_perm('om.add_flow', flow)]):
         return JsonResponse({'result': 'N', 'desc': '没有权限，请联系管理员！'})
 
+    if flow.locked:
+        return JsonResponse({'result': 'N', 'desc': '请先解锁！'})
     now_time = timezone.now()
     timestamp = int(time.mktime(now_time.timetuple()))
     cloned_flow = Flow.objects.create()
@@ -326,6 +334,9 @@ def flow_delete(request, flow_id, username):
 
     if not any([request.user.username == username, request.user.is_superuser]):
         return JsonResponse({'result': 'N', 'desc': '不能删除别人创建的作业流！'})
+
+    if flow.locked:
+        return JsonResponse({'result': 'N', 'desc': '请先解锁！'})
 
     flow.delete()
     return JsonResponse({'result': 'Y'})
@@ -560,7 +571,11 @@ def del_group_in_flow(request, flow_id, group_id):
 def edit_flow(request, flow_id):
     settings.logger.info('%s %s' % (request.user.username, flow_id))
     flow = get_object_or_404(Flow, pk=flow_id)
+
     if not any([request.user.has_perm('om.change_flow'), request.user.has_perm('om.change_flow', flow)]):
+        return no_permission(request)
+
+    if not flow.locked or (flow.locked and flow.last_modified_by != request.user.username):
         return no_permission(request)
 
     flow.validate_job_group_list()
@@ -792,18 +807,14 @@ def valid_task_job_ip_list(request, task_job_id):
     settings.logger.info(f'{request.user.username}, {task_job_id}')
     result = {}
     ip_list = str2arr(TaskJob.objects.get(pk=task_job_id).server_list, digit_check=False)
-    cpt_list = Computer.objects.filter(ip__in=ip_list)
-    valid_ip_list = cpt_list.values_list('ip', flat=True)
-    invalid_ip_list = set(ip_list) - set(valid_ip_list)
-    no_agent_ip_list = cpt_list.filter(installed_agent=False).values_list('ip', flat=True)
-    if len(invalid_ip_list) == 0 and len(no_agent_ip_list) == 0:
+    not_in_computers = set(ip_list) - set(Computer.objects.filter(ip__in=ip_list).values_list('ip', flat=True))
+    not_in_salt_minions = [x for x in ip_list if not ip_in_salt_minion(x)]
+    if len(not_in_computers) == 0 and len(not_in_salt_minions) == 0:
         return JsonResponse({'结果': '通过！'}, safe=False)
-    if len(invalid_ip_list) > 0:
-        result['未录入信息列表'] = list(invalid_ip_list)
-    if len(no_agent_ip_list) > 0:
-        result['已录入信息但agent未上线列表'] = list(no_agent_ip_list)
-    result['salt未上线列表'] = [x for x in ip_list if not SaltMinion.objects.filter(
-        name__endswith=x, status='up').exists()]
+    if len(not_in_computers) > 0:
+        result['未录入系统信息'] = list(not_in_computers)
+    if len(not_in_salt_minions) > 0:
+        result['salt未上线'] = [x for x in ip_list if not ip_in_salt_minion(x)]
     return JsonResponse(result, safe=False)
 
 
@@ -906,14 +917,15 @@ def show_server(request):
 @login_required
 def salt_status_api(request):
     settings.logger.info(request.user.username)
-    search_fields = ['pk__icontains', 'name__icontains', 'status__icontains', 'env__icontains', 'os__icontains']
+    search_fields = ['pk__icontains', 'name__icontains', 'host__icontains', 'sn__icontains', 'ip_list__icontains', 'status__icontains', 'env__icontains', 'os__icontains']
     minions, minion_count = get_paged_query(SaltMinion.objects.all(), search_fields, request)
     result = {'total': minion_count, 'rows': []}
 
     fmt = '%Y-%m-%d %H:%M:%S'
     [result['rows'].append({
-            'id': x.id, 'name': x.name, 'env': x.env, 'os': x.os, 'status': x.status,
-            'update_time': dt.strftime(timezone.localtime(x.update_time), fmt)
+        'id': x.id, 'name': x.name, 'host': x.host, 'ip_list': x.ip_list, 'sn': x.sn,
+        'env': x.env, 'os': x.os, 'status': x.status,
+        'update_time': dt.strftime(timezone.localtime(x.update_time), fmt)
     }) for x in minions]
     return JsonResponse(result, safe=False)
 
@@ -965,6 +977,8 @@ def add_auto_task(request):
         if expire_time.strip() == '____-__-__ __:__:__':
             expire_time = ''
         p.expires = None if expire_time.strip() == '' else dt.strptime(expire_time, '%Y-%m-%d %H:%M:%S')
+        p.founder = request.user.username
+        p.last_modified_by = request.user.username
         p.save()
         return render(request, 'om/close_this_layer.html', {'msg': '保存成功！'})
     else:
@@ -977,6 +991,8 @@ def delete_auto_task(request, task_id):
     settings.logger.info('%s %s' % (request.user.username, task_id))
     try:
         p = PeriodicTask.objects.get(pk=task_id)
+        if p.locked:
+            return JsonResponse({'result': 'N', 'msg': '不能删除锁定状态的任务！'})
         perm = 'djcelery.delete_periodictask'
         if not any([request.user.has_perm(perm), request.user.has_perm(perm, p)]):
             return JsonResponse({'result': 'N', 'msg': '没有删除权限'})
@@ -996,6 +1012,9 @@ def modify_auto_task(request, task_id):
 
     if not any([request.user.has_perm(perm), request.user.has_perm(perm, p)]):
         return no_permission(request)
+
+    if not p.locked:
+        return render(request, 'om/close_this_layer.html', {'msg': '请先锁定！'})
 
     if request.method == 'POST':
         p.name = request.POST['name']
@@ -1022,6 +1041,7 @@ def modify_auto_task(request, task_id):
         if expire_time.strip() == '____-__-__ __:__:__':
             expire_time = ''
         p.expires = None if expire_time.strip() == '' else dt.strptime(expire_time, '%Y-%m-%d %H:%M:%S')
+        p.last_modified_by = request.user.username
         p.save()
         return render(request, 'om/close_this_layer.html', {'msg': '保存成功！'})
     else:
@@ -1042,10 +1062,58 @@ def modify_auto_task(request, task_id):
 
 
 @login_required
+def lock_auto_task(request, auto_task_id):
+    settings.logger.info(f'{request.user.username}, {auto_task_id}')
+    try:
+        p = PeriodicTask.objects.get(pk=auto_task_id)
+        if p.locked:
+            return JsonResponse({'result': False, 'desc': '已锁定过，请刷新最新状态！'})
+        else:
+            p.last_modified_by = request.user.username
+            p.locked = True
+            p.save()
+            return JsonResponse({'result': True})
+    except PeriodicTask.DoesNotExist as e:
+        settings.logger.error(repr(e))
+        return JsonResponse({'result': False, 'desc': f'定时任务[{auto_task_id}]不存在！'})
+
+
+@login_required
+def unlock_auto_task(request, auto_task_id):
+    settings.logger.info(f'{request.user.username}, {auto_task_id}')
+    try:
+        p = PeriodicTask.objects.get(pk=auto_task_id)
+        if p.locked:
+            if p.last_modified_by == request.user.username or request.user.is_superuser:
+                p.last_modified_by = request.user.username
+                p.locked = False
+                p.save()
+                return JsonResponse({'result': True})
+            else:
+                return JsonResponse({'result': False, 'desc': '请联系锁定人或管理员进行解锁！'})
+        else:
+            return JsonResponse({'result': False, 'desc': '不需要解锁，请刷新最新状态！'})
+    except PeriodicTask.DoesNotExist as e:
+        settings.logger.error(repr(e))
+        return JsonResponse({'result': False, 'desc': f'定时任务[{auto_task_id}]不存在！'})
+
+
+@login_required
+def auto_task_is_locked(request, auto_task_id):
+    settings.logger.info(f'{request.user.username}, {auto_task_id}')
+    try:
+        p = PeriodicTask.objects.get(pk=auto_task_id)
+        return JsonResponse({'result': p.locked, 'lock_by': p.last_modified_by})
+    except PeriodicTask.DoesNotExist as e:
+        settings.logger.error(repr(e))
+        return JsonResponse({'result': True, 'lock_by': 'NA'})
+
+
+@login_required
 def auto_task_list(request):
     settings.logger.info(request.user.username)
     search_fields = [
-        'pk__icontains', 'name__icontains'
+        'pk__icontains', 'name__icontains', 'founder__icontains', 'last_modified_by__icontains'
     ]
     auto_tasks, auto_task_count = get_paged_query(PeriodicTask.objects.filter(task='om.util.celery_auto_task'), search_fields, request)
     result = {'total': auto_task_count, 'rows': []}
@@ -1061,7 +1129,12 @@ def auto_task_list(request):
             'enabled': '是' if p.enabled else '否',
             'interval': '无' if p.interval is None else str(p.interval),
             'crontab': '无' if p.crontab is None else str(p.crontab),
-            'expires': '未设置' if p.expires is None else dt.strftime(timezone.localtime(p.expires), fmt)
+            'expires': '未设置' if p.expires is None else dt.strftime(timezone.localtime(p.expires), fmt),
+            'founder': p.founder,
+            'locked': p.locked,
+            'last_modified_by': p.last_modified_by,
+            'created_time': dt.strftime(timezone.localtime(p.created_time), fmt),
+            'last_modified_time': dt.strftime(timezone.localtime(p.last_modified_time), fmt)
         })
 
     return JsonResponse(result, safe=False)
@@ -1323,3 +1396,73 @@ def salt_minion_ping(request, minion_id):
         return JsonResponse({'result': 'N', 'desc': '无此操作权限，请联系管理员！'})
     result = check_minion_ping(minion_id)
     return JsonResponse({'result': 'Y' if result else 'N', 'desc': '服务可用' if result else '检查失败'}, safe=False)
+
+
+@login_required
+def lock_flow(request, flow_id):
+    settings.logger.info(f'{request.user.username}, {flow_id}')
+    try:
+        flow = Flow.objects.get(pk=flow_id)
+        if flow.locked:
+            return JsonResponse({'result': False, 'desc': '已锁定过，请刷新最新状态！'})
+        else:
+            flow.last_modified_by = request.user.username
+            flow.locked = True
+            flow.save()
+            return JsonResponse({'result': True})
+    except Flow.DoesNotExist as e:
+        settings.logger.error(repr(e))
+        return JsonResponse({'result': False, 'desc': f'作业流[{flow_id}]不存在！'})
+
+
+@login_required
+def unlock_flow(request, flow_id):
+    settings.logger.info(f'{request.user.username}, {flow_id}')
+    try:
+        flow = Flow.objects.get(pk=flow_id)
+        if flow.locked:
+            if flow.last_modified_by == request.user.username or request.user.is_superuser:
+                flow.last_modified_by = request.user.username
+                flow.locked = False
+                flow.save()
+                return JsonResponse({'result': True})
+            else:
+                return JsonResponse({'result': False, 'desc': '请联系锁定人或管理员进行解锁！'})
+        else:
+            return JsonResponse({'result': False, 'desc': '不需要解锁，请刷新最新状态！'})
+    except Flow.DoesNotExist as e:
+        settings.logger.error(repr(e))
+        return JsonResponse({'result': False, 'desc': f'作业流[{flow_id}]不存在！'})
+
+
+@login_required
+def flow_is_locked(request, flow_id):
+    settings.logger.info(f'{request.user.username}, {flow_id}')
+    try:
+        flow = Flow.objects.get(pk=flow_id)
+        return JsonResponse({'result': flow.locked, 'lock_by': flow.last_modified_by})
+    except Flow.DoesNotExist as e:
+        settings.logger.error(repr(e))
+        return JsonResponse({'result': True, 'lock_by': 'NA'})
+
+
+def diy_report_download(request):
+    import time
+    import csv
+    from django.http import StreamingHttpResponse
+    settings.logger.info(request.user.username)
+
+    class Echo(object):
+        @classmethod
+        def write(cls, value):
+            return value
+
+    def read_iterator():
+        for c in Computer.objects.select_related().only('host', 'entity'):
+            yield [c.host, c.entities()]
+
+    writer = csv.writer(Echo())
+    time_stamp = int(time.mktime(timezone.now().timetuple()))
+    response = StreamingHttpResponse((writer.writerow(row) for row in read_iterator()), content_type="text/csv")
+    response['Content-Disposition'] = f'attachment;filename=info-{time_stamp}.csv'
+    return response

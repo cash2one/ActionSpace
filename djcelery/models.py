@@ -260,6 +260,12 @@ class PeriodicTask(models.Model):
     date_changed = models.DateTimeField(auto_now=True)
     description = models.TextField(_('description'), blank=True)
 
+    founder = models.CharField(max_length=50, verbose_name='创建人', default='NA')
+    locked = models.BooleanField(verbose_name='锁定', default=False)
+    last_modified_by = models.CharField(max_length=50, verbose_name='最后修改人', default='NA')
+    created_time = models.DateTimeField(verbose_name='创建时间', auto_now_add=True)
+    last_modified_time = models.DateTimeField(verbose_name='最后修改时间', auto_now=True)
+
     objects = managers.PeriodicTaskManager()
     no_changes = False
 

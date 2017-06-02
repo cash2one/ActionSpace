@@ -18,6 +18,8 @@
                             <button id="edit" class="btn btn-xs btn-success" title="编辑" disabled><i class="fa fa-edit">编辑</i></button>
                             <button id="clone" class="btn btn-xs btn-primary" title="克隆" disabled><i class="fa fa-clone">克隆</i></button>
                             <button id="delete" class="btn btn-xs btn-info" title="删除" disabled><i class="fa fa-remove">删除</i></button>
+                            <button id="lock" class="btn btn-xs btn-info" title="锁定" disabled><i class="fa fa-lock">锁定</i></button>
+                            <button id="unlock" class="btn btn-xs btn-info" title="解锁" disabled><i class="fa fa-unlock">解锁</i></button>
                             <!-- <button id="recipient" class="btn btn-xs btn-success" title="收件人" disabled><i class="fa fa-at">收件人</i></button> -->
                         </div>
                         <table data-toggle="table" id="table" data-toolbar="#toolbar"
@@ -73,8 +75,9 @@
             $table.bootstrapTable('hideColumn', 'created_time');
         });
         var $table=$("#table"), $add=$("#add"), $to_task=$("#to_task"), $recipient = $("recipient"),
-            $edit=$("#edit"), $clone=$("#clone"), $delete=$("#delete"), selections = [];
-        var need_single = [$to_task, $edit, $clone, $delete, $recipient];
+            $edit=$("#edit"), $clone=$("#clone"), $delete=$("#delete"), $lock=$("#lock"),
+            $unlock=$("#unlock"), selections = [];
+        var need_single = [$to_task, $edit, $clone, $delete, $recipient, $lock, $unlock];
         $table.on('editable-save.bs.table', function(e, field, row, oldValue, $el) {
             $.get('/om/update_flow_name/'+row.founder+"/"+row.id+"/" + row.name, function(result) {
                 if (result.result == 'Y') {
@@ -90,8 +93,14 @@
         $table.on('check.bs.table uncheck.bs.table ' + 'check-all.bs.table uncheck-all.bs.table', function () {
             selections = $table.bootstrapTable('getSelections');
             need_single.forEach(function(btn) {
-                btn.prop('disabled', selections.length != 1);
+                btn.prop('disabled', selections.length !== 1);
             });
+
+            if (selections.length === 1) {
+                var row = selections[0];
+                $lock.prop('disabled', row.locked);
+                $unlock.prop('disabled', !row.locked);
+            }
         });
 
         $add.click(function () {
@@ -108,7 +117,7 @@
 
         function single_bind(btn, func) {
             btn.click(function () {
-                if (selections.length == 1) {
+                if (selections.length === 1) {
                     func(selections[0])
                 }
                 else {
@@ -119,62 +128,120 @@
 
         single_bind($to_task,function (row){
             $.get('/om/create_task/'+row.id+"/-1", function(result) {
-                layer.msg(result.desc,{time: 2000});
+                layer.msg(result.desc, {time: 2000});
+            });
+        });
+
+        single_bind($lock,function (row){
+            $.get('/om/flow_is_locked/'+row.id+"/", function(result) {
+                if (result.result) {
+                    layer.msg('已被锁过，请刷新最新状态！',{time: 2000});
+                }
+                else {
+                    $.get('/om/lock_flow/'+row.id+"/", function(result) {
+                        if (result.result) {
+                            layer.msg('锁定成功',{time: 2000});
+                            //row.locked = true;
+                            $("#table").bootstrapTable('refresh');
+                        }
+                        else {
+                            layer.msg('锁定失败',{time: 2000});
+                        }
+                    });
+                }
+            });
+        });
+
+        single_bind($unlock,function (row){
+            $.get('/om/unlock_flow/'+row.id+"/", function(result) {
+                if (result.result) {
+                    layer.msg('解锁成功',{time: 2000});
+                    //row.locked = false;
+                    $("#table").bootstrapTable('refresh');
+                }
+                else {
+                    layer.msg(result.desc,{time: 2000});
+                }
             });
         });
 
         single_bind($edit,function (row){
-            var flow_edit_layer = layer.open({
-              type: 2,
-              title: '编辑作业流[' + row.name + ']',
-              area: ['700px', '530px'],
-              fix: false, //不固定
-              maxmin: true,
-              content:"/om/edit_flow/"+row.id+"/"
-              //content: "{%url 'om:edit_flow' 1 %}"
-            });
-            layer.full(flow_edit_layer);
-        });
-        single_bind($clone,function (row){
-            $.get('/om/flow_clone/'+row.id+"/", function(result) {
-                if (result.result == 'Y') {
-                    layer.msg('克隆后的ID为：'+result.id,{time: 2000, icon: 1});
-                    $('#table').bootstrapTable('refresh', {url: "{% url 'om:get_flow_list' %}"});
+            $.get('/om/flow_is_locked/'+row.id+"/", function(result) {
+                if (result.result) {
+                    if (result.lock_by !== '{{ user.username }}') {
+                        layer.msg('已被其他人锁定！',{time: 2000});
+                    }
+                    else {
+                        var flow_edit_layer = layer.open({
+                          type: 2,
+                          title: '编辑作业流[' + row.name + ']',
+                          area: ['700px', '530px'],
+                          fix: false, //不固定
+                          maxmin: true,
+                          content:"/om/edit_flow/"+row.id+"/"
+                          //content: "{%url 'om:edit_flow' 1 %}"
+                        });
+                        layer.full(flow_edit_layer);
+                    }
                 }
                 else {
-                    layer.msg(result.desc, {time: 2000, icon: 1});
+                    layer.msg('请先锁定！',{time: 2000});
+                }
+            });
+        });
+        single_bind($clone,function (row){
+            $.get('/om/flow_is_locked/'+row.id+"/", function(result) {
+                if (result.result) {
+                    layer.msg('请先解锁',{time: 2000});
+                }
+                else {
+                    $.get('/om/flow_clone/'+row.id+"/", function(result) {
+                        if (result.result === 'Y') {
+                            layer.msg('克隆后的ID为：'+result.id,{time: 2000, icon: 1});
+                            $('#table').bootstrapTable('refresh', {url: "{% url 'om:get_flow_list' %}"});
+                        }
+                        else {
+                            layer.msg(result.desc, {time: 2000, icon: 1});
+                        }
+                    });
                 }
             });
         });
         single_bind($delete,function (row){
-            layer.confirm('删除是不可逆的操作，是否确认删除？', {
-                title: '删除确认',
-                btn: ['确认删除','取消删除']
-            }, function(){
-                $.get('/om/flow_delete/'+row.id+"/"+row.founder,function(result) {
-                    if (result.result == 'Y')
-                    {
-                        $('#table').bootstrapTable('refresh');
-                        layer.msg('删除成功',{time: 2000, icon: 1});
-                    }
-                    else {
-                        layer.msg(result.desc,{time: 2000, icon: 1});
-                    }
-                });
+            $.get('/om/flow_is_locked/'+row.id+"/", function(result) {
+                if (result.result) {
+                    layer.msg('请先解锁！', {time: 2000});
+                }
+                else {
+                    layer.confirm('删除是不可逆的操作，是否确认删除？', {
+                        title: '删除确认',
+                        btn: ['确认删除','取消删除']
+                    }, function(){
+                        $.get('/om/flow_delete/' + row.id + "/" + row.founder, function (result) {
+                            if (result.result === 'Y') {
+                                $('#table').bootstrapTable('refresh');
+                                layer.msg('删除成功', {time: 2000, icon: 1});
+                            }
+                            else {
+                                layer.msg(result.desc, {time: 2000, icon: 1});
+                            }
+                        });
+                    });
+                }
             });
         });
 
         single_bind($recipient,function (row){
-                $.get('/om/set_flow_recipient/'+row.id+"/"+row.founder,function(result) {
-                    if (result.result == 'Y')
-                    {
-                        $('#table').bootstrapTable('refresh');
-                        layer.msg('删除成功',{time: 2000, icon: 1});
-                    }
-                    else {
-                        layer.msg(result.desc,{time: 2000, icon: 1});
-                    }
-                });
+            $.get('/om/set_flow_recipient/'+row.id+"/"+row.founder,function(result) {
+                if (result.result === 'Y')
+                {
+                    $('#table').bootstrapTable('refresh');
+                    layer.msg('删除成功',{time: 2000, icon: 1});
+                }
+                else {
+                    layer.msg(result.desc,{time: 2000, icon: 1});
+                }
+            });
         });
     </script>
 {% endblock %}

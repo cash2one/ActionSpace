@@ -1,5 +1,6 @@
 # coding: utf-8
 from switch.models import *
+from celery import shared_task
 from om.models import MacAddr
 from io import StringIO
 from collections import OrderedDict
@@ -253,7 +254,7 @@ class Scan(object):
             self.process(1, kargs, self.scan_switch, peer_switch, group_switch)
 
         # 2 遍历出所有交换机的网口
-        for switch in Switch.objects.filter():
+        for switch in Switch.objects.all():
             kargs = {'ip': switch.ip, 'communication': switch.communication}
             self.process(2, kargs, self.scan_port, switch)  # 扫描端口
             self.process(8, kargs, self.scan_port_channel, switch)  # 扫描捆绑口
@@ -273,3 +274,8 @@ class Scan(object):
             self.process(7, kargs, self.scan_arp)
         run_end = time.time()
         print(f'run cost time:{run_end-run_begin:.3f}(s)')
+
+
+@shared_task
+def switch_test(who='wqz'):
+    print(who)

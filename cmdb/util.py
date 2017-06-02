@@ -1,9 +1,7 @@
 # coding=utf-8
-from celery import shared_task
 from om.proxy import Salt
 from cmdb.models import Action
 import requests
-import math
 
 
 class CmdbApi(object):
@@ -35,31 +33,49 @@ class CmdbApi(object):
         else:
             return False, {'code': r.status_code}
 
+    def exist_trans(self, ci_id, ent_id):
+        result, back = self.send('TransactionQueryRestApi', data={'ciId': ci_id, 'ciEntityId': ent_id, 'token': 0})
+        assert result, '执行报错'
+        return len(back['Return']) > 0
+
     def process_salt_grains(self, info, env):
         self.last_error = ''
         if not self.process_os(info, env):
             return False
+        if True:
+            return
         if not self.process_hardware(info, env):
             return False
-        # mem_total = info['mem_total']
-        # cpu_model = info['cpu_model']
-        # num_cpus = info['num_cpus']
-        # bios_version = info['biosversion']
 
     def process_os(self, info, env):
-        os_id = self.get_os_id(info['localhost'])
-        if os_id == CmdbApi.ERR_ID:
+        os_id = self.get_cp_os_id(info['localhost'])
+        if os_id == CmdbApi.ERR_ID:  # 执行报错
+            print('exec error')
             return False
-        data = {"ciId": CmdbApi.CP_OS_ID}
-        self.create_or_update_os(data)
+        elif os_id == CmdbApi.NO_ID:  # 对象不存在
+            print('create new')
+            return self.create_os_trans(None, info, env, True)
+        else:  # 对象存在
+            if self.exist_trans(CmdbApi.CP_OS_ID, os_id):  # 存在事务了，先不更新，等人工确定
+                print(f'trans exist, ent id:{os_id}')
+                return True
+            else:  # 不存在事务， 这里新建一个事务
+                print('create trans')
+                return self.create_os_trans(os_id, info, env)
 
     def process_hardware(self, info, env):
-        self.create_or_update_hardware(self.get_hardware_id(info['serialnumber']), {})
+        self.create_or_update_hardware(self.get_cp_hd_id(info['serialnumber']), {})
 
-    def get_os_id(self, hostname):
+    def get_cp_os_id(self, hostname):
+        return self.get_ent_id(CmdbApi.CP_OS_ID, {'label': 'OS名称', 'attrValue': hostname})
+
+    def get_cp_hd_id(self, sn):
+        return self.get_ent_id(CmdbApi.CP_HD_ID, {'label': '序列号', 'attrValue': sn})
+
+    def get_ent_id(self, ci_id, condition):
         result, back = self.send(
             'ciEntityListByAttrlabelRestComponentApi',
-            data={'ciId': CmdbApi.CP_OS_ID, 'filterArray': [{'label': 'OS名称', 'attrValue': hostname}]}
+            data={'ciId': ci_id, 'filterArray': [condition]}
         )
         if not result:
             self.last_error = '发送消息失败'
@@ -74,20 +90,27 @@ class CmdbApi(object):
         if count == 0:
             self.last_error = '对象不存在'
             return CmdbApi.NO_ID
-        return back['Return'][0]['ciId']
+        return back['Return'][0]['id']
 
-    def create_or_update_os(self, data):
-        print(self.url_base, data)
-
-    def get_hardware_id(self, sn):
-        print(self.url_base, sn)
-        return 1
+    def create_os_trans(self, os_id, info, env, commit=False):
+        print('create_os_trans')
+        data = {
+            'ciId': CmdbApi.CP_OS_ID, 'saveMode': 1 if commit else 0,
+            'editor': 'ADMIN',
+            'attr_OS名称': info['localhost'],
+            'attr_CPU核数': info['num_cpus'],
+            'attr_OS状态': '建设中',
+            'attr_环境': self.get_env_name(env)
+        }
+        if os_id is not None:
+            data['ciEntityId'] = os_id
+        print(data)
+        return self.send('ciEntitySaveRestComponentApi', data=data)
 
     def create_or_update_hardware(self, sn, data):
         print(self.url_base, sn, data)
 
 
-@shared_task
 def update_computer(update_time, action_id, callback=None):
     # update_time放在参数里是为了在flower里看到
     # callback允许为空，这样方便手工调用
@@ -95,42 +118,25 @@ def update_computer(update_time, action_id, callback=None):
     def send(content):
         callback.msg(content) if callback else print(content)
 
-    action = Action.objects.get(pk=action_id)
-    if action.status == 'running':
-        send('有任务正在执行，请等待执行完成！')
-        return
+    # action = Action.objects.get(pk=action_id)
+    # if action.status == 'running':
+    #     send('有任务正在执行，请等待执行完成！')
+    #     return
 
-    action.status = 'running'
+    # action.status = 'running'
     print(update_time)
+    api = CmdbApi()
     for env in ['PRD', 'UAT']:
         salt = Salt(env)
-        ping_check, back = salt.ping('*')
-        if not ping_check:
-            send('ping 失败')
-            action.status = 'fail'
-            action.save()
-            return False
+        check, back = salt.grains('*', ['localhost', 'num_cpus'])
+        if check:
+            for _, info in back['return'][0].items():
+                process_result = api.process_salt_grains(info, env)
+                if not process_result:
+                    send(api.last_error)
+                    # break  # 如果有失败则至二级返回，不再进行后面的批次
         else:
-            ag_list = back['return'][0].keys()
-
-        # 分批处理，50一批
-        count = len(ag_list)
-        batch_count = 50
-        api = CmdbApi()
-        for batch in range(int(math.ceil(count/batch_count))):
-            offset = batch * batch_count
-            batch_list = ag_list[offset: min((offset+batch_count), count-1)]
-            check, back = salt.grains(batch_list)
-            if check:
-                send(f'开始处理完成第{batch}批。')
-                for info in back['return'][0].keys():
-                    process_result = api.process_salt_grains(info, env)
-                    if not process_result:
-                        send(api.last_error)
-                        break  # 如果有失败则至二级返回，不再进行后面的批次
-                send(f'结束处理完成第{batch}批。')
-            else:
-                send(f'获取grains失败:{batch_list}')
-        action.status = 'success'
-        action.save()
+            send(f'获取grains失败')
+        # action.status = 'success'
+        # action.save()
         return True

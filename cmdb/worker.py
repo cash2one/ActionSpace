@@ -24,7 +24,8 @@ class ComputerUpdateConsumer(OmConsumer):
             return
 
         if action_type == 'computer':
-            update_computer.delay(timezone.now(), action_id, self)
+            from om.util import cmdb_task
+            cmdb_task.delay(timezone.now(), action_id, self)
             self.msg('任务已下发')
         else:
             self.msg('不支持的操作！')

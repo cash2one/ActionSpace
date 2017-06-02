@@ -13,13 +13,15 @@
                     </div>
                     <div class="ibox-content">
                         <div id="toolbar" class="btn-group">
-                            <button id="add_auto_task" class="btn btn-success">
-                                <i class="glyphicon glyphicon-plus">添加</i>
-                            </button>
+                            <button id="add" class="btn btn-xs btn-success" title="新建"><i class="fa fa-plus">新建</i></button>
+                            <button id="edit" class="btn btn-xs btn-success" title="编辑" disabled><i class="fa fa-edit">编辑</i></button>
+                            <button id="delete" class="btn btn-xs btn-info" title="删除" disabled><i class="fa fa-remove">删除</i></button>
+                            <button id="lock" class="btn btn-xs btn-info" title="锁定" disabled><i class="fa fa-lock">锁定</i></button>
+                            <button id="unlock" class="btn btn-xs btn-info" title="解锁" disabled><i class="fa fa-unlock">解锁</i></button>
                         </div>
                         <table data-toggle="table" id="table" data-url="{% url 'om:auto_task_list' %}"
                                data-id-field="id" data-page-list="[10, 25, 50{% if user.is_superuser %},ALL{% endif %}]"
-                               data-show-toggle="true" data-resizable="true"
+                               data-show-toggle="true" data-resizable="true" data-toolbar="#toolbar"
                                data-minimum-count-columns="2" data-show-columns="true"
                                data-show-refresh="true" data-icon-size="sm" data-search="true"
                                data-pagination="true" data-side-pagination="server"  data-single-select="true"
@@ -39,6 +41,7 @@
                         >
                             <thead>
                             <tr>
+                                <th data-field="state" data-checkbox="true"></th>
                                 <th data-field="id" data-sortable="true" data-width="20">ID</th>
                                 <th data-field="name" data-sortable="true" data-width="300">自动任务</th>
                                 <th data-field="args" data-sortable="false" data-width="300">任务模板</th>
@@ -47,7 +50,11 @@
                                 <th data-field="interval" data-sortable="true" data-width="40">周期任务</th>
                                 <th data-field="crontab" data-sortable="true" data-width="200">定时任务</th>
                                 <th data-field="expires" data-sortable="true" data-width="140">过期时间</th>
-                                <th data-field="auto_task_action" data-formatter="actionFormatter" data-events="actionEvents" data-width="120">操作</th>
+                                <th data-field="founder" data-sortable="true">创建人</th>
+                                <th data-field="locked" data-sortable="true">锁定</th>
+                                <th data-field="last_modified_by" data-sortable="true">最后修改人</th>
+                                <th data-field="created_time" data-sortable="true" data-width="140">创建时间</th>
+                                <th data-field="last_modified_time" data-sortable="true" data-width="140">最后修改时间</th>
                             </tr>
                             </thead>
                         </table>
@@ -61,48 +68,36 @@
     {% include 'om/table_load.html' %}
     <script src="{% static 'om/js/plugins/chosen/chosen.jquery.js' %}"></script>
     <script src="{% static 'om/layer/layer.js' %}"></script>
-    <!--suppress JSUnusedLocalSymbols -->
+    <!--suppress JSUnusedLocalSymbols, JSUnresolvedVariable -->
     <script>
-        function actionFormatter(value, row, index) {
-            var actions = new Array()
-            actions.push('<div class="btn-group">')
-            actions.push('<button class="btn btn-xs btn-success edit_auto_task" title="编辑"><i class="fa fa-edit">编辑</i></button>');
-            actions.push('<button class="btn btn-xs btn-info delete_auto_task" title="删除"><i class="fa fa-remove">删除</i></button>');
-            actions.push('<div class="btn-group">');
-            actions.push('</div>');
-            return actions.join('&nbsp;&nbsp;');
-        }
-        window.actionEvents = {
-            'click .edit_auto_task': function (e, value, row, _) {
-                var edit_layer = layer.open({
-                  type: 2,
-                  title: '编辑自动任务',
-                  area: ['700px', '530px'],
-                  fix: false, //不固定
-                  maxmin: true,
-                  content:"/om/modify_auto_task/"+row.id+"/"
-                });
-                layer.full(edit_layer);
-            },
-            'click .delete_auto_task': function (e, value, row, _) {
-                layer.confirm('删除是不可逆的操作，是否确认删除？', {
-                    title: '删除确认',
-                    btn: ['确认删除','取消删除']
-                }, function(){
-                    $.get('/om/delete_auto_task/'+row.id, function(result) {
-                        if (result.result == 'Y')
-                        {
-                            $('#table').bootstrapTable('refresh');
-                            layer.msg(result.msg,{time: 2000, icon: 1});
-                        }
-                        else {
-                            layer.msg(result.msg,{time: 2000, icon: 1});
-                        }
-                    });
-                });
+        $(document).ready(function() {
+            var $table = $('#table');
+            $table.bootstrapTable('hideColumn', 'id');
+            $table.bootstrapTable('hideColumn', 'type');
+            $table.bootstrapTable('hideColumn', 'founder');
+            $table.bootstrapTable('hideColumn', 'expires');
+            $table.bootstrapTable('hideColumn', 'created_time');
+            $table.bootstrapTable('hideColumn', 'last_modified_time');
+            $table.bootstrapTable('hideColumn', 'args');
+        });
+        var $table=$("#table"), $add=$("#add"), $edit=$("#edit"),
+            $delete=$("#delete"), $lock=$("#lock"), $unlock=$("#unlock"), selections = [];
+        var need_single = [$edit, $delete, $lock, $unlock];
+
+        $table.on('check.bs.table uncheck.bs.table ' + 'check-all.bs.table uncheck-all.bs.table', function () {
+            selections = $table.bootstrapTable('getSelections');
+            need_single.forEach(function(btn) {
+                btn.prop('disabled', selections.length !== 1);
+            });
+
+            if (selections.length === 1) {
+                var row = selections[0];
+                $lock.prop('disabled', row.locked);
+                $unlock.prop('disabled', !row.locked);
             }
-        };
-        $('#add_auto_task').on('click', function(){
+        });
+
+        $add.click(function () {
             var edit_layer = layer.open({
               type: 2,
               title: '添加自动任务',
@@ -113,8 +108,91 @@
             });
             layer.full(edit_layer);
         });
-        $(document).ready(function() {
-            //
+
+        function single_bind(btn, func) {
+            btn.click(function () {
+                if (selections.length === 1) {
+                    func(selections[0])
+                }
+                else {
+                    layer.msg('需要仅选中一个！',{time: 2000, icon: 1});
+                }
+            })
+        }
+
+        single_bind($edit,function (row){
+            $.get('/om/auto_task_is_locked/'+row.id+"/", function(result) {
+                if (result.result) {
+                    if (result.lock_by !== '{{ user.username }}') {
+                        layer.msg('已被其他人锁定！',{time: 2000});
+                    }
+                    else {
+                        var edit_layer = layer.open({
+                          type: 2,
+                          title: '编辑自动任务',
+                          area: ['700px', '530px'],
+                          fix: false, //不固定
+                          maxmin: true,
+                          content:"/om/modify_auto_task/"+row.id+"/"
+                        });
+                        layer.full(edit_layer);
+                    }
+                }
+                else {
+                    layer.msg('请先锁定！',{time: 2000});
+                }
+            });
+        });
+
+        single_bind($delete,function (row){
+            layer.confirm('删除是不可逆的操作，是否确认删除？', {
+                title: '删除确认',
+                btn: ['确认删除','取消删除']
+            }, function(){
+                $.get('/om/delete_auto_task/'+row.id, function(result) {
+                    if (result.result === 'Y')
+                    {
+                        $('#table').bootstrapTable('refresh');
+                        layer.msg(result.msg,{time: 2000, icon: 1});
+                    }
+                    else {
+                        layer.msg(result.msg,{time: 2000, icon: 1});
+                    }
+                });
+            });
+        });
+
+        single_bind($lock,function (row){
+            $.get('/om/auto_task_is_locked/'+row.id+"/", function(result) {
+                if (result.result) {
+                    layer.msg('已被锁过，请刷新最新状态！',{time: 2000});
+                }
+                else {
+                    $.get('/om/lock_auto_task/'+row.id+"/", function(result) {
+                        if (result.result) {
+                            layer.msg('锁定成功',{time: 2000});
+                            //row.locked = true;
+                            $("#table").bootstrapTable('refresh');
+                        }
+                        else {
+                            layer.msg('锁定失败',{time: 2000});
+                        }
+                    });
+                }
+            });
+        });
+
+        single_bind($unlock,function (row){
+            $.get('/om/unlock_auto_task/'+row.id+"/", function(result) {
+                if (result.result) {
+                    layer.msg('解锁成功',{time: 2000});
+                    //row.locked = false;
+                    $("#table").bootstrapTable('refresh');
+                }
+                else {
+                    layer.msg(result.desc,{time: 2000});
+                }
+            });
         });
     </script>
 {% endblock %}

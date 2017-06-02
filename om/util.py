@@ -16,7 +16,6 @@ import pika
 import os
 import re
 import traceback
-import uuid
 from django.db.models import Q
 
 task_logger = get_task_logger(__name__)
@@ -74,35 +73,29 @@ def celery_send_mail(subject, msg, to):
         return 'send mail to fail cause recipient is None'
 
 
-def check_computer(env_input=None):
-    from om.models import Computer
-    env_list = [env_input] if env_input is not None else ['PRD', 'UAT'] if settings.OM_ENV == 'PRD' else ['UAT']
+def check_computer():
+    from om.models import Computer, SaltMinion
+    from django.db.models import Count
     last_return = {}
 
-    for env in env_list:
-        last_return[env] = {'count_not_one': [], 'change': []}
-        result, back = Salt(env).grains('*', ['os', 'localhost', 'ipv4'])
-        if not result:
-            settings.logger.error(back)
-            settings.logger.error(f'{env} update_salt_manage_status fail')
-            continue
-        for ag_name, info in back['return'][0].items():
-            ipv4_list = [x for x in info['ipv4'] if x != '127.0.0.1']
-            cpts = Computer.objects.filter(env=env, host__iexact=info['localhost'])
-            cpt_count = cpts.count()
-            if cpt_count == 1:
-                cpt = cpts.first()
-                if cpt.ip not in ipv4_list:
-                    last_return[env]['change'].append({
-                        'from': {
-                            'host': cpt.host, 'ip': cpt.ip, 'agent_name': cpt.agent_name
-                        },
-                        'to': {
-                            'host': info['localhost'], 'agent_name': ag_name, 'ipv4': ipv4_list
-                        }
-                    })
-            elif cpt_count > 1:
-                last_return[env]['count_not_one'].append([info['localhost'], cpt_count])
+    count_not_one = list(Computer.objects.values('host').annotate(count=Count('host')).filter(count__gt=1).values('host', 'count'))
+    if count_not_one:
+        last_return['count_not_one'] = count_not_one
+    change = []
+    for minion in SaltMinion.objects.filter(status='up'):
+        cpts = Computer.objects.filter(host__iexact=minion.host)
+        if cpts.exists():
+            cpt = cpts.first()
+            ip_list = minion.ip_list.split(',')
+            if cpt.ip not in ip_list:
+                change.append({
+                    'from': {'host': cpt.host, 'ip': cpt.ip, 'agent_name': cpt.agent_name},
+                    'to': {'host': minion.host, 'ipv4': ip_list, 'agent_name': minion.name}
+                })
+    if change:
+        last_return['change'] = change
+    if not last_return:
+        last_return['result'] = '没问题'
     return last_return
 
 
@@ -113,22 +106,26 @@ def update_from_salt(env_input=None):
     # SaltMinion.objects.all().delete()
     for env in env_list:
         try:
-            result, back = Salt(env).grains('*', ['os', 'localhost', 'hwaddr_interfaces', 'ipv4'])
+            result, back = Salt(env).grains('*', ['os', 'localhost', 'hwaddr_interfaces', 'ipv4', 'serialnumber'])
             if not result:
                 settings.logger.error(back)
                 settings.logger.error(f'{env} update_salt_manage_status fail')
                 continue
             now = timezone.now()
             for ag_name, info in back['return'][0].items():
-                minion, _ = SaltMinion.objects.get_or_create(name=ag_name, os=info['os'], env=env, status='up')
+                ipv4_list = [x for x in info['ipv4'] if x not in ['127.0.0.1', '0.0.0.0']]
+                minion, _ = SaltMinion.objects.get_or_create(name=ag_name, os=info['os'], env=env)
+                minion.status = 'up'
                 minion.update_time = now
+                minion.host = info['localhost']
+                minion.sn = info['serialnumber']
+                minion.ip_list = ','.join(ipv4_list)
                 minion.save()
                 cpts = Computer.objects.filter(host__iexact=info['localhost'], env=env)
                 cpts.update(
                     host=info['localhost'], agent_name=ag_name, installed_agent=True,
                     sys=Computer.get_sys(info['os']), update_time=now
                 )
-                ipv4_list = [x for x in info['ipv4'] if x != '127.0.0.1']
                 if len(ipv4_list) == 1 and cpts.count() == 1:
                     if cpts.first().ip != ipv4_list[0]:
                         cpts.update(ip=ipv4_list[0], update_time=now)
@@ -172,10 +169,6 @@ def get_name(content):
         return content.decode()
     else:
         return content
-
-
-def get_salt_status():
-    return Salt(settings.OM_ENV).manage_status()
 
 
 def expand_server_list(post_form):
@@ -594,9 +587,8 @@ def celery_auto_task(tid, sender):
 def get_paged_query(query, search_fields, request, force_order=None):
     settings.logger.info(repr(request.GET))
     try:
+        ordering = []
         search = request.GET.get('search')
-        if force_order is not None:
-            query = query.order_by(force_order)
         offset = request.GET.get('offset')
         offset = 0 if offset is None else int(offset)
         limit = request.GET.get('limit')
@@ -604,7 +596,11 @@ def get_paged_query(query, search_fields, request, force_order=None):
         sort_val = request.GET.get('sort')
         order = request.GET.get('order')
         if all([sort_val, order]):
-            query = query.order_by('-'+sort_val if order == 'desc' else sort_val)
+            ordering.append('-' + sort_val if order == 'desc' else sort_val)
+        if force_order is not None and force_order.lower() != 'pk':
+            ordering.append(force_order)
+        ordering.append('pk')
+        query = query.order_by(*ordering)
         if search is not None:
             select = Q()
             multi = len(search_fields) > 1
@@ -805,3 +801,26 @@ def check_minion_ping(minion_id):
         minion.status = 'up' if ping_success else 'down'
         minion.save()
     return result and ping_success
+
+
+def ip_in_salt_minion(ip):
+    from om.models import SaltMinion
+    minions = SaltMinion.objects.only('ip_list').filter(ip_list__contains=ip, status='up')
+    return len([x for x in minions if ip in x.ip_list.split(',')]) > 0
+
+
+def host_in_salt_minion(host):
+    from om.models import SaltMinion
+    return SaltMinion.objects.only('ip_list').filter(host=host, status='up').exists()
+
+
+@shared_task
+def switch_task():
+    from switch.util import Scan
+    Scan(True).run()
+
+
+@shared_task
+def cmdb_task(update_time, action_id, callback=None):
+    from cmdb.util import update_computer
+    update_computer(update_time, action_id, callback)

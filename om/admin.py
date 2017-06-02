@@ -145,7 +145,7 @@ class FlowAdmin(GuardedModelAdmin):
     search_fields = ('id', 'name')
     readonly_fields = ('created_time', 'last_modified_time',)
     list_display = (
-        'id', 'name', 'founder', 'is_quick_flow', 'last_modified_by', 'job_group_list', 'desc'
+        'id', 'name', 'locked', 'founder', 'is_quick_flow', 'last_modified_by', 'job_group_list', 'desc'
     )
 
 
@@ -300,8 +300,8 @@ class MacAddrInline(admin.StackedInline):
 
 @admin.register(SaltMinion)
 class SaltMinionAdmin(GuardedModelAdmin):
-    list_display = ('name', 'status', 'env', 'os', 'update_time')
-    search_fields = ('name', 'status', 'env', 'os')
+    list_display = ('name', 'status', 'env', 'os', 'host', 'ip_list', 'sn', 'update_time')
+    search_fields = ('name', 'status', 'env', 'os', 'host', 'ip_list', 'sn')
     inlines = [MacAddrInline]
     list_filter = ('status', 'env', 'os')
 

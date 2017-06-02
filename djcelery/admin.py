@@ -331,9 +331,11 @@ class PeriodicTaskAdmin(GuardedModelAdmin):
         '__unicode__',
         'task',
         'args',
-        'kwargs',
+        'last_modified_by',
+        'locked',
     )
     search_fields = ('name', 'task')
+    readonly_fields = ('created_time', 'last_modified_time',)
     ordering = ('-enabled', 'name')
     fieldsets = (
         (None, {
@@ -350,6 +352,10 @@ class PeriodicTaskAdmin(GuardedModelAdmin):
         }),
         ('执行选项', {
             'fields': ('expires', 'queue', 'exchange', 'routing_key'),
+            'classes': ('extrapretty', 'wide', 'collapse'),
+        }),
+        ('其他', {
+            'fields': ('founder', 'locked', 'last_modified_by', 'created_time', 'last_modified_time'),
             'classes': ('extrapretty', 'wide', 'collapse'),
         }),
     )
